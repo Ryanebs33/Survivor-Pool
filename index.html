@@ -777,7 +777,6 @@ function submitPage(){
 function commishPage(){
   let head=`<h2>Commissioner</h2>`;
   if(!commishUnlocked) return `<section class="page">${head}
-    <p class="lede">Enter picks for pool members, set the deadline and make the weekly recap. Enter the commissioner code to continue.</p>
     <form id="codeForm" class="codeform" novalidate>
       <div class="field"><label for="codeIn">Commissioner code</label>
         <input id="codeIn" type="password" inputmode="numeric" autocomplete="off" maxlength="12"></div>

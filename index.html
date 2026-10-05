@@ -175,6 +175,15 @@ input[type="datetime-local"]:focus-visible{outline:3px solid var(--torch);outlin
 .editlink{margin-top:22px;background:var(--surface);border-radius:10px;padding:14px 16px;display:grid;gap:6px;font-size:14px;max-width:62ch}
 .editlink b{font-family:var(--display);font-size:18px;text-transform:uppercase;letter-spacing:.03em}
 
+.pick{padding:0}
+.pick-link{display:flex;gap:10px;align-items:center;padding:10px;border-radius:8px;color:inherit;text-decoration:none;min-width:0;flex:1}
+.pick-link:hover{background:color-mix(in srgb,var(--torch) 8%,transparent)}
+.pick-link:hover .nm{text-decoration:underline;text-decoration-color:var(--torch);text-underline-offset:3px}
+.pick-link:focus-visible{outline:3px solid var(--torch);outline-offset:2px}
+.card{scroll-margin-top:80px}
+.card.flash{box-shadow:0 0 0 3px var(--torch),0 8px 24px -10px color-mix(in srgb,var(--torch) 60%,transparent)}
+.card:focus{outline:none}
+
 /* Spoiler gate */
 .gate{background:var(--gate);color:var(--gate-ink);border-radius:12px;padding:48px 24px;text-align:center;display:grid;justify-items:center;gap:14px}
 .gate .flame{width:48px;height:64px}
@@ -639,7 +648,7 @@ function castPage(){
     <p class="lede">Meet the 21 first-time players of Survivor 51. Spoiler-free: nothing here says who is still in the game.</p>
     <div class="filter" role="group" aria-label="Filter by tribe">${btn("All")}${btn("Toka")}${btn("Savu")}</div>
     <div class="grid">${list.map(c=>`
-      <article class="card t-${c.tribe}">
+      <article class="card t-${c.tribe}" id="c-${c.id}">
         <div class="badge" aria-hidden="true">${initials(c)}</div>
         <div style="min-width:0">
           <div class="tribe ${c.tribe}">${c.tribe}</div>
@@ -653,9 +662,9 @@ function castPage(){
 let picksSel = "";
 function pickLi(id, mvp){
   const c=byId[id];
-  return `<li class="pick ${id===mvp?'mvp':''}">
+  return `<li class="pick ${id===mvp?'mvp':''}"><a class="pick-link" href="#castaway-${c.id}" aria-label="${esc(c.name)}${id===mvp?", MVP":""}: view bio">
     <div class="badge t-${c.tribe}" aria-hidden="true">${initials(c)}</div>
-    <div style="min-width:0"><div class="nm">${esc(c.name)}${id===mvp?'<span class="mvp-tag">MVP</span>':''}</div><div class="tribe ${c.tribe}">${c.tribe}</div></div></li>`;
+    <div style="min-width:0"><div class="nm">${esc(c.name)}${id===mvp?'<span class="mvp-tag">MVP</span>':''}</div><div class="tribe ${c.tribe}">${c.tribe}</div></div></a></li>`;
 }
 function entryCard(e){
   const m = byId[e.mvp];
@@ -1179,12 +1188,14 @@ function wireRecap(){
 }
 
 const ROUTES = {rules:rulesPage, scoreboard:()=>revealedThrough>=LATEST_EP()&&revealed?boardPage():gatePage(), recap:recapPage, castaways:castPage, picks:picksPage, submit:submitPage, commissioner:commishPage};
+let focusCast = null;
 const currentPage = () => { const r=(location.hash||"").slice(1);
   const m=/^recap-ep(\d+)$/.exec(r); if(m){ recapEp=+m[1]; commishTab="recap"; return "commissioner"; }
   if(r==="recap"){ recapEp=null; commishTab="recap"; return "commissioner"; }
   if(r==="commissioner") commishTab="picks";
   if(r==="power"){ boardTab="power"; return "scoreboard"; }
   if(r==="scoreboard") boardTab="standings";
+  const cm=/^castaway-([a-z]+)$/.exec(r); if(cm && byId[cm[1]]){ focusCast=cm[1]; tribeFilter="All"; return "castaways"; }
   return ROUTES[r]?r:"rules"; };
 function route(){
   const page = currentPage();
@@ -1195,6 +1206,13 @@ function route(){
   if(act && strip){ const l=act.offsetLeft-16, r=act.offsetLeft+act.offsetWidth-strip.clientWidth+40; if(strip.scrollLeft>l) strip.scrollLeft=l; else if(strip.scrollLeft<r) strip.scrollLeft=r; updateFade(); }
   view.innerHTML = ROUTES[page]();
   wire();
+  if(page==="castaways" && focusCast){
+    const id=focusCast; focusCast=null;
+    requestAnimationFrame(()=>{ const card=document.getElementById("c-"+id); if(!card) return;
+      card.scrollIntoView({block:"center", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"});
+      card.classList.add("flash"); card.setAttribute("tabindex","-1"); card.focus({preventScroll:true});
+      setTimeout(()=>card.classList.remove("flash"), 2200); });
+  }
 }
 function wire(){
   const rv=document.getElementById("reveal");

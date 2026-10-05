@@ -223,6 +223,19 @@ button.pick-link{font:inherit;color:inherit;background:none;border:0;text-align:
 .board-tabs .ep-tab:focus-visible{outline:3px solid var(--ember);outline-offset:2px}
 @media (max-width:640px){.board-tabs{display:flex;width:100%}.board-tabs .ep-tab{flex:1;justify-content:center;font-size:18px;padding:12px 10px}}
 
+.card{position:relative;cursor:help}
+.card:focus-visible{outline:3px solid var(--torch);outline-offset:2px}
+.own-count{margin-top:10px;font-size:12.5px;color:var(--muted)}
+.own-count .mono{color:var(--torch);font-weight:600}
+.own-pop{display:none;position:absolute;z-index:25;left:0;right:0;top:calc(100% + 8px);background:var(--night);color:var(--night-ink);border-radius:10px;padding:12px 14px;box-shadow:0 14px 34px -12px rgba(0,0,0,.55);font-size:13.5px}
+.own-pop::before{content:"";position:absolute;top:-6px;left:26px;width:12px;height:12px;background:var(--night);transform:rotate(45deg)}
+.card:hover .own-pop,.card:focus-within .own-pop,.card:focus .own-pop{display:block}
+.card:hover,.card:focus-within{z-index:5}
+.own-pop ul{list-style:none;margin:6px 0 0;padding:0;columns:2;column-gap:14px}
+.own-pop li{padding:3px 0;break-inside:avoid}
+.own-pop .mvp-tag{margin-left:6px}
+.own-tag{font:500 10px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--flame-hi);margin-left:6px}
+
 /* Spoiler gate */
 .gate{background:var(--gate);color:var(--gate-ink);border-radius:12px;padding:48px 24px;text-align:center;display:grid;justify-items:center;gap:14px}
 .gate .flame{width:48px;height:64px}
@@ -739,15 +752,35 @@ function castPage(){
     <p class="lede">Meet the 21 first-time players of Survivor 51. Spoiler-free: nothing here says who is still in the game.</p>
     <div class="filter" role="group" aria-label="Filter by tribe">${btn("All")}${btn("Toka")}${btn("Savu")}</div>
     <div class="grid">${list.map(c=>`
-      <article class="card t-${c.tribe}" id="c-${c.id}">
+      <article class="card t-${c.tribe}" id="c-${c.id}" tabindex="0" aria-label="${esc(c.name)}: show who picked them">
         <div class="badge" aria-hidden="true">${initials(c)}</div>
         <div style="min-width:0">
           <div class="tribe ${c.tribe}">${c.tribe}</div>
           <h3>${esc(c.name)}${c.nick?` <span style="color:var(--muted);font-weight:600">“${esc(c.nick)}”</span>`:""}</h3>
           <div class="facts">${c.age} · ${esc(c.job)} · ${esc(c.home)}</div>
           <p>${esc(c.bio)}</p>
+          ${ownersBadge(c)}
         </div>
+        ${ownersPop(c)}
       </article>`).join("")}</div></section>`;
+}
+/* Who in the pool has this castaway (spoiler-free: no points or eliminations). */
+function ownersOf(id){
+  return ENTRANTS.filter(e=>e.picks.includes(id) || e.merge===id)
+    .map(e=>({name:e.name, mvp:e.mvp===id, merge:e.merge===id && !e.picks.includes(id)}))
+    .sort((a,b)=>(b.mvp-a.mvp)||a.name.localeCompare(b.name));
+}
+function ownersBadge(c){
+  const n=ownersOf(c.id).length;
+  return `<div class="own-count"><span class="mono">${n}</span> of ${ENTRANTS.length} picked</div>`;
+}
+function ownersPop(c){
+  const o=ownersOf(c.id), mvps=o.filter(x=>x.mvp).length;
+  return `<div class="own-pop" role="tooltip">
+    <div class="bd-head"><span>Picked by ${o.length} of ${ENTRANTS.length}</span>${mvps?`<span>${mvps} MVP${mvps>1?"s":""}</span>`:""}</div>
+    ${o.length?`<ul>${o.map(x=>`<li>${esc(x.name)}${x.mvp?'<span class="mvp-tag">MVP</span>':""}${x.merge?'<span class="own-tag">Merge pick</span>':""}</li>`).join("")}</ul>`
+      :`<p class="bd-none">Nobody in the pool picked ${esc(short(c))}.</p>`}
+  </div>`;
 }
 
 let picksSel = "__all";   // everyone's picks by default
@@ -1028,6 +1061,7 @@ function applyEntries(snap){
   document.getElementById("sampleNote").hidden = !usingSample;
   const page=currentPage();
   if(page==="picks" || page==="scoreboard" || page==="recap") { view.innerHTML = ROUTES[page](); wire(); }
+  if(page==="castaways" && !view.contains(document.activeElement)) { view.innerHTML = ROUTES[page](); wire(); }
   if(page==="submit" && !saving && !FORMS.self.loaded && myEntry) rerender();
   if(page==="commissioner" && commishUnlocked && !saving){
     // refresh the entrant list without discarding an edit in progress

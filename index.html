@@ -709,7 +709,7 @@ function castPage(){
       </article>`).join("")}</div></section>`;
 }
 
-let picksSel = "";
+let picksSel = "__all";   // everyone's picks by default
 function pickLi(id, mvp){
   const c=byId[id];
   return `<li class="pick ${id===mvp?'mvp':''}"><a class="pick-link" href="#castaway-${c.id}" aria-label="${esc(c.name)}${id===mvp?", MVP":""}: view bio">
@@ -741,7 +741,7 @@ function picksPage(){
     <h2>Picks</h2>
     <p class="lede">Every entrant's Fantasy Tribe: four Toka, four Savu, an MVP, and a merge pick once the tribes merge. Spoiler-free: no points or eliminations shown here.</p>
     <div class="picker"><label for="entrantSel">Entrant</label>
-      <select id="entrantSel"><option value="" ${!picksSel?"selected":""}>Select a name…</option><option value="__all" ${picksSel==="__all"?"selected":""}>View all picks</option>${opts}</select></div>
+      <select id="entrantSel"><option value="__all" ${picksSel==="__all"?"selected":""}>Everyone's picks</option>${opts}</select></div>
     ${body}</section>`;
 }
 

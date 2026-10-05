@@ -184,6 +184,24 @@ input[type="datetime-local"]:focus-visible{outline:3px solid var(--torch);outlin
 .card.flash{box-shadow:0 0 0 3px var(--torch),0 8px 24px -10px color-mix(in srgb,var(--torch) 60%,transparent)}
 .card:focus{outline:none}
 
+.cast-pts li.cp-item{position:relative;align-items:center}
+.cp-left{min-width:0}
+.cp-name{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:help;text-align:left;text-decoration:underline dotted color-mix(in srgb,var(--muted) 70%,transparent);text-underline-offset:3px}
+.cp-name:focus-visible{outline:3px solid var(--torch);outline-offset:2px;border-radius:3px}
+.cp-pop{display:none;position:absolute;z-index:20;left:0;top:calc(100% - 2px);width:min(300px,calc(100vw - 48px));background:var(--night);color:var(--night-ink);border-radius:10px;padding:12px 14px;box-shadow:0 14px 34px -12px rgba(0,0,0,.55);font-size:13px}
+.cp-pop::before{content:"";position:absolute;top:-6px;left:18px;width:12px;height:12px;background:var(--night);transform:rotate(45deg)}
+.cp-item:hover .cp-pop,.cp-item:focus-within .cp-pop{display:block}
+.bd-title{font:800 18px/1.1 var(--display);text-transform:uppercase;letter-spacing:.03em;display:flex;justify-content:space-between;gap:10px;margin-bottom:8px}
+.bd-title .mono{font-size:13px;color:var(--flame-hi);font-weight:500}
+.bd-ep+.bd-ep{margin-top:10px;padding-top:10px;border-top:1px solid rgba(243,238,228,.12)}
+.bd-head{display:flex;justify-content:space-between;gap:10px;font:500 11px/1.3 var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--flame-hi);margin-bottom:4px}
+.bd-out{color:var(--ember)}
+.cp-pop ul{list-style:none;margin:0;padding:0}
+.cast-pts .cp-pop li{display:flex;justify-content:space-between;gap:10px;padding:3px 0;border:0}
+.cp-pop li .mono{color:var(--night-ink)}
+.bd-none,.bd-foot{margin:4px 0 0;color:var(--night-muted);font-size:12px}
+.bd-foot{margin-top:10px}
+
 /* Spoiler gate */
 .gate{background:var(--gate);color:var(--gate-ink);border-radius:12px;padding:48px 24px;text-align:center;display:grid;justify-items:center;gap:14px}
 .gate .flame{width:48px;height:64px}
@@ -438,6 +456,9 @@ const EPISODES = [
               kilby:11, kristin:1, lewis:11, linnea:1, maggie:16, mike:16, ori:1, patt:11, rob:11, sharonda:1}, out:["ana"]}
 ];
 const MERGE_EP = null;   // episode number of the merge; merge picks score from the episode after it
+/* Optional: how a castaway earned their points in an episode, when the breakdown is known.
+   Add to an episode as  detail: { brady: [["Wins an individual Reward Challenge",10], ["Hugs Jeff",5]] }
+   Anything not listed shows as "Other point categories". */
 
 const RESULTS = {};
 CAST.forEach(c=>RESULTS[c.id]={pts:0,out:null,after:0,byEp:{}});
@@ -601,6 +622,25 @@ function powerHTML(){
     </details>`;
 }
 
+/* How one castaway earned their points, episode by episode. */
+function breakdownHTML(c){
+  const r = RESULTS[c.id];
+  const eps = EPISODES.filter(e=>Object.keys(e.pts).length && (r.out==null || e.ep<=r.out)).map(e=>e.ep).reverse();
+  if(!eps.length) return `<div class="bd-title">${esc(c.name)}</div><p class="bd-none">${r.out!=null?`Voted out in Episode ${r.out}, before scoring began.`:"No points scored yet."}</p>`;
+  const blocks = eps.map(ep=>{
+    const e = EPISODES.find(x=>x.ep===ep), total = r.byEp[ep]||0, outNow = r.out===ep;
+    const lines = [];
+    const surv = outNow ? 0 : (MERGE_EP!=null && ep>MERGE_EP ? 3 : 1);
+    if(surv && total>=surv) lines.push([MERGE_EP!=null && ep>MERGE_EP ? "Survived the week (post-merge)" : "Survived the week", surv]);
+    (e.detail?.[c.id]||[]).forEach(([label,p])=>lines.push([label,p]));
+    const rest = total - lines.reduce((s,[,p])=>s+p,0);
+    if(rest>0) lines.push(["Other point categories", rest]);
+    return `<div class="bd-ep"><div class="bd-head"><span>Episode ${ep}${outNow?' · <span class="bd-out">Voted out</span>':""}</span><span class="mono">${total} pts</span></div>
+      ${lines.length?`<ul>${lines.map(([l,p])=>`<li><span>${esc(l)}</span><span class="mono">+${p}</span></li>`).join("")}</ul>`:`<p class="bd-none">No points this week.</p>`}</div>`;
+  }).join("");
+  const hasDetail = eps.some(ep=>EPISODES.find(x=>x.ep===ep).detail?.[c.id]);
+  return `<div class="bd-title">${esc(c.name)} <span class="mono">${r.pts} pts</span></div>${blocks}${hasDetail?"":`<p class="bd-foot">Weekly results list totals only, so category points aren't broken out yet.</p>`}`;
+}
 function boardPage(){
   const ranked = ENTRANTS.map(e=>({...e,total:score(e)})).sort((a,b)=>b.total-a.total||a.name.localeCompare(b.name));
   let rank=0, prev=null;
@@ -615,7 +655,8 @@ function boardPage(){
       <td class="mono">${left}/${e.picks.length+(e.merge?1:0)}</td><td class="total">${e.total}</td></tr>`;
   }).join("");
   const castRank = CAST.map(c=>({c,r:RESULTS[c.id]||{pts:0,out:null}})).sort((a,b)=>b.r.pts-a.r.pts||a.c.name.localeCompare(b.c.name));
-  const castList = castRank.map(({c,r})=>`<li><span>${esc(c.name)} <span class="tribe ${c.tribe}">${c.tribe}</span>${r.out!=null?` <span class="chip">Out Ep ${r.out}</span>`:""}</span><span class="mono" title="${EPISODES.map(e=>'Ep '+e.ep+': '+(r.byEp[e.ep]||0)).join(', ')}">${r.pts}</span></li>`).join("");
+  const castList = castRank.map(({c,r})=>`<li class="cp-item"><span class="cp-left"><button type="button" class="cp-name" aria-describedby="cp-${c.id}">${esc(c.name)}</button> <span class="tribe ${c.tribe}">${c.tribe}</span>${r.out!=null?` <span class="chip">Out Ep ${r.out}</span>`:""}</span><span class="mono">${r.pts}</span>
+      <div class="cp-pop" role="tooltip" id="cp-${c.id}">${breakdownHTML(c)}</div></li>`).join("");
   return `<section class="page">
     <h2>Scoreboard</h2>
     <p class="meta-line">Through ${esc(POOL.updatedThrough)}</p>

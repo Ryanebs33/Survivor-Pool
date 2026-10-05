@@ -202,6 +202,20 @@ input[type="datetime-local"]:focus-visible{outline:3px solid var(--torch);outlin
 .bd-none,.bd-foot{margin:4px 0 0;color:var(--night-muted);font-size:12px}
 .bd-foot{margin-top:10px}
 
+.pick{position:relative}
+button.pick-link{font:inherit;color:inherit;background:none;border:0;text-align:left;cursor:help;width:100%}
+.bio-pop{display:none;position:absolute;z-index:25;left:0;top:calc(100% + 8px);width:min(300px,calc(100vw - 48px));background:var(--night);color:var(--night-ink);border-radius:10px;padding:14px;box-shadow:0 14px 34px -12px rgba(0,0,0,.55);font-size:13px}
+.bio-pop::before{content:"";position:absolute;top:-6px;left:22px;width:12px;height:12px;background:var(--night);transform:rotate(45deg)}
+.bio-pop.flip{left:auto;right:0}
+.bio-pop.flip::before{left:auto;right:22px}
+.pick:hover .bio-pop,.pick:focus-within .bio-pop{display:block}
+.bp-top{display:flex;gap:10px;align-items:center;margin-bottom:8px}
+.bp-top .badge{width:40px;height:40px;font-size:16px;flex:0 0 auto}
+.bp-top .bd-title{margin:0}
+.bp-nick{color:var(--night-muted);font-size:12px}
+.bp-facts{color:var(--night-muted);font-size:12.5px;margin:4px 0 6px}
+.bp-bio{margin:0;line-height:1.45}
+
 /* Spoiler gate */
 .gate{background:var(--gate);color:var(--gate-ink);border-radius:12px;padding:48px 24px;text-align:center;display:grid;justify-items:center;gap:14px}
 .gate .flame{width:48px;height:64px}
@@ -710,11 +724,20 @@ function castPage(){
 }
 
 let picksSel = "__all";   // everyone's picks by default
+let bioSeq = 0;
 function pickLi(id, mvp){
   const c=byId[id];
-  return `<li class="pick ${id===mvp?'mvp':''}"><a class="pick-link" href="#castaway-${c.id}" aria-label="${esc(c.name)}${id===mvp?", MVP":""}: view bio">
+  const pid = `bio-${c.id}-${++bioSeq}`;
+  return `<li class="pick ${id===mvp?'mvp':''}"><button type="button" class="pick-link" aria-describedby="${pid}">
     <div class="badge t-${c.tribe}" aria-hidden="true">${initials(c)}</div>
-    <div style="min-width:0"><div class="nm">${esc(c.name)}${id===mvp?'<span class="mvp-tag">MVP</span>':''}</div><div class="tribe ${c.tribe}">${c.tribe}</div></div></a></li>`;
+    <div style="min-width:0"><div class="nm">${esc(c.name)}${id===mvp?'<span class="mvp-tag">MVP</span>':''}</div><div class="tribe ${c.tribe}">${c.tribe}</div></div></button>
+    <div class="bio-pop" role="tooltip" id="${pid}">
+      <div class="bp-top"><span class="badge t-${c.tribe}" aria-hidden="true">${initials(c)}</span>
+        <div><div class="bd-title">${esc(c.name)}</div>${c.nick?`<div class="bp-nick">“${esc(c.nick)}”</div>`:""}</div></div>
+      <div class="bd-head"><span>${c.tribe} tribe</span></div>
+      <div class="bp-facts">${c.age} · ${esc(c.job)} · ${esc(c.home)}</div>
+      <p class="bp-bio">${esc(c.bio)}</p>
+    </div></li>`;
 }
 function entryCard(e){
   const m = byId[e.mvp];
@@ -1271,6 +1294,12 @@ function wire(){
   view.querySelectorAll("[data-tribe]").forEach(b=>b.addEventListener("click",()=>{tribeFilter=b.dataset.tribe;view.innerHTML=castPage();wire();}));
   const sel=document.getElementById("entrantSel");
   if(sel) sel.addEventListener("change",()=>{picksSel=sel.value;view.innerHTML=picksPage();wire();document.getElementById("entrantSel").focus();});
+  view.querySelectorAll(".pick").forEach(li=>{
+    const place=()=>{ const pop=li.querySelector(".bio-pop"); if(!pop) return;
+      pop.classList.remove("flip"); const r=pop.getBoundingClientRect();
+      if(r.right > document.documentElement.clientWidth-12) pop.classList.add("flip"); };
+    li.addEventListener("mouseenter",place); li.addEventListener("focusin",place);
+  });
   wireSubmit();
 }
 function updateFade(){ const st=document.querySelector(".tabs-in"); if(!st) return;

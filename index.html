@@ -579,18 +579,33 @@ function gatePage(ep, back){
 /* ---------- Power rankings: projected rest-of-season points ---------- */
 const SEASON_EPISODES = 13;   // expected episodes in the season (finale = last); adjust if CBS announces otherwise
 let boardTab = "standings";
-/* Expert tiers used by the power rankings. Update when a newer ranking is published. */
-const EXPERT = {
-  source: "In-Between Media, Survivor 51 tiers and rankings (post-Episode 1)",
-  url: "https://in-betweenmedia.com/survivor-51-tiers-and-rankings-post-episode-1/",
-  tiers: {mike:"S", alexis:"S", maggie:"A", carter:"A", kilby:"B", linnea:"B", cristian:"B",
-          kristin:"C", rob:"C", patt:"C", lewis:"C", brady:"C", jenna:"C",
-          sharonda:"D", ori:"D", an:"D", ana:"D", devin:"D", jelly:"F", eric:"F"}
-};
-/* How much each tier changes a castaway's expected staying power and finale chances (C = average). */
+/* Expert rankings used by the power rankings. Each source is turned into a strength score
+   (1 = average castaway) and the sources are averaged. Add or update sources as new rankings come out. */
+const EXPERTS = [
+  { source: "In-Between Media", title: "Survivor 51 tiers and rankings (post-Episode 1)",
+    url: "https://in-betweenmedia.com/survivor-51-tiers-and-rankings-post-episode-1/",
+    tiers: {mike:"S", alexis:"S", maggie:"A", carter:"A", kilby:"B", linnea:"B", cristian:"B",
+            kristin:"C", rob:"C", patt:"C", lewis:"C", brady:"C", jenna:"C",
+            sharonda:"D", ori:"D", an:"D", ana:"D", devin:"D", jelly:"F", eric:"F"} },
+  { source: "DK Network", title: "Survivor 51 power rankings after Episode 1",
+    url: "https://dknetwork.draftkings.com/2026/09/25/survivor-51-power-rankings-fallout-after-episode-1/",
+    ranks: ["kristin","mike","carter","sharonda","rob","ori","kilby","patt","linnea","brady",
+            "maggie","ana","an","alexis","jenna","cristian","lewis","jelly","devin","eric"] }
+];
+/* Tier strengths (C = average). A numbered ranking maps evenly from 1.6 (1st) down to 0.6 (last). */
 const TIER_MULT = {S:1.6, A:1.35, B:1.15, C:1, D:0.8, F:0.6};
-const tierOf = id => EXPERT.tiers[id] || null;
-const multOf = id => TIER_MULT[tierOf(id)] ?? 1;
+function sourceMult(src, id){
+  if(src.tiers) return src.tiers[id] ? TIER_MULT[src.tiers[id]] : null;
+  const i = src.ranks.indexOf(id); if(i<0) return null;
+  return 1.6 - (i/(src.ranks.length-1))*1.0;
+}
+const MULT_CACHE = {};
+const multOf = id => { if(id in MULT_CACHE) return MULT_CACHE[id];
+  const v = EXPERTS.map(src=>sourceMult(src,id)).filter(x=>x!=null);
+  return MULT_CACHE[id] = v.length ? v.reduce((a,b)=>a+b,0)/v.length : 1; };
+/* Consensus tier from the averaged strength, for the badges. */
+const tierOf = id => { if(!EXPERTS.some(src=>sourceMult(src,id)!=null)) return null;
+  const m = multOf(id); return m>=1.45?"S": m>=1.25?"A": m>=1.08?"B": m>=0.92?"C": m>=0.72?"D":"F"; };
 function powerData(){
   const eps = SCORED_EPS(), latest = LATEST_EP();
   const alive = CAST.filter(c=>RESULTS[c.id]?.out==null);
@@ -641,14 +656,14 @@ function powerHTML(){
       <td class="total">${x.proj}</td>
     </tr>`).join("");
   return `
-    <p class="lede">Teams ranked by the points they're expected to score from here to the finale, not by what they've banked so far. Projections combine each castaway's scoring so far with expert tier rankings from <a class="inline-link" href="${EXPERT.url}" target="_blank" rel="noopener">${esc(EXPERT.source)}</a>.</p>
+    <p class="lede">Teams ranked by the points they're expected to score from here to the finale, not by what they've banked so far. Projections combine each castaway's scoring so far with expert rankings from ${EXPERTS.map(x=>`<a class="inline-link" href="${x.url}" target="_blank" rel="noopener">${esc(x.source)}</a>`).join(" and ")}.</p>
     <div class="tablewrap"><table class="board power">
       <thead><tr><th>#</th><th>Team</th><th class="r" title="Compared with the current standings">vs. standings</th><th class="r">Now</th><th class="r">Projected</th></tr></thead>
       <tbody>${rows}</tbody></table></div>
     <details class="how"><summary>How the projection works</summary>
       <p>For each castaway still in the game, the projection takes their average points per episode so far (pulled toward the cast average so one big week doesn't dominate) and multiplies it by how many of the ${d.epsLeft} remaining episodes they're expected to last in a ${SEASON_EPISODES}-episode season.</p>
-      <p>The expert tiers set that staying power. An average (C-tier) castaway is expected to last about half of the remaining episodes. S-tier castaways count 1.6 times as much as C-tier, A-tier 1.35, B-tier 1.15, D-tier 0.8 and F-tier 0.6. The same tiers split the finale bonuses (10, 20 and 30 points) and the 30-point MVP bonus, so higher-tier castaways get a bigger share. Castaways who are out add nothing.</p>
-      <p>The tier badges show how many of each team's remaining castaways sit in each tier. "vs. standings" shows how many spots higher (▲) or lower (▼) a team sits here than in the current standings. It's a guide for bragging rights, not a prediction of who goes home next.</p>
+      <p>The expert rankings set that staying power. Each source becomes a strength score: In-Between Media's tiers count S 1.6, A 1.35, B 1.15, C 1 (average), D 0.8 and F 0.6, and DK Network's numbered list runs evenly from 1.6 for 1st down to 0.6 for 20th. The two scores are averaged. An average castaway is expected to last about half of the remaining episodes, and stronger ones longer. The same scores split the finale bonuses (10, 20 and 30 points) and the 30-point MVP bonus. Castaways who are out add nothing.</p>
+      <p>The badges show each team's remaining castaways by consensus tier, from the two sources combined. "vs. standings" shows how many spots higher (▲) or lower (▼) a team sits here than in the current standings. It's a guide for bragging rights, not a prediction of who goes home next.</p>
     </details>`;
 }
 

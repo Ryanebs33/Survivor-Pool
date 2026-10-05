@@ -1,0 +1,1218 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Rules, scoreboard, picks and weekly recaps for our Survivor 51 fantasy pool.">
+<meta name="theme-color" content="#0A1A14">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 22'%3E%3Cpath fill='%23FF8A3D' d='M8 0c3 5 7 8 7 14a7 7 0 0 1-14 0c0-4 2-6 3-9 .5 2 1.5 3.5 3 4-1-3 0-6 1-9z'/%3E%3C/svg%3E">
+<title>Survivor 51 Fantasy Pool</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800;900&family=Big+Shoulders+Stencil+Display:wght@800;900&family=Work+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+html{-webkit-text-size-adjust:100%}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+
+/* Layout: torch-lit tab bar over a single content column; tribe colour is the only other hue. */
+:root{
+  --bg:#ECF0EC; --surface:#FFFFFF; --ink:#13201C; --muted:#5A6B65; --line:#D3DCD7;
+  --torch:#C9471B; --torch-ink:#FFFFFF; --toka:#B7790A; --savu:#1C7488;
+  --toka-soft:#F6EAD2; --savu-soft:#DCEEF1; --gate:#13201C; --gate-ink:#F4EFE6;
+  --night:#0A1A14; --night-2:#123528; --ember:#FF8A3D; --flame-hi:#FFD27A; --night-ink:#F3EEE4; --night-muted:#A9BDB4;
+  --stencil:"Big Shoulders Stencil Display","Big Shoulders Display",Impact,sans-serif;
+  --display:"Big Shoulders Display","Arial Narrow",Impact,sans-serif;
+  --body:"Work Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0E1613; --surface:#16211D; --ink:#E7ECE8; --muted:#94A49E; --line:#2A3833;
+  --torch:#F06A35; --torch-ink:#1A0D07; --toka:#E6A93A; --savu:#4FB3C8;
+  --toka-soft:#2E2512; --savu-soft:#132B31; --gate:#070B0A; --gate-ink:#F4EFE6; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E1613; --surface:#16211D; --ink:#E7ECE8; --muted:#94A49E; --line:#2A3833;
+  --torch:#F06A35; --torch-ink:#1A0D07; --toka:#E6A93A; --savu:#4FB3C8;
+  --toka-soft:#2E2512; --savu-soft:#132B31; --gate:#070B0A; --gate-ink:#F4EFE6; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:400 15px/1.55 var(--body)}
+.wrap{max-width:1040px;margin:0 auto;padding-inline:16px;padding-block:0 48px}
+header.top{padding-block:28px 0}
+.eyebrow{font:500 12px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--torch)}
+h1{font:900 clamp(40px,8vw,68px)/.9 var(--display);text-transform:uppercase;letter-spacing:.01em;margin:8px 0 6px;text-wrap:balance}
+.sub{color:var(--muted);margin:0}
+nav.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);display:flex;gap:4px;overflow-x:auto;margin:22px 0 26px;border-bottom:2px solid var(--line);scrollbar-width:none}
+nav.tabs a{flex:0 0 auto;font:800 19px/1 var(--display);text-transform:uppercase;letter-spacing:.04em;color:var(--muted);text-decoration:none;padding:14px 14px 12px;border-bottom:4px solid transparent;margin-bottom:-2px}
+nav.tabs a[aria-current="page"]{color:var(--ink);border-bottom-color:var(--torch)}
+nav.tabs a:focus-visible,button:focus-visible,select:focus-visible{outline:3px solid var(--torch);outline-offset:2px}
+h2{font:800 34px/1 var(--display);text-transform:uppercase;margin:0 0 6px;text-wrap:balance}
+h3{font:800 22px/1.1 var(--display);text-transform:uppercase;letter-spacing:.02em;margin:0}
+.lede{color:var(--muted);max-width:62ch;margin:0 0 22px}
+.notice{display:flex;gap:10px;align-items:flex-start;background:var(--surface);border:1px dashed var(--torch);border-radius:8px;padding:10px 14px;margin:0 0 22px;font-size:14px}
+.notice b{color:var(--torch)}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+/* Rules */
+.rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:28px 40px}
+.rules section{min-width:0}
+.rules ol,.rules ul{padding-left:20px;margin:10px 0 0;display:grid;gap:6px}
+.pts{width:100%;border-collapse:collapse;margin-top:10px}
+.pts td{padding:8px 0;border-bottom:1px solid var(--line)}
+.pts td:last-child{text-align:right;font-family:var(--mono);color:var(--torch);white-space:nowrap;padding-left:12px}
+
+.small{font-size:13px;color:var(--muted);margin:10px 0 0}
+.cats-title{margin:36px 0 6px}
+.cats{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;align-items:start}
+.cat{background:var(--surface);border-radius:10px;padding:16px 18px;min-width:0}
+.cat-head{display:flex;align-items:baseline;gap:8px;padding-bottom:10px;border-bottom:2px solid var(--torch);margin-bottom:6px;font:500 12px/1 var(--mono);text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+.cat-pts{font:900 40px/.8 var(--display);color:var(--torch);letter-spacing:0}
+.cat ul{list-style:none;margin:0;padding:0}
+.cat li{padding:7px 0;border-bottom:1px solid var(--line);font-size:14px}
+.cat li:last-child{border-bottom:0}
+.group-label{font:500 11px/1 var(--mono);text-transform:uppercase;letter-spacing:.1em;margin:14px 0 8px}
+.group-label:first-of-type{margin-top:0}
+.mvp-tag{font:500 10px/1 var(--mono);letter-spacing:.1em;background:var(--torch);color:var(--torch-ink);padding:3px 6px;border-radius:4px;margin-left:6px;vertical-align:2px}
+.pick.mvp{box-shadow:inset 0 0 0 2px var(--torch)}
+.pick.empty{color:var(--muted);font-size:14px;border:1px dashed var(--line);background:transparent}
+
+
+/* Submit */
+.pform{display:grid;gap:26px}
+.field{display:grid;gap:8px;max-width:420px}
+.field label{font:500 12px/1.3 var(--mono);text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+input[type="text"]{font:500 16px/1.2 var(--body);padding:11px 12px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);width:100%}
+input[type="text"]:focus-visible{outline:3px solid var(--torch);outline-offset:1px}
+.pg-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:10px;border-bottom:2px solid var(--line);padding-bottom:6px}
+.tribe-h.Toka{color:var(--toka)} .tribe-h.Savu{color:var(--savu)}
+.count{font-size:14px;color:var(--muted)} .count.full{color:var(--torch)}
+.ptiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px}
+.ptile{display:flex;align-items:center;gap:10px;text-align:left;padding:8px 10px;border-radius:10px;border:2px solid transparent;background:var(--surface);color:var(--ink);font:500 14.5px/1.25 var(--body);cursor:pointer;min-width:0}
+.ptile .badge{width:38px;height:38px;font-size:15px;flex:0 0 auto}
+.ptile .pt-name{flex:1;min-width:0}
+.ptile .pt-check{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:13px;border:2px solid var(--line);flex:0 0 auto}
+.ptile[aria-pressed="true"]{border-color:var(--torch)}
+.ptile[aria-pressed="true"] .pt-check{background:var(--torch);border-color:var(--torch);color:var(--torch-ink)}
+.ptile:disabled{opacity:.45;cursor:not-allowed}
+.ptile[aria-pressed="true"]:disabled{opacity:1}
+.ptile:focus-visible{outline:3px solid var(--torch);outline-offset:2px}
+.submit-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap;position:sticky;bottom:0;background:var(--bg);padding-block:12px calc(12px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.small .ok{color:var(--savu);font-weight:600} .small .err{color:var(--torch);font-weight:600}
+
+.codeform{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap}
+.codeform .field{width:200px}
+input[type="password"]{font:500 18px/1.2 var(--mono);letter-spacing:.2em;padding:11px 12px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);width:100%}
+input[type="password"]:focus-visible{outline:3px solid var(--torch);outline-offset:1px}
+.admin-bar{display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap;background:var(--surface);border-radius:10px;padding:14px 16px;margin-bottom:24px}
+.admin-bar .field{flex:1 1 240px}
+.admin-bar #targetSel{width:100%}
+.small-btn{font-size:15px;padding:10px 14px}
+.danger{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:22px;padding-top:16px;border-top:1px solid var(--line);font-size:14px}
+.danger-btn{font-size:15px;padding:10px 14px}
+
+.deadline-bar{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;background:var(--night);color:var(--night-ink);border-radius:10px;padding:12px 16px;margin:0 0 20px}
+.deadline-bar .dl-label{font:500 11px/1 var(--mono);text-transform:uppercase;letter-spacing:.12em;color:var(--flame-hi)}
+.deadline-bar strong{font:800 20px/1.1 var(--display);text-transform:uppercase;letter-spacing:.03em}
+.dl-panel{background:var(--surface);border-radius:10px;padding:16px;margin-bottom:16px;box-shadow:0 1px 0 var(--line),0 8px 24px -16px rgba(10,26,20,.35)}
+.dl-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.dl-state{font:500 11px/1 var(--mono);text-transform:uppercase;letter-spacing:.1em;padding:5px 9px;border-radius:999px}
+.dl-state.open{background:var(--savu-soft);color:var(--savu)}
+.dl-state.closed{background:color-mix(in srgb,var(--torch) 15%,transparent);color:var(--torch)}
+.dl-form{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:6px}
+.dl-form .field{flex:0 1 260px}
+input[type="datetime-local"]{font:500 16px/1.2 var(--body);padding:10px 12px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);width:100%;max-width:100%}
+input[type="datetime-local"]:focus-visible{outline:3px solid var(--torch);outline-offset:1px}
+
+.recap-head{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap}
+.recap-head h2{margin:6px 0 0}
+.share{display:flex;gap:8px;flex-wrap:wrap}
+.ep-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:16px 0 6px}
+.ep-tab{font:800 16px/1 var(--display);text-transform:uppercase;letter-spacing:.05em;text-decoration:none;color:var(--ink);padding:8px 12px;border-radius:999px;border:1px solid var(--line);background:var(--surface)}
+.ep-tab[aria-current="page"]{background:var(--night);color:var(--night-ink);border-color:var(--night)}
+.ep-tab:focus-visible,.inline-link:focus-visible{outline:3px solid var(--torch);outline-offset:2px}
+.inline-link{color:var(--torch);text-transform:none;letter-spacing:0;font-family:var(--body);font-weight:600}
+.highlights{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:14px}
+.hl{background:var(--night);color:var(--night-ink);border-radius:10px;padding:16px;display:grid;gap:4px;min-width:0;position:relative;overflow:hidden}
+.hl::after{content:"";position:absolute;inset:auto -20% -60% auto;width:70%;height:120%;background:radial-gradient(closest-side,rgba(255,138,61,.35),transparent);pointer-events:none}
+.hl-k{font:500 11px/1 var(--mono);text-transform:uppercase;letter-spacing:.12em;color:var(--flame-hi)}
+.hl-v{font:800 26px/1.05 var(--display);text-transform:uppercase;letter-spacing:.02em;overflow-wrap:anywhere}
+.hl-n{font-size:13px;color:var(--night-muted)}
+.recap-board .wk{color:var(--torch);font-weight:600}
+.mvcell{width:46px;padding-left:0!important}
+.mv{font:600 12px/1 var(--mono);white-space:nowrap}
+.mv.up{color:var(--savu)} .mv.down{color:var(--torch)} .mv.same,.mv.new{color:var(--muted)}
+.chip.zero{opacity:.5}
+.sub-tabs{margin:12px 0 22px}
+.wk-title{margin:4px 0 0}
+.wk-title + .highlights{margin-bottom:28px}
+.wk-standings{margin-bottom:10px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.copy-fallback{display:block;width:100%;margin-top:8px;font:13px/1.4 var(--mono);padding:10px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+.recap .small{display:block}
+
+.img-panel{margin-top:14px;background:var(--surface);border-radius:12px;padding:14px;display:grid;gap:12px;justify-items:start;box-shadow:0 1px 0 var(--line),0 8px 24px -16px rgba(10,26,20,.35)}
+.score-img{width:100%;max-width:540px;height:auto;border-radius:10px;display:block}
+.img-actions{display:flex;gap:8px;flex-wrap:wrap}
+
+.board.power td{vertical-align:middle}
+.pbar{height:6px;border-radius:3px;background:var(--line);margin:8px 0 6px;max-width:320px;overflow:hidden}
+.pbar span{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,var(--toka),var(--torch))}
+.pmeta{font-size:12.5px;color:var(--muted)}
+.ok-dot{color:var(--savu);font-weight:600} .out-dot{color:var(--torch);font-weight:600;text-decoration:line-through}
+.how{margin-top:18px;background:var(--surface);border-radius:10px;padding:12px 16px;max-width:72ch}
+.how summary{cursor:pointer;font-weight:600}
+.how p{font-size:14px;color:var(--muted);margin:10px 0 0}
+
+.tiers{display:flex;gap:4px;flex-wrap:wrap;margin:2px 0 4px}
+.tier{font:600 11px/1 var(--mono);padding:3px 6px;border-radius:4px;background:var(--bg);color:var(--ink)}
+.tier.tS{background:var(--torch);color:var(--torch-ink)}
+.tier.tA{background:var(--toka);color:var(--night)}
+.tier.tB{background:var(--toka-soft);color:var(--toka)}
+.tier.tD,.tier.tF{color:var(--muted)}
+
+.editlink{margin-top:22px;background:var(--surface);border-radius:10px;padding:14px 16px;display:grid;gap:6px;font-size:14px;max-width:62ch}
+.editlink b{font-family:var(--display);font-size:18px;text-transform:uppercase;letter-spacing:.03em}
+
+/* Spoiler gate */
+.gate{background:var(--gate);color:var(--gate-ink);border-radius:12px;padding:48px 24px;text-align:center;display:grid;justify-items:center;gap:14px}
+.gate .flame{width:48px;height:64px}
+.gate h2{font-size:clamp(34px,7vw,52px);margin:0}
+.gate p{max-width:46ch;margin:0;opacity:.85}
+.btn{font:800 18px/1 var(--display);text-transform:uppercase;letter-spacing:.06em;background:var(--torch);color:var(--torch-ink);border:0;border-radius:6px;padding:14px 22px;cursor:pointer}
+.btn.ghost{background:transparent;color:inherit;border:2px solid currentColor;opacity:.75}
+.gate .row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+
+/* Scoreboard */
+.board{width:100%;border-collapse:collapse;background:var(--surface);border-radius:10px;overflow:hidden}
+.tablewrap{overflow-x:auto}
+.board th{font:500 11px/1 var(--mono);text-transform:uppercase;letter-spacing:.1em;color:var(--muted);text-align:left;padding:12px 14px;border-bottom:1px solid var(--line)}
+.board td{padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+.board tr:last-child td{border-bottom:0}
+.board .rank{font:900 28px/1 var(--display);color:var(--muted);width:48px}
+.board tr.lead .rank{color:var(--torch)}
+.board .total{font:600 22px/1 var(--mono);text-align:right}
+.board th.r,.board td.r{text-align:right}
+.board.eps td{padding:8px 14px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.chip{font-size:12.5px;padding:3px 8px;border-radius:999px;background:var(--bg);white-space:nowrap}
+.chip.out{text-decoration:line-through;opacity:.55}
+.chip .mono{margin-left:4px;color:var(--muted)}
+.split{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:28px;margin-top:8px}
+@media (max-width:760px){.split{grid-template-columns:1fr}}
+.cast-pts{background:var(--surface);border-radius:10px;padding:6px 16px}
+.cast-pts li{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid var(--line)}
+.cast-pts li:last-child{border-bottom:0}
+.cast-pts ul{list-style:none;margin:0;padding:0}
+.meta-line{font:500 12px/1.4 var(--mono);color:var(--muted);margin:0 0 12px;text-transform:uppercase;letter-spacing:.08em}
+
+/* Castaways */
+.filter{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px}
+.filter button{font:600 13px/1 var(--body);padding:8px 14px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+.filter button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.card{background:var(--surface);border-radius:10px;padding:16px;display:grid;grid-template-columns:52px minmax(0,1fr);gap:12px;align-content:start}
+.badge{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;font:800 20px/1 var(--display);letter-spacing:.02em}
+.t-Toka .badge,.badge.t-Toka{background:var(--toka-soft);color:var(--toka);box-shadow:inset 0 0 0 2px var(--toka)}
+.t-Savu .badge,.badge.t-Savu{background:var(--savu-soft);color:var(--savu);box-shadow:inset 0 0 0 2px var(--savu)}
+.tribe{font:500 11px/1 var(--mono);text-transform:uppercase;letter-spacing:.1em}
+.tribe.Toka{color:var(--toka)} .tribe.Savu{color:var(--savu)}
+.card .facts{font-size:13px;color:var(--muted);margin:4px 0 8px}
+.card p{margin:0;font-size:14px}
+
+/* Picks */
+.picker{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:22px}
+.picker label{font:500 12px/1 var(--mono);text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+select{font:500 16px/1.2 var(--body);padding:10px 36px 10px 12px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);min-width:0;max-width:100%}
+.entry{background:var(--surface);border-radius:10px;padding:18px}
+.entry-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.pick-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;list-style:none;margin:0;padding:0}
+.pick{display:flex;gap:10px;align-items:center;padding:10px;border-radius:8px;background:var(--bg);min-width:0}
+.pick .badge{width:40px;height:40px;font-size:16px;flex:0 0 auto}
+.pick .nm{font-weight:600;line-height:1.25}
+.winner{margin-top:14px;padding-top:12px;border-top:1px solid var(--line);font-size:14px}
+.winner b{font-family:var(--display);font-size:18px;text-transform:uppercase;letter-spacing:.03em}
+.all{display:grid;gap:14px}
+
+/* ===== Survivor theme ===== */
+.wrap{padding-block:30px 56px}
+.hero{position:relative;overflow:hidden;color:var(--night-ink);background:var(--night);isolation:isolate}
+.sky{position:absolute;inset:0;z-index:-2;background:
+  radial-gradient(120% 70% at 30% 115%,rgba(255,138,61,.55),rgba(255,138,61,0) 60%),
+  radial-gradient(60% 40% at 85% 110%,rgba(255,210,122,.35),rgba(255,210,122,0) 70%),
+  linear-gradient(180deg,var(--night) 0%,var(--night-2) 60%,#2A4A35 100%)}
+.palms{position:absolute;right:0;bottom:14px;height:88%;width:auto;max-width:60%;z-index:-1;opacity:.95}
+.hero-in{max-width:1040px;margin:0 auto;padding-inline:16px;padding-block:34px 40px;display:flex;gap:18px;align-items:flex-end}
+.hero-text{min-width:0}
+.torch-col{flex:0 0 auto;width:34px;align-self:stretch;display:flex;align-items:flex-end}
+.torch{width:34px;height:auto;filter:drop-shadow(0 0 14px rgba(255,138,61,.7))}
+.hero-eyebrow{color:var(--flame-hi)}
+.hero h1{margin:10px 0 10px;line-height:.86}
+.h1a{display:block;font:900 clamp(52px,11vw,104px)/.86 var(--stencil);letter-spacing:.01em;text-transform:uppercase;color:var(--night-ink)}
+.h1b{display:block;font:800 clamp(26px,5vw,44px)/1 var(--display);letter-spacing:.14em;text-transform:uppercase;color:var(--ember);margin-top:6px}
+.hero .sub{color:var(--night-muted);max-width:44ch}
+.tribal{height:12px;background:
+  linear-gradient(135deg,var(--toka) 25%,transparent 25%) -6px 0/12px 12px,
+  linear-gradient(225deg,var(--toka) 25%,transparent 25%) -6px 0/12px 12px,
+  linear-gradient(315deg,var(--savu) 25%,transparent 25%) 0 0/12px 12px,
+  linear-gradient(45deg,var(--savu) 25%,transparent 25%) 0 0/12px 12px,
+  var(--night)}
+@media (prefers-reduced-motion:no-preference){
+  .fl{transform-origin:20px 44px;animation:flick 1.6s ease-in-out infinite alternate}
+  @keyframes flick{0%{transform:scale(1,1) skewX(0)}30%{transform:scale(.94,1.06) skewX(-3deg)}60%{transform:scale(1.05,.95) skewX(2deg)}100%{transform:scale(.97,1.04) skewX(-1deg)}}
+}
+nav.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--night);margin:0;border:0;box-shadow:0 6px 18px rgba(0,0,0,.18);overflow:visible}
+.tabs-in{max-width:1040px;margin:0 auto;padding-inline:8px;display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
+nav.tabs a{color:var(--night-muted);border-bottom:3px solid transparent;margin:0;padding:15px 12px 12px;transition:color .15s}
+nav.tabs a:hover{color:var(--night-ink)}
+nav.tabs a[aria-current="page"]{color:var(--night-ink);border-bottom-color:var(--ember);text-shadow:0 0 14px rgba(255,138,61,.6)}
+nav.tabs a:focus-visible{outline:3px solid var(--ember);outline-offset:-3px}
+h2{font-size:clamp(36px,6vw,48px);display:flex;align-items:center;gap:12px}
+h2::before{content:"";width:16px;height:22px;flex:0 0 auto;background:var(--torch);
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 22'%3E%3Cpath d='M8 0c3 5 7 8 7 14a7 7 0 0 1-14 0c0-4 2-6 3-9 .5 2 1.5 3.5 3 4-1-3 0-6 1-9z'/%3E%3C/svg%3E") center/contain no-repeat;
+          mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 22'%3E%3Cpath d='M8 0c3 5 7 8 7 14a7 7 0 0 1-14 0c0-4 2-6 3-9 .5 2 1.5 3.5 3 4-1-3 0-6 1-9z'/%3E%3C/svg%3E") center/contain no-repeat}
+.gate h2::before{display:none}
+.gate h2{justify-content:center}
+.card,.entry,.cat,.cast-pts,.board,.admin-bar{box-shadow:0 1px 0 var(--line),0 8px 24px -16px rgba(10,26,20,.35)}
+.card{transition:transform .15s ease, box-shadow .15s ease}
+@media (prefers-reduced-motion:no-preference){.card:hover{transform:translateY(-2px)}}
+.cat-head{border-bottom-color:var(--torch)}
+.board tr.lead td{background:linear-gradient(90deg,color-mix(in srgb,var(--torch) 12%,transparent),transparent 70%)}
+.board tr.lead .rank::after{content:"";display:inline-block;width:12px;height:17px;margin-left:4px;vertical-align:2px;background:var(--torch);
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 22'%3E%3Cpath d='M8 0c3 5 7 8 7 14a7 7 0 0 1-14 0c0-4 2-6 3-9 .5 2 1.5 3.5 3 4-1-3 0-6 1-9z'/%3E%3C/svg%3E") center/contain no-repeat;
+          mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 22'%3E%3Cpath d='M8 0c3 5 7 8 7 14a7 7 0 0 1-14 0c0-4 2-6 3-9 .5 2 1.5 3.5 3 4-1-3 0-6 1-9z'/%3E%3C/svg%3E") center/contain no-repeat}
+.gate{background:radial-gradient(90% 80% at 50% 120%,rgba(255,138,61,.35),rgba(255,138,61,0) 60%),var(--night);color:var(--night-ink);box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
+.gate .flame{width:56px;height:76px;filter:drop-shadow(0 0 18px rgba(255,138,61,.75))}
+@media (prefers-reduced-motion:no-preference){.gate .flame{animation:flick 1.6s ease-in-out infinite alternate;transform-origin:50% 90%}}
+.btn{box-shadow:0 6px 18px -8px color-mix(in srgb,var(--torch) 70%,transparent);transition:transform .12s ease,filter .12s ease}
+.btn:not(:disabled):hover{filter:brightness(1.08)}
+@media (prefers-reduced-motion:no-preference){.btn:not(:disabled):active{transform:translateY(1px)}}
+.btn.ghost{box-shadow:none}
+.ptile[aria-pressed="true"]{box-shadow:0 0 0 3px color-mix(in srgb,var(--torch) 20%,transparent)}
+@media (max-width:560px){.torch-col{display:none}.palms{opacity:.55}}
+
+
+/* ===== Responsive: phones & small tablets ===== */
+.board tr.lead td{background:none}
+.board tr.lead{background:linear-gradient(90deg,color-mix(in srgb,var(--torch) 12%,transparent),transparent 70%)}
+nav.tabs{position:sticky}
+nav.tabs::after{content:"";position:absolute;top:0;right:0;bottom:0;width:36px;pointer-events:none;background:linear-gradient(90deg,transparent,var(--night));opacity:var(--fade,1);transition:opacity .2s}
+@media (max-width:640px){
+  .hero-in{padding-block:22px 26px}
+  .h1a{font-size:clamp(44px,13vw,64px)}
+  .h1b{font-size:clamp(22px,6.4vw,30px);letter-spacing:.1em}
+  .hero .sub{font-size:14px}
+  .hero-eyebrow{font-size:10.5px}
+  nav.tabs a{font-size:17px;padding:13px 10px 11px}
+  .wrap{padding-block:20px 48px}
+  h2{font-size:34px}
+  .notice{flex-direction:column;gap:2px}
+  .ep-tab{font-size:14px;padding:7px 11px}
+  .highlights{grid-template-columns:1fr;gap:8px}
+  .hl{padding:12px 14px}
+  .hl-v{font-size:22px}
+  .board th,.board td{padding:10px 8px}
+  .board .rank{font-size:24px;width:34px}
+  .board .total{font-size:18px}
+  .chip{font-size:12px;padding:2px 7px}
+  .recap-head .share{width:100%}
+  .recap-head .share .btn{flex:1 1 auto}
+  .split{gap:22px}
+  /* Power rankings become stacked cards */
+  .board.power,.board.power tbody{display:block}
+  .board.power thead{display:none}
+  .board.power tr{display:grid;grid-template-columns:34px minmax(0,1fr) auto;column-gap:10px;row-gap:2px;padding:12px 12px;border-bottom:1px solid var(--line);align-items:start}
+  .board.power tr:last-child{border-bottom:0}
+  .board.power td{padding:0;border:0}
+  .board.power td:nth-child(1){grid-column:1;grid-row:1/span 3}
+  .board.power td:nth-child(2){grid-column:2;grid-row:1/span 3;min-width:0}
+  .board.power td:nth-child(5){grid-column:3;grid-row:1;text-align:right;font-size:24px}
+  .board.power td:nth-child(5)::after{content:"projected";display:block;font:500 10px/1.2 var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+  .board.power td:nth-child(4){grid-column:3;grid-row:2;text-align:right;font-size:12px;color:var(--muted)}
+  .board.power td:nth-child(4)::before{content:"now "}
+  .board.power td:nth-child(3){grid-column:3;grid-row:3;text-align:right}
+  .pbar{max-width:none}
+  .img-panel{padding:10px}
+  .admin-bar{padding:12px}
+  .dl-form .field,.codeform .field{flex:1 1 100%;width:100%}
+  .submit-row .btn{flex:1 1 100%}
+}
+@media (min-width:641px) and (max-width:900px){
+  .highlights{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .hl-v{font-size:20px}
+}
+@media (hover:hover){ .ep-tab:hover{border-color:var(--ink)} .filter button:hover{border-color:var(--ink)} }
+
+@media (prefers-reduced-motion:no-preference){.page{animation:in .25s ease-out}@keyframes in{from{transform:translateY(6px)}to{transform:none}}}
+</style>
+</head>
+<body>
+
+
+<header class="hero">
+  <div class="sky" aria-hidden="true"></div>
+  <svg class="palms" viewBox="0 0 400 220" preserveAspectRatio="xMaxYMax meet" aria-hidden="true">
+    <path d="M300 220c4-60 10-110 30-160" stroke="var(--night)" stroke-width="7" fill="none" stroke-linecap="round"/>
+    <path d="M330 60c-30-14-62-10-90 8 28-4 52 0 72 12M330 60c-6-30-26-48-54-56 18 14 30 32 34 52M330 60c22-24 52-30 80-22-26 2-46 12-62 28M330 60c30-2 54 14 66 40-18-16-38-22-60-22M330 60c-16 14-26 36-26 62 8-22 20-38 36-50" stroke="var(--night)" stroke-width="9" fill="none" stroke-linecap="round"/>
+    <path d="M370 220c-2-44 2-80 14-112" stroke="var(--night)" stroke-width="5" fill="none" stroke-linecap="round"/>
+    <path d="M384 108c-20-8-42-4-58 8 18-2 34 2 46 8M384 108c14-16 34-20 52-14-16 2-30 8-40 18M384 108c-4-20-18-32-36-36 12 10 18 22 22 36" stroke="var(--night)" stroke-width="7" fill="none" stroke-linecap="round"/>
+  </svg>
+  <div class="hero-in">
+    <div class="torch-col" aria-hidden="true">
+      <svg class="torch" viewBox="0 0 40 120"><g class="fl"><path d="M20 4c6 12 14 18 14 32a14 14 0 0 1-28 0c0-8 4-12 7-18 1 5 3 8 6 9-2-7 0-15 1-23z" fill="var(--ember)"/><path d="M20 26c3 5 6 8 6 13a6 6 0 0 1-12 0c0-5 3-8 6-13z" fill="var(--flame-hi)"/></g><path d="M12 50h16l-3 8H15z" fill="#6B4A2B"/><rect x="17" y="58" width="6" height="62" rx="2" fill="#8A6239"/><path d="M15 64h10M15 72h10" stroke="#5A3D22" stroke-width="2"/></svg>
+    </div>
+    <div class="hero-text">
+      <div class="eyebrow hero-eyebrow">Season 51 · Fiji · Wednesdays on CBS</div>
+      <h1 id="poolName"><span class="h1a">Survivor 51</span><span class="h1b">Fantasy Pool</span></h1>
+      <p class="sub" id="poolSub"></p>
+    </div>
+  </div>
+  <div class="tribal" aria-hidden="true"></div>
+</header>
+
+<nav class="tabs" aria-label="Pool pages"><div class="tabs-in">
+    <a href="#rules" data-r="rules">Rules</a>
+    <a href="#scoreboard" data-r="scoreboard">Scoreboard</a>
+    <a href="#picks" data-r="picks">Picks</a>
+    <a href="#castaways" data-r="castaways">Castaways</a>
+    <a href="#submit" data-r="submit">Submit picks</a>
+    <a href="#commissioner" data-r="commissioner">Commissioner</a>
+</div></nav>
+
+<div class="wrap">
+  <div id="sampleNote" class="notice" hidden><b>Sample data</b><span>The entrants and their picks are placeholders until the first real picks are submitted. Castaway points are the real weekly results.</span></div>
+
+  <main id="view"></main>
+</div>
+
+<script>
+/* ============ POOL DATA — edit this block each week ============ */
+const POOL = {
+  name: "Survivor 51 Fantasy Pool",
+  updatedThrough: "Episode 2",
+  picksOpen: true,         // set to false to lock the original 8 picks + MVP
+  merged: false,           // true once the tribes merge (unlocks merge picks)
+  winner: null             // castaway id of the Sole Survivor, at the finale (+30 to every entrant whose MVP it is)
+};
+
+const CAST = [
+  {id:"aaliyah", name:"Aaliyah Puglia", age:24, home:"Gloucester City, NJ", job:"Chef", tribe:"Toka", bio:"A self-assured chef who is as interested in reading the social game as she is in running the camp kitchen."},
+  {id:"alexis", name:"Alexis Levine", age:34, home:"Atlanta, GA", job:"Criminal defense attorney", tribe:"Savu", bio:"Plans to keep her legal career under wraps and calls herself a calculating, strategic player."},
+  {id:"an", name:"Thien An Nguyen", nick:"An", age:24, home:"Fort Worth, TX", job:"Medical student", tribe:"Toka", bio:"Competitive and upfront, she has long wanted to play a cutthroat game."},
+  {id:"ana", name:"Ana Sani", age:34, home:"Toronto, ON", job:"Voice actress", tribe:"Savu", bio:"A longtime superfan from Toronto playing in memory of her late mother."},
+  {id:"jelly", name:"Angelica Loblack", nick:"Jelly", age:29, home:"Bloomington, IN", job:"Sociology professor", tribe:"Toka", bio:"Teaches Survivor in her classroom and came out to test herself in the field."},
+  {id:"brady", name:"Brady Booker", age:27, home:"Knoxville, TN", job:"Professional wrestler", tribe:"Toka", bio:"Wrestles as Bodhi Hayward. An outdoorsman who says there is more strategy to him than the persona suggests."},
+  {id:"carter", name:"Carter Krull", age:24, home:"Sioux Falls, SD", job:"Livestock farmer", tribe:"Savu", bio:"A young farmer and entrepreneur who prides himself on sizing people up quickly."},
+  {id:"cristian", name:"Cristian Chavez", age:26, home:"Salt Lake City, UT", job:"Head of HR", tribe:"Savu", bio:"Bubbly and offbeat, playing with his late father's lessons in mind."},
+  {id:"kilby", name:"Danny Kilby", nick:"Kilby", age:30, home:"London, ON", job:"Game designer", tribe:"Toka", bio:"A proud Survivor nerd who loves puzzles and long-game strategy."},
+  {id:"devin", name:"Devin Way", age:33, home:"Los Angeles, CA", job:"Actor", tribe:"Toka", bio:"TV actor with credits on Sistas and Grey's Anatomy who says integrity matters to him."},
+  {id:"eric", name:"Eric Macksoud", age:34, home:"Windsor Locks, CT", job:"Mental health counselor", tribe:"Savu", bio:"Has watched since he was eight and says he is ready to be ruthless."},
+  {id:"jenna", name:"Jenna Doore", age:30, home:"Toledo, OH", job:"Wedding photographer", tribe:"Toka", bio:"A lifelong fan whose client contracts include a clause in case she got the Survivor call."},
+  {id:"kristin", name:"Kristin Flickinger", age:49, home:"Santa Barbara, CA", job:"Crisis management", tribe:"Savu", bio:"The oldest castaway this season, finally cast after applying for 25 years."},
+  {id:"lewis", name:"Lewis Kelly", age:28, home:"Puerto Rico", job:"Farmer", tribe:"Toka", bio:"An Irishman who lives in a converted school bus with his wife and chases adventure."},
+  {id:"linnea", name:"Linnea Capobianco", age:25, home:"Jersey City, NJ", job:"Entrepreneur", tribe:"Savu", bio:"Runs her own wellness business and says she goes looking for things that scare her."},
+  {id:"maggie", name:"Maggie Nestor", age:40, home:"Charles Town, WV", job:"Farmer & homeschool teacher", tribe:"Toka", bio:"An athletic hunter and fisher who describes herself as fearless."},
+  {id:"mike", name:"Mike Pinsky", age:32, home:"New York, NY", job:"Baseball executive", tribe:"Toka", bio:"Princeton grad who has been playing Survivor-style games with friends since childhood."},
+  {id:"ori", name:"Ori Jean-Charles", age:27, home:"Spring Valley, NY", job:"Personal trainer", tribe:"Savu", bio:"Former Division I football player whose only focus is the win."},
+  {id:"patt", name:"Patt Cannaday", age:33, home:"Washington, DC", job:"Federal prosecutor", tribe:"Toka", bio:"A Navy prosecutor and the first woman in her family to serve in the military."},
+  {id:"rob", name:"Rob Antonson", age:40, home:"Cumberland, RI", job:"Airline gate agent", tribe:"Savu", bio:"Father of three with an easy way of talking to anyone and a competitive streak."},
+  {id:"sharonda", name:"Sharonda Cox", age:34, home:"Richmond, KY", job:"OB-GYN resident", tribe:"Savu", bio:"A doctor in training who calls herself self-driven and street-smart."}
+];
+
+/* Weekly results, copied from Global TV's Survivor 51 Fantasy Tribe page (globaltv.com/survivor-51-fantasy-tribe).
+   pts: points each castaway earned that episode. out: castaways eliminated that episode.
+   Points start with Episode 2, per Global's rules. Add one entry per episode. */
+const EPISODES = [
+  {ep:1, pts:{}, out:["aaliyah"]},
+  {ep:2, pts:{alexis:1, an:11, ana:15, brady:36, carter:1, cristian:11, devin:11, eric:1, jelly:21, jenna:11,
+              kilby:11, kristin:1, lewis:11, linnea:1, maggie:16, mike:16, ori:1, patt:11, rob:11, sharonda:1}, out:["ana"]}
+];
+const MERGE_EP = null;   // episode number of the merge; merge picks score from the episode after it
+
+const RESULTS = {};
+CAST.forEach(c=>RESULTS[c.id]={pts:0,out:null,after:0,byEp:{}});
+EPISODES.forEach(e=>{
+  Object.entries(e.pts).forEach(([id,p])=>{const r=RESULTS[id]; r.pts+=p; r.byEp[e.ep]=p; if(MERGE_EP!=null&&e.ep>MERGE_EP) r.after+=p;});
+  e.out.forEach(id=>RESULTS[id].out=e.ep);
+});
+
+/* toka: 4 Toka picks · savu: 4 Savu picks · mvp: one of the 8 · merge: extra post-merge pick (null until the merge) */
+const SAMPLE_ENTRANTS = [
+  {name:"Sample Entrant A", toka:["kilby","jenna","maggie","mike"], savu:["alexis","ori","kristin","rob"], mvp:"kilby", merge:null},
+  {name:"Sample Entrant B", toka:["maggie","patt","an","lewis"], savu:["kristin","sharonda","ana","eric"], mvp:"maggie", merge:null},
+  {name:"Sample Entrant C", toka:["brady","patt","devin","jelly"], savu:["ana","cristian","linnea","carter"], mvp:"ana", merge:null},
+  {name:"Sample Entrant D", toka:["an","devin","aaliyah","kilby"], savu:["rob","linnea","ori","alexis"], mvp:"rob", merge:null},
+  {name:"Sample Entrant E", toka:["jelly","aaliyah","mike","brady"], savu:["carter","eric","sharonda","cristian"], mvp:"jelly", merge:null},
+  {name:"Sample Entrant F", toka:["lewis","maggie","jenna","an"], savu:["alexis","kristin","ana","rob"], mvp:"alexis", merge:null}
+];
+/* ============ end of pool data ============ */
+SAMPLE_ENTRANTS.forEach((e,i)=>{ e.key="sample"+i; e.picks=[...e.toka,...e.savu]; });
+/* Real entries come from the pool's shared database (entries/<person>), filled in on the Submit picks page. */
+let ENTRANTS = SAMPLE_ENTRANTS, usingSample = true;
+
+const byId = Object.fromEntries(CAST.map(c=>[c.id,c]));
+const esc = s => String(s).replace(/[&<>"]/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[ch]));
+const short = c => c.nick || c.name.split(" ")[0];
+const initials = c => (c.nick ? c.nick.slice(0,2) : c.name.split(" ").map(w=>w[0]).join("").slice(0,2)).toUpperCase();
+const score = e => e.picks.reduce((s,id)=>s+(RESULTS[id]?.pts||0),0)
+  + (e.merge ? (RESULTS[e.merge]?.after||0) : 0)
+  + (POOL.winner && POOL.winner===e.mvp ? 30 : 0);
+
+
+document.getElementById("poolSub").textContent = `21 new castaways. Two tribes. One Sole Survivor. Scores through ${POOL.updatedThrough}.`;
+document.getElementById("sampleNote").hidden = !usingSample;
+
+const view = document.getElementById("view");
+let revealed = false, revealedThrough = 0;
+
+const CATS = {
+  5:["Wins a group Immunity Challenge","Wins a group Reward Challenge","Gets chosen to go on reward","Finds or gets a game advantage","Plays a hidden immunity idol on themselves at Tribal Council","Uses a game advantage at Tribal Council","Visually cries with tears on camera","Says a curse word that is bleeped/censored","Says “I miss…”","Kisses another player still in the game","Gets into a heated argument and shouts at another player","Has a wardrobe malfunction/shows nudity that is blurred on screen","Chooses to risk their vote","Finds a fake immunity idol","Hugs Jeff","Buys something with fire tokens"],
+  10:["Wins an individual Reward Challenge","Finds a hidden immunity idol","Voted out while in possession of a hidden immunity idol or game advantage","Plays their ‘Shot in the Dark’","Torch gets snuffed as a result of a blindside","Gets treated for a medical emergency","Chooses to forfeit the game","Catches seafood or wildlife","Tampers with or steals the tribe’s food","Plays a fake immunity idol at Tribal Council","Searches through someone else’s bag","Voted out unanimously","A hidden immunity idol is played on them by another player","Is chosen to flip the “million-dollar coin”","Is chosen to go on a journey or sent to Exile Island"],
+  15:["Wins an individual Immunity Challenge","Draws a SAFE scroll as a result of playing their ‘Shot in the Dark’","Wins a fire-making challenge","Gives an immunity idol/necklace away or plays it for another player","Creates a fake immunity idol","Successfully gets another player to play their fake idol at Tribal Council","Is forced to leave the game by no choice of their own (aside from being voted off)","Returns to the game after being voted off/eliminated","Successfully flips the “million-dollar coin” and isn’t eliminated"]
+};
+function rulesPage(){
+  const cat = n => `<section class="cat"><div class="cat-head"><span class="cat-pts">${n}</span><span>point categories</span></div>
+    <ul>${CATS[n].map(t=>`<li>${t}</li>`).join("")}</ul></section>`;
+  return `<section class="page">
+  <h2>Rules</h2>
+  <p class="lede">Build your Fantasy Tribe, pick your MVP, and earn points every week your castaways stay in the game.</p>
+  <div class="rules">
+    <section><h3>Building your tribe</h3><ol>
+      <li>Pick <b>four castaways from each tribe</b> (Toka and Savu) that you think will make it to the end of the game. These eight are your Fantasy Tribe.</li>
+      <li>Out of your eight picks, choose <b>one MVP</b> who you think will be the Sole Survivor. You get bonus points at the end of the season if you guessed right.</li>
+      <li><b>Merge bonus:</b> after the tribes merge, you can pick one extra castaway for your Fantasy Tribe. If you lost players before the merge, this is your chance to bolster your tribe. Points for this pick are not retroactive and start accumulating the episode after the merge.</li>
+    </ol></section>
+    <section><h3>Weekly scoring</h3>
+      <table class="pts"><tbody>
+        <tr><td>Each week a castaway survives before the merge</td><td>+1</td></tr>
+        <tr><td>Each week a castaway survives after the merge</td><td>+3</td></tr>
+        <tr><td>One of your picks finishes 3rd</td><td>+10</td></tr>
+        <tr><td>One of your picks finishes 2nd</td><td>+20</td></tr>
+        <tr><td>One of your picks wins the game</td><td>+30</td></tr>
+        <tr><td>Your MVP wins the game</td><td>+30</td></tr>
+      </tbody></table>
+      <p class="small">Survival points are per castaway, so every pick still in the game earns them each week.</p>
+    </section>
+  </div>
+  <h3 class="cats-title">Point categories</h3>
+  <p class="lede" style="margin-bottom:14px">Each time one of your castaways does one of these on an episode, they earn the points.</p>
+  <div class="cats">${cat(5)}${cat(10)}${cat(15)}</div>
+  </section>`;
+}
+
+const flame = `<svg class="flame" viewBox="0 0 48 64" aria-hidden="true"><path d="M24 2C30 14 40 20 40 36a16 16 0 0 1-32 0c0-9 5-14 8-20 1 6 4 9 7 10-2-8 0-17 1-24z" fill="var(--torch)"/><path d="M24 30c3 5 7 8 7 14a7 7 0 0 1-14 0c0-5 4-8 7-14z" fill="var(--gate-ink)" opacity=".9"/></svg>`;
+
+function gatePage(ep, back){
+  return `<section class="page gate" role="alertdialog" aria-labelledby="gateTitle" aria-describedby="gateText">
+    ${flame}
+    <div class="eyebrow">Spoiler warning</div>
+    <h2 id="gateTitle">Have you watched ${ep?`Episode ${ep}`:esc(POOL.updatedThrough)}?</h2>
+    <p id="gateText">${ep?"This recap":"The scoreboard"} shows who has been voted out and who is earning points. Don't open it until you're caught up.</p>
+    <div class="row">
+      <button class="btn" id="reveal" data-ep="${ep||LATEST_EP()}">I'm caught up. Show scores</button>
+      <a class="btn ghost" href="#rules">Take me back</a>
+    </div>
+  </section>`;
+}
+
+/* ---------- Power rankings: projected rest-of-season points ---------- */
+const SEASON_EPISODES = 13;   // expected episodes in the season (finale = last); adjust if CBS announces otherwise
+let boardTab = "standings";
+/* Expert tiers used by the power rankings. Update when a newer ranking is published. */
+const EXPERT = {
+  source: "In-Between Media, Survivor 51 tiers and rankings (post-Episode 1)",
+  url: "https://in-betweenmedia.com/survivor-51-tiers-and-rankings-post-episode-1/",
+  tiers: {mike:"S", alexis:"S", maggie:"A", carter:"A", kilby:"B", linnea:"B", cristian:"B",
+          kristin:"C", rob:"C", patt:"C", lewis:"C", brady:"C", jenna:"C",
+          sharonda:"D", ori:"D", an:"D", ana:"D", devin:"D", jelly:"F", eric:"F"}
+};
+/* How much each tier changes a castaway's expected staying power and finale chances (C = average). */
+const TIER_MULT = {S:1.6, A:1.35, B:1.15, C:1, D:0.8, F:0.6};
+const tierOf = id => EXPERT.tiers[id] || null;
+const multOf = id => TIER_MULT[tierOf(id)] ?? 1;
+function powerData(){
+  const eps = SCORED_EPS(), latest = LATEST_EP();
+  const alive = CAST.filter(c=>RESULTS[c.id]?.out==null);
+  const nAlive = Math.max(alive.length,1);
+  const epsLeft = Math.max(SEASON_EPISODES - latest, 0);
+  // Each castaway's scoring rate per episode, pulled toward the cast average so one big week doesn't dominate.
+  const played = c => eps.filter(n => RESULTS[c.id].out==null || n <= RESULTS[c.id].out).length;
+  const castMean = alive.reduce((s,c)=>s+RESULTS[c.id].pts,0) / Math.max(alive.reduce((s,c)=>s+played(c),0),1);
+  const K = 2;
+  const rate = c => (RESULTS[c.id].pts + K*castMean) / (played(c) + K);
+  // An average castaway still in the game lasts about half of the remaining episodes,
+  // and has a 3-in-(castaways left) shot at the final three (10 + 20 + 30 pts) and the win.
+  // Expert tiers shift how long a castaway is expected to last and their share of the finale bonuses.
+  const meanMult = alive.reduce((s,c)=>s+multOf(c.id),0)/nAlive;
+  const sumMult = alive.reduce((s,c)=>s+multOf(c.id),0) || 1;
+  const stay = c => Math.min(0.95, 0.5*multOf(c.id)/meanMult);
+  const finaleShare = c => multOf(c.id)/sumMult;
+  const castValue = c => RESULTS[c.id].out!=null ? 0 : rate(c)*epsLeft*stay(c) + 60*finaleShare(c);
+  const rows = ENTRANTS.map(e=>{
+    const ids = [...e.picks, ...(e.merge?[e.merge]:[])];
+    const live = ids.filter(id=>RESULTS[id]?.out==null);
+    const parts = live.map(id=>({id, v:castValue(byId[id])})).sort((a,b)=>b.v-a.v);
+    const mvpAlive = e.mvp && RESULTS[e.mvp]?.out==null;
+    const proj = parts.reduce((s,p)=>s+p.v,0) + (mvpAlive ? 30*finaleShare(byId[e.mvp]) : 0);
+    const tierCounts = {}; live.forEach(id=>{const t=tierOf(id)||"–"; tierCounts[t]=(tierCounts[t]||0)+1;});
+    const current = score(e);
+    return {e, proj:Math.round(proj), current, final:Math.round(current+proj), live:live.length, total:ids.length, mvpAlive, best:parts[0], tierCounts};
+  }).sort((a,b)=>b.proj-a.proj || b.current-a.current || a.e.name.localeCompare(b.e.name));
+  let r=0, prev=null; rows.forEach((x,i)=>{ if(x.proj!==prev){r=i+1;prev=x.proj} x.rank=r; });
+  const standRank = {}; let sr=0, sp=null;
+  [...rows].sort((a,b)=>b.current-a.current).forEach((x,i)=>{ if(x.current!==sp){sr=i+1;sp=x.current} standRank[x.e.key]=sr; });
+  rows.forEach(x=>x.vsStand = standRank[x.e.key] - x.rank);
+  return {rows, epsLeft, nAlive, latest};
+}
+function powerHTML(){
+  const d = powerData();
+  if(!d.latest) return `<p class="lede">Power rankings appear once the first episode is scored.</p>`;
+  const max = Math.max(...d.rows.map(x=>x.proj),1);
+  const rows = d.rows.map(x=>`
+    <tr class="${x.rank===1?"lead":""}">
+      <td class="rank">${x.rank}</td>
+      <td><strong>${esc(x.e.name)}</strong>
+        <div class="pbar" aria-hidden="true"><span style="width:${Math.round(x.proj/max*100)}%"></span></div>
+        <div class="tiers">${["S","A","B","C","D","F"].filter(t=>x.tierCounts[t]).map(t=>`<span class="tier t${t}" title="${x.tierCounts[t]} castaway${x.tierCounts[t]>1?"s":""} in ${t} tier">${t}${x.tierCounts[t]>1?`×${x.tierCounts[t]}`:""}</span>`).join("")}</div>
+        <div class="pmeta">${x.live}/${x.total} still in · MVP ${x.e.mvp?esc(short(byId[x.e.mvp]))+(tierOf(x.e.mvp)?` (${tierOf(x.e.mvp)})`:""):"none"} ${x.e.mvp?(x.mvpAlive?'<span class="ok-dot">alive</span>':'<span class="out-dot">out</span>'):""}${x.best?` · Best asset: ${esc(short(byId[x.best.id]))}`:""}</div></td>
+      <td class="mono r">${x.vsStand>0?`<span class="mv up">▲${x.vsStand}</span>`:x.vsStand<0?`<span class="mv down">▼${-x.vsStand}</span>`:`<span class="mv same">=</span>`}</td>
+      <td class="mono r">${x.current}</td>
+      <td class="total">${x.proj}</td>
+    </tr>`).join("");
+  return `
+    <p class="lede">Teams ranked by the points they're expected to score from here to the finale, not by what they've banked so far. Projections combine each castaway's scoring so far with expert tier rankings from <a class="inline-link" href="${EXPERT.url}" target="_blank" rel="noopener">${esc(EXPERT.source)}</a>.</p>
+    <div class="tablewrap"><table class="board power">
+      <thead><tr><th>#</th><th>Team</th><th class="r" title="Compared with the current standings">vs. standings</th><th class="r">Now</th><th class="r">Projected</th></tr></thead>
+      <tbody>${rows}</tbody></table></div>
+    <details class="how"><summary>How the projection works</summary>
+      <p>For each castaway still in the game, the projection takes their average points per episode so far (pulled toward the cast average so one big week doesn't dominate) and multiplies it by how many of the ${d.epsLeft} remaining episodes they're expected to last in a ${SEASON_EPISODES}-episode season.</p>
+      <p>The expert tiers set that staying power. An average (C-tier) castaway is expected to last about half of the remaining episodes. S-tier castaways count 1.6 times as much as C-tier, A-tier 1.35, B-tier 1.15, D-tier 0.8 and F-tier 0.6. The same tiers split the finale bonuses (10, 20 and 30 points) and the 30-point MVP bonus, so higher-tier castaways get a bigger share. Castaways who are out add nothing.</p>
+      <p>The tier badges show how many of each team's remaining castaways sit in each tier. "vs. standings" shows how many spots higher (▲) or lower (▼) a team sits here than in the current standings. It's a guide for bragging rights, not a prediction of who goes home next.</p>
+    </details>`;
+}
+
+function boardPage(){
+  const ranked = ENTRANTS.map(e=>({...e,total:score(e)})).sort((a,b)=>b.total-a.total||a.name.localeCompare(b.name));
+  let rank=0, prev=null;
+  const rows = ranked.map((e,i)=>{
+    if(e.total!==prev){rank=i+1;prev=e.total}
+    const left = [...e.picks,...(e.merge?[e.merge]:[])].filter(id=>RESULTS[id]?.out==null).length;
+    const chip=(id,p,tag)=>{const c=byId[id],r=RESULTS[id]||{};return `<span class="chip ${r.out!=null?'out':''}">${esc(short(c))}${tag?` <b style="color:var(--torch)">${tag}</b>`:""}<span class="mono">${p}</span></span>`};
+    const chips = e.picks.map(id=>chip(id,RESULTS[id]?.pts||0,id===e.mvp?"MVP":"")).join("")
+      + (e.merge?chip(e.merge,RESULTS[e.merge]?.after||0,"Merge"):"");
+    return `<tr class="${rank===1?'lead':''}"><td class="rank">${rank}</td>
+      <td><strong>${esc(e.name)}</strong><div class="chips">${chips}</div></td>
+      <td class="mono">${left}/${e.picks.length+(e.merge?1:0)}</td><td class="total">${e.total}</td></tr>`;
+  }).join("");
+  const castRank = CAST.map(c=>({c,r:RESULTS[c.id]||{pts:0,out:null}})).sort((a,b)=>b.r.pts-a.r.pts||a.c.name.localeCompare(b.c.name));
+  const castList = castRank.map(({c,r})=>`<li><span>${esc(c.name)} <span class="tribe ${c.tribe}">${c.tribe}</span>${r.out!=null?` <span class="chip">Out Ep ${r.out}</span>`:""}</span><span class="mono" title="${EPISODES.map(e=>'Ep '+e.ep+': '+(r.byEp[e.ep]||0)).join(', ')}">${r.pts}</span></li>`).join("");
+  return `<section class="page">
+    <h2>Scoreboard</h2>
+    <p class="meta-line">Through ${esc(POOL.updatedThrough)}</p>
+    <nav class="ep-tabs sub-tabs" aria-label="Scoreboard views">
+      <a class="ep-tab" href="#scoreboard" ${boardTab!=="power"?'aria-current="page"':""}>Standings</a>
+      <a class="ep-tab" href="#power" ${boardTab==="power"?'aria-current="page"':""}>Power rankings</a></nav>
+    ${boardTab==="power" ? powerHTML()+"</section>" : `
+    ${LATEST_EP()?`<h3 class="wk-title">Episode ${LATEST_EP()} highlights</h3>${highlightsHTML(recapData(LATEST_EP()))}<h3 class="wk-title wk-standings">Standings</h3>`:""}
+    <div class="split">
+      <div class="tablewrap"><table class="board">
+        <thead><tr><th>#</th><th>Entrant &amp; picks</th><th>Left</th><th class="r">Pts</th></tr></thead>
+        <tbody>${rows}</tbody></table></div>
+      <div><h3 style="margin-bottom:10px">Castaway points</h3><div class="cast-pts"><ul>${castList}</ul></div></div>
+    </div>
+    <h3 style="margin:32px 0 10px">Points by episode</h3>
+    <div class="tablewrap"><table class="board eps">
+      <thead><tr><th>Castaway</th>${EPISODES.map(e=>`<th class="r">Ep ${e.ep}</th>`).join("")}<th class="r">Total</th></tr></thead>
+      <tbody>${CAST.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(c=>{const r=RESULTS[c.id];
+        return `<tr><td>${esc(c.name)} <span class="tribe ${c.tribe}">${c.tribe}</span></td>${EPISODES.map(e=>`<td class="mono r">${r.out===e.ep?'<span class="chip">Out</span>':(r.out!=null&&e.ep>r.out?'–':(r.byEp[e.ep]??0))}</td>`).join("")}<td class="mono r"><strong>${r.pts}</strong></td></tr>`}).join("")}</tbody>
+    </table></div>
+    </section>`}`;
+}
+
+let tribeFilter = "All";
+function castPage(){
+  const list = CAST.filter(c=>tribeFilter==="All"||c.tribe===tribeFilter);
+  const btn = t=>`<button type="button" data-tribe="${t}" aria-pressed="${tribeFilter===t}">${t}${t==="All"?` (${CAST.length})`:` (${CAST.filter(c=>c.tribe===t).length})`}</button>`;
+  return `<section class="page">
+    <h2>Castaways</h2>
+    <p class="lede">Meet the 21 first-time players of Survivor 51. Spoiler-free: nothing here says who is still in the game.</p>
+    <div class="filter" role="group" aria-label="Filter by tribe">${btn("All")}${btn("Toka")}${btn("Savu")}</div>
+    <div class="grid">${list.map(c=>`
+      <article class="card t-${c.tribe}">
+        <div class="badge" aria-hidden="true">${initials(c)}</div>
+        <div style="min-width:0">
+          <div class="tribe ${c.tribe}">${c.tribe}</div>
+          <h3>${esc(c.name)}${c.nick?` <span style="color:var(--muted);font-weight:600">“${esc(c.nick)}”</span>`:""}</h3>
+          <div class="facts">${c.age} · ${esc(c.job)} · ${esc(c.home)}</div>
+          <p>${esc(c.bio)}</p>
+        </div>
+      </article>`).join("")}</div></section>`;
+}
+
+let picksSel = "";
+function pickLi(id, mvp){
+  const c=byId[id];
+  return `<li class="pick ${id===mvp?'mvp':''}">
+    <div class="badge t-${c.tribe}" aria-hidden="true">${initials(c)}</div>
+    <div style="min-width:0"><div class="nm">${esc(c.name)}${id===mvp?'<span class="mvp-tag">MVP</span>':''}</div><div class="tribe ${c.tribe}">${c.tribe}</div></div></li>`;
+}
+function entryCard(e){
+  const m = byId[e.mvp];
+  const mergeSlot = e.merge ? `<ul class="pick-list">${pickLi(e.merge)}</ul>`
+    : `<ul class="pick-list"><li class="pick empty">${POOL.merged?"No merge pick made":"Opens after the merge"}</li></ul>`;
+  return `<article class="entry">
+    <div class="entry-head"><h3>${esc(e.name)}</h3>${m?`<span class="meta-line" style="margin:0">MVP · ${esc(m.name)}</span>`:""}</div>
+    <div class="group-label tribe Toka">Toka picks</div>
+    <ul class="pick-list">${e.toka.map(id=>pickLi(id,e.mvp)).join("")}</ul>
+    <div class="group-label tribe Savu">Savu picks</div>
+    <ul class="pick-list">${e.savu.map(id=>pickLi(id,e.mvp)).join("")}</ul>
+    <div class="group-label" style="color:var(--muted)">Merge bonus pick</div>
+    ${mergeSlot}
+  </article>`;
+}
+function picksPage(){
+  const opts = [...ENTRANTS].sort((a,b)=>a.name.localeCompare(b.name)).map(e=>`<option value="${esc(e.key)}" ${picksSel===e.key?"selected":""}>${esc(e.name)}</option>`).join("");
+  let body;
+  if(picksSel==="__all") body = `<div class="all">${[...ENTRANTS].sort((a,b)=>a.name.localeCompare(b.name)).map(entryCard).join("")}</div>`;
+  else if(picksSel && ENTRANTS.find(e=>e.key===picksSel)) body = entryCard(ENTRANTS.find(e=>e.key===picksSel));
+  else if(!ENTRANTS.length) body = `<p class="lede">No picks have been submitted yet.</p>`;
+  else body = `<p class="lede">Choose your name from the list to see your castaways, or pick “View all” to see everyone's.</p>`;
+  return `<section class="page">
+    <h2>Picks</h2>
+    <p class="lede">Every entrant's Fantasy Tribe: four Toka, four Savu, an MVP, and a merge pick once the tribes merge. Spoiler-free: no points or eliminations shown here.</p>
+    <div class="picker"><label for="entrantSel">Entrant</label>
+      <select id="entrantSel"><option value="" ${!picksSel?"selected":""}>Select a name…</option><option value="__all" ${picksSel==="__all"?"selected":""}>View all picks</option>${opts}</select></div>
+    ${body}</section>`;
+}
+
+/* ---------- Submit picks & Commissioner ---------- */
+/* Server API (Vercel functions in /api). The commissioner code is checked on the server. */
+async function api(path, body){
+  const r = await fetch(path, body ? {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)} : {cache:"no-store"});
+  let data={}; try{ data = await r.json(); }catch(e){}
+  if(!r.ok) throw Object.assign(new Error(data.error||"Something went wrong."), {status:r.status, userMsg:data.error});
+  return data;
+}
+const MINE_KEY = "s51-my-entry";
+function loadMine(){ try{ return JSON.parse(localStorage.getItem(MINE_KEY)||"null"); }catch(e){ return null; } }
+function saveMine(v){ try{ localStorage.setItem(MINE_KEY, JSON.stringify(v)); }catch(e){} }
+let mine = loadMine();                       // {id, token} for this browser's own entry
+let adminCode = null;                         // held in memory only after the server accepts it
+let myId = mine?.id || null, dbState="loading", myEntry=null, realEntries=[];
+const blankForm = () => ({name:"", toka:[], savu:[], mvp:"", merge:"", loaded:false});
+const FORMS = {self: blankForm(), admin: blankForm()};
+const MSG = {self:null, admin:null};
+let deadline=null;        // ISO time when original picks lock (from settings/pool)
+let deadlineTimer=null, dlMsg=null;
+const picksLocked = () => !POOL.picksOpen || (deadline!=null && Date.now() >= Date.parse(deadline));
+const fmtDeadline = iso => new Date(iso).toLocaleString(undefined,{weekday:"short",month:"short",day:"numeric",hour:"numeric",minute:"2-digit",timeZoneName:"short"});
+const toLocalInput = iso => { const d=new Date(iso), p=n=>String(n).padStart(2,"0"); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`; };
+function scheduleLock(){
+  clearTimeout(deadlineTimer);
+  if(!deadline) return;
+  const ms = Date.parse(deadline) - Date.now();
+  if(ms>0 && ms<2147483000) deadlineTimer=setTimeout(()=>{ if(["submit","commissioner"].includes(currentPage())) rerender(); }, ms+500);
+}
+let saving=false, commishUnlocked=false, commishErr="", adminTarget="__new", confirmDelete=false;
+
+function fill(f, e){ Object.assign(f,{name:e?.name||"", toka:[...(e?.toka||[])], savu:[...(e?.savu||[])], mvp:e?.mvp||"", merge:e?.merge||"", loaded:true}); }
+function missingList(f){
+  const m=[];
+  if(!f.name.trim()) m.push("a name");
+  if(f.toka.length<4) m.push(`${4-f.toka.length} more Toka`);
+  if(f.savu.length<4) m.push(`${4-f.savu.length} more Savu`);
+  if(!f.mvp) m.push("an MVP");
+  return m;
+}
+function tile(c, picked, disabled){
+  return `<button type="button" class="ptile t-${c.tribe}" data-pick="${c.id}" aria-pressed="${picked}" ${disabled?"disabled":""}>
+    <span class="badge" aria-hidden="true">${initials(c)}</span>
+    <span class="pt-name">${esc(c.name)}</span>
+    <span class="pt-check" aria-hidden="true">${picked?"✓":""}</span></button>`;
+}
+/* mode: "self" or "admin". locked: original 8 + MVP can't change. */
+function formHTML(mode, locked, isExisting, nameLabel){
+  const f=FORMS[mode], msg=MSG[mode];
+  const group = (tribe,key)=>{const sel=f[key];
+    return `<section class="pgroup"><div class="pg-head"><h3 class="tribe-h ${tribe}">${tribe}</h3><span class="count mono ${sel.length===4?'full':''}">${sel.length} of 4</span></div>
+      <div class="ptiles">${CAST.filter(c=>c.tribe===tribe).map(c=>tile(c, sel.includes(c.id), locked||(!sel.includes(c.id)&&sel.length>=4))).join("")}</div></section>`;};
+  const eight=[...f.toka,...f.savu];
+  if(f.mvp && !eight.includes(f.mvp)) f.mvp="";
+  if(f.merge && eight.includes(f.merge)) f.merge="";
+  const missing=missingList(f), ready=!missing.length && !saving;
+  return `<form id="pickForm" class="pform" data-mode="${mode}" novalidate>
+      <div class="field"><label for="entName">${nameLabel}</label>
+        <input id="entName" type="text" maxlength="40" autocomplete="off" value="${esc(f.name)}" ${locked?"disabled":""} placeholder="e.g. Jordan M."></div>
+      ${group("Toka","toka")}${group("Savu","savu")}
+      <div class="field"><label for="mvpSel">MVP (Sole Survivor prediction)</label>
+        <select id="mvpSel" ${locked||!eight.length?"disabled":""}><option value="">${eight.length?"Choose from the eight…":"Pick castaways first"}</option>${eight.map(id=>`<option value="${id}" ${f.mvp===id?"selected":""}>${esc(byId[id].name)}</option>`).join("")}</select></div>
+      ${POOL.merged?`<div class="field"><label for="mergeSel">Merge bonus pick</label>
+        <select id="mergeSel"><option value="">No merge pick</option>${CAST.filter(c=>!eight.includes(c.id)).map(c=>`<option value="${c.id}" ${f.merge===c.id?"selected":""}>${esc(c.name)} (${c.tribe})</option>`).join("")}</select>
+        <span class="small">Scores from the episode after the merge onward.</span></div>`:""}
+      <div class="submit-row">
+        <button class="btn" type="submit" ${ready?"":"disabled"}>${saving?"Saving…":(isExisting?"Save changes":"Submit picks")}</button>
+        <span class="small" id="formStatus" role="status">${msg?`<span class="${msg.kind}">${esc(msg.text)}</span>`:(missing.length?`Still need: ${missing.join(", ")}.`:"Ready to submit.")}</span>
+      </div></form>`;
+}
+
+function submitPage(){
+  const f=FORMS.self;
+  if(!f.loaded && myEntry) fill(f,myEntry);
+  const head=`<h2>Submit picks</h2>
+    <p class="lede">Pick four castaways from each tribe, then choose one of your eight as your MVP. You can come back on this phone or computer and change your picks until the deadline.</p>`;
+  if(dbState==="loading") return `<section class="page">${head}<p class="lede">Loading the pool…</p></section>`;
+  if(dbState==="none") return `<section class="page">${head}<div class="notice"><b>Can't reach the pool right now</b><span>Picks can't be loaded or saved at the moment. Try again in a minute, or ask the commissioner to enter your picks.</span></div></section>`;
+  const locked=picksLocked();
+  if(locked && !POOL.merged && !myEntry) return `<section class="page">${head}<div class="notice"><b>Picks are locked</b><span>The draft ${deadline?`closed ${esc(fmtDeadline(deadline))}`:"is closed"}. Check the Picks page to see everyone's Fantasy Tribe.</span></div></section>`;
+  const dlNote = (!locked && deadline) ? `<div class="deadline-bar"><span class="dl-label">Picks lock</span><strong>${esc(fmtDeadline(deadline))}</strong></div>` : "";
+  return `<section class="page">${head}${dlNote}
+    ${myEntry?`<div class="notice"><b>${locked?"Your picks are locked":"You've submitted"}</b><span>${locked?"Your original eight and MVP can no longer change.":`Changes you save here replace your earlier picks${deadline?` until ${esc(fmtDeadline(deadline))}`:""}.`}</span></div>`:""}
+    ${formHTML("self", locked, !!myEntry, "Your name as it appears in the pool")}
+    ${myEntry && mine?.token ? `<div class="editlink"><b>Your edit link</b><span>Use this link to change your picks from another phone or computer. Keep it to yourself: anyone with it can edit your picks.</span>
+      <div class="img-actions"><button class="btn ghost small-btn" type="button" id="copyEdit">Copy my edit link</button></div><span class="small" id="editStatus" role="status"></span></div>` : ""}
+    </section>`;
+}
+
+function commishPage(){
+  let head=`<h2>Commissioner</h2>`;
+  if(!commishUnlocked) return `<section class="page">${head}
+    <p class="lede">Enter picks for pool members, set the deadline and make the weekly recap. Enter the commissioner code to continue.</p>
+    <form id="codeForm" class="codeform" novalidate>
+      <div class="field"><label for="codeIn">Commissioner code</label>
+        <input id="codeIn" type="password" inputmode="numeric" autocomplete="off" maxlength="12"></div>
+      <button class="btn" type="submit">Unlock</button>
+      <span class="small" role="status">${commishErr?`<span class="err">${esc(commishErr)}</span>`:""}</span>
+    </form></section>`;
+  head += `<nav class="ep-tabs sub-tabs" aria-label="Commissioner tools">
+      <a class="ep-tab" href="#commissioner" ${commishTab!=="recap"?'aria-current="page"':""}>Picks &amp; deadline</a>
+      <a class="ep-tab" href="#recap" ${commishTab==="recap"?'aria-current="page"':""}>Weekly recap</a></nav>`;
+  if(commishTab==="recap") return `<section class="page">${head}</section>${recapPage()}`;
+  if(dbState==="loading") return `<section class="page">${head}<p class="lede">Loading the pool…</p></section>`;
+  if(dbState==="none") return `<section class="page">${head}<div class="notice"><b>Can't reach the pool right now</b><span>The pool database isn't responding. Try again in a minute.</span></div></section>`;
+  const sorted=[...realEntries].sort((a,b)=>a.name.localeCompare(b.name));
+  const target = adminTarget==="__new" ? null : sorted.find(e=>e.key===adminTarget);
+  if(adminTarget!=="__new" && !target) adminTarget="__new";
+  if(!FORMS.admin.loaded) fill(FORMS.admin, target);
+  return `<section class="page">${head}
+    <p class="lede">Enter picks for anyone in the pool. Entries saved here appear on the Picks page and the scoreboard right away. The draft lock doesn't apply to you.</p>
+    <section class="dl-panel" aria-labelledby="dlTitle">
+      <div class="dl-top"><h3 id="dlTitle">Pick deadline</h3>
+        <span class="dl-state ${picksLocked()?"closed":"open"}">${picksLocked()?"Locked":"Open"}</span></div>
+      <p class="small" style="margin:4px 0 12px">${deadline
+        ? (picksLocked()?`Picks locked ${esc(fmtDeadline(deadline))}. Members can't change their eight castaways or MVP.`:`Submissions close ${esc(fmtDeadline(deadline))}. After that, members can't change their eight castaways or MVP.`)
+        : "No deadline set. Members can submit and change picks until you set one."}</p>
+      <form id="dlForm" class="dl-form" novalidate>
+        <div class="field"><label for="dlIn">Lock picks at (your local time)</label>
+          <input id="dlIn" type="datetime-local" value="${deadline?toLocalInput(deadline):""}"></div>
+        <button class="btn small-btn" type="submit">Save deadline</button>
+        ${deadline?`<button class="btn ghost small-btn" type="button" id="dlClear">${picksLocked()?"Reopen picks":"Remove deadline"}</button>`:""}
+        <button class="btn ghost small-btn" type="button" id="dlNow" ${picksLocked()?"hidden":""}>Lock now</button>
+      </form>
+      <span class="small" role="status">${dlMsg?`<span class="${dlMsg.kind}">${esc(dlMsg.text)}</span>`:""}</span>
+    </section>
+    <div class="admin-bar">
+      <div class="field"><label for="targetSel">Entering picks for</label>
+        <select id="targetSel"><option value="__new" ${adminTarget==="__new"?"selected":""}>+ New person</option>
+        ${sorted.map(e=>`<option value="${esc(e.key)}" ${adminTarget===e.key?"selected":""}>${esc(e.name)}${e.key===myId?" (you)":""}</option>`).join("")}</select></div>
+      <span class="small mono">${sorted.length} ${sorted.length===1?"entry":"entries"} in the pool</span>
+      <button type="button" class="btn ghost small-btn" id="lockBtn">Lock this page</button>
+    </div>
+    ${formHTML("admin", false, !!target, "Entrant's name")}
+    ${target?`<div class="danger">${confirmDelete
+      ?`<span>Remove ${esc(target.name)} from the pool? This can't be undone.</span><button type="button" class="btn danger-btn" id="delYes">Remove entry</button><button type="button" class="btn ghost small-btn" id="delNo">Keep it</button>`
+      :`<button type="button" class="btn ghost small-btn" id="delAsk">Remove this entry</button>`}</div>`:""}
+    </section>`;
+}
+
+function rerender(){ const y=scrollY; view.innerHTML=ROUTES[currentPage()](); wire(); scrollTo(0,y); }
+
+function wireSubmit(){
+  const cf=document.getElementById("codeForm");
+  if(cf){ const ci=document.getElementById("codeIn"); ci.focus();
+    cf.addEventListener("submit",async ev=>{ev.preventDefault();
+      const code=ci.value; commishErr="Checking…"; 
+      try{ await api("/api/admin",{code, action:"verify"}); adminCode=code; commishUnlocked=true; commishErr=""; }
+      catch(e){ commishErr = e.userMsg || "Couldn't check the code. Try again."; }
+      rerender();});
+  }
+  const dlf=document.getElementById("dlForm");
+  if(dlf){
+    const saveDl = async (iso, okText) => {
+      try{ await api("/api/admin",{code:adminCode, action:"deadline", deadline:iso}); deadline=iso; dlMsg={kind:"ok",text:okText}; scheduleLock(); }
+      catch(e){ dlMsg={kind:"err",text: e.userMsg || "The deadline didn't save. Check your connection and try again."}; }
+      rerender();
+    };
+    dlf.addEventListener("submit",ev=>{ev.preventDefault();
+      const v=document.getElementById("dlIn").value;
+      if(!v){ dlMsg={kind:"err",text:"Choose a date and time first."}; rerender(); return; }
+      const iso=new Date(v).toISOString();
+      saveDl(iso, Date.parse(iso)<=Date.now()?`Saved. That time has passed, so picks are locked now.`:`Saved. Picks lock ${fmtDeadline(iso)}.`);
+    });
+    const clr=document.getElementById("dlClear"); clr && clr.addEventListener("click",()=>saveDl(null,"Deadline removed. Picks are open."));
+    const now=document.getElementById("dlNow"); now && now.addEventListener("click",()=>saveDl(new Date().toISOString(),"Picks are locked."));
+  }
+  const ts=document.getElementById("targetSel");
+  ts && ts.addEventListener("change",()=>{adminTarget=ts.value; FORMS.admin=blankForm(); MSG.admin=null; confirmDelete=false; rerender(); document.getElementById("targetSel").focus();});
+  const lb=document.getElementById("lockBtn"); lb && lb.addEventListener("click",()=>{commishUnlocked=false; adminCode=null; FORMS.admin=blankForm(); MSG.admin=null; rerender();});
+  const da=document.getElementById("delAsk"); da && da.addEventListener("click",()=>{confirmDelete=true;rerender();document.getElementById("delNo").focus();});
+  const dn=document.getElementById("delNo"); dn && dn.addEventListener("click",()=>{confirmDelete=false;rerender();});
+  const dy=document.getElementById("delYes"); dy && dy.addEventListener("click",async()=>{
+    const gone=realEntries.find(e=>e.key===adminTarget);
+    try{ await api("/api/admin",{code:adminCode, action:"delete", id:adminTarget}); MSG.admin={kind:"ok",text:`Removed ${gone?gone.name:"the entry"}.`}; adminTarget="__new"; FORMS.admin=blankForm(); await refreshState(); }
+    catch(e){ MSG.admin={kind:"err",text:"That entry wasn't removed. Check your connection and try again."}; }
+    confirmDelete=false; rerender();
+  });
+
+  const ce=document.getElementById("copyEdit");
+  ce && ce.addEventListener("click",async()=>{ const link=`${location.origin}/#edit-${mine.id}.${mine.token}`, st=document.getElementById("editStatus");
+    try{ await navigator.clipboard.writeText(link); st.textContent="Edit link copied."; }catch(e){ st.textContent=link; } });
+  const f=document.getElementById("pickForm"); if(!f) return;
+  const mode=f.dataset.mode, st=FORMS[mode];
+  const nm=document.getElementById("entName");
+  nm && nm.addEventListener("input",()=>{st.name=nm.value; MSG[mode]=null;
+    const m=missingList(st), s=document.getElementById("formStatus"), btn=f.querySelector('button[type="submit"]');
+    btn.disabled=!!m.length||saving; s.textContent=m.length?`Still need: ${m.join(", ")}.`:"Ready to submit.";});
+  f.querySelectorAll("[data-pick]").forEach(b=>b.addEventListener("click",()=>{
+    const c=byId[b.dataset.pick], arr=st[c.tribe==="Toka"?"toka":"savu"], i=arr.indexOf(c.id);
+    if(i>=0) arr.splice(i,1); else if(arr.length<4) arr.push(c.id);
+    MSG[mode]=null; rerender(); const again=view.querySelector(`[data-pick="${c.id}"]`); again&&again.focus();
+  }));
+  const mv=document.getElementById("mvpSel"); mv && mv.addEventListener("change",()=>{st.mvp=mv.value;MSG[mode]=null;rerender();document.getElementById("mvpSel").focus();});
+  const mg=document.getElementById("mergeSel"); mg && mg.addEventListener("change",()=>{st.merge=mg.value;MSG[mode]=null;rerender();document.getElementById("mergeSel").focus();});
+  f.addEventListener("submit",async ev=>{
+    ev.preventDefault(); if(saving||missingList(st).length) return;
+    let existing;
+    if(mode==="self"){ existing=myEntry; }
+    else { existing = adminTarget==="__new"?null:realEntries.find(e=>e.key===adminTarget); }
+    if(mode==="self" && picksLocked() && !existing){ MSG.self={kind:"err",text:"Picks locked before this was saved."}; rerender(); return; }
+    const lockedSelf = mode==="self" && picksLocked();
+    const body = lockedSelf
+      ? {name:existing.name, toka:existing.toka, savu:existing.savu, mvp:existing.mvp, merge:st.merge||null, updatedAt:new Date().toISOString()}
+      : {name:st.name.trim().slice(0,40), toka:[...st.toka], savu:[...st.savu], mvp:st.mvp, merge:POOL.merged?(st.merge||null):null, updatedAt:new Date().toISOString()};
+    if(mode==="admin") body.enteredBy="commissioner";
+    saving=true; rerender();
+    try{
+      if(mode==="self"){
+        const r = await api("/api/submit", {...body, id: existing ? mine?.id : undefined, token: existing ? mine?.token : undefined});
+        if(r.token){ mine={id:r.id, token:r.token}; saveMine(mine); myId=r.id; }
+      } else {
+        const r = await api("/api/admin", {code:adminCode, action:"save", id: existing ? existing.key : null, entry: body});
+        adminTarget = r.entry.id;
+      }
+      await refreshState();
+      MSG[mode]={kind:"ok", text: existing?`Saved. ${mode==="admin"?body.name+"'s":"Your"} picks are updated.`:(mode==="admin"?`Added ${body.name} to the pool.`:"Submitted. You're in the pool.")};
+    }catch(e){
+      MSG[mode]={kind:"err", text: e.userMsg || "The picks didn't save. Check your connection and try again."};
+    }
+    saving=false; rerender();
+  });
+}
+
+function applyEntries(snap){
+  realEntries = snap.docs.filter(d=>d.exists).map(d=>{const v=d.data();
+    return {key:d.id, name:String(v.name||"Unnamed"), toka:(v.toka||[]).filter(id=>byId[id]), savu:(v.savu||[]).filter(id=>byId[id]),
+      mvp:byId[v.mvp]?v.mvp:"", merge:byId[v.merge]?v.merge:null};});
+  realEntries.forEach(e=>e.picks=[...e.toka,...e.savu]);
+  usingSample = realEntries.length===0;
+  ENTRANTS = usingSample ? SAMPLE_ENTRANTS : realEntries;
+  myEntry = myId ? (realEntries.find(e=>e.key===myId)||null) : null;
+  document.getElementById("sampleNote").hidden = !usingSample;
+  const page=currentPage();
+  if(page==="picks" || page==="scoreboard" || page==="recap") { view.innerHTML = ROUTES[page](); wire(); }
+  if(page==="submit" && !saving && !FORMS.self.loaded && myEntry) rerender();
+  if(page==="commissioner" && commishUnlocked && !saving){
+    // refresh the entrant list without discarding an edit in progress
+    const ts=document.getElementById("targetSel");
+    if(!ts || document.activeElement===document.body || !view.contains(document.activeElement)) rerender();
+  }
+}
+function applyState(data){
+  applyEntries({docs:(data.entries||[]).map(e=>({id:e.id, exists:true, data:()=>e}))});
+  const d = data.deadline || null;
+  if(d!==deadline){ deadline=(d && !isNaN(Date.parse(d)))?d:null; scheduleLock();
+    const pg=currentPage();
+    if(pg==="submit" && !saving) rerender();
+    if(pg==="commissioner" && commishUnlocked && !saving && !view.contains(document.activeElement)) rerender(); }
+}
+async function refreshState(){
+  try{ const data = await api("/api/state"); dbState="ready"; applyState(data); }
+  catch(e){ if(dbState==="loading"){ dbState="none"; if(["submit","commissioner"].includes(currentPage())) rerender(); } }
+}
+(async()=>{
+  // A member's edit link (#edit-<id>.<token>) signs this browser in to that entry.
+  const m=/^#edit-([A-Za-z0-9_-]+)\.([A-Za-z0-9_-]+)$/.exec(location.hash);
+  if(m){ mine={id:m[1], token:m[2]}; saveMine(mine); myId=m[1]; history.replaceState(null,"","#submit"); route(); }
+  await refreshState();
+  if(["submit","commissioner"].includes(currentPage())) rerender();
+  setInterval(()=>{ if(document.visibilityState==="visible" && !saving) refreshState(); }, 60000);
+  document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible") refreshState(); });
+})();
+
+/* ---------- Scoreboard image (canvas) ---------- */
+const IMG_FONTS = ['900 96px "Big Shoulders Stencil Display"','800 40px "Big Shoulders Display"','600 26px "Work Sans"','500 20px "IBM Plex Mono"'];
+const fontsReady = (document.fonts && document.fonts.load) ? Promise.all(IMG_FONTS.map(f=>document.fonts.load(f).catch(()=>{}))) : Promise.resolve();
+const C = {night:"#0A1A14", night2:"#123528", jungle:"#2A4A35", ink:"#F3EEE4", muted:"#A9BDB4", ember:"#FF8A3D", hi:"#FFD27A", toka:"#E6A93A", savu:"#4FB3C8", line:"rgba(243,238,228,.12)", up:"#6FD3A8", down:"#FF8A6B"};
+const F = {stencil:'"Big Shoulders Stencil Display","Big Shoulders Display",Impact,sans-serif', disp:'"Big Shoulders Display","Arial Narrow",Impact,sans-serif', body:'"Work Sans",system-ui,sans-serif', mono:'"IBM Plex Mono",ui-monospace,monospace'};
+function shrink(ctx, text, max, weight, size, min, fam){ let s=size; ctx.font=`${weight} ${s}px ${fam}`; while(s>min && ctx.measureText(text).width>max){ s-=2; ctx.font=`${weight} ${s}px ${fam}`; } return fit(ctx,text,max); }
+function fit(ctx, text, max){ if(ctx.measureText(text).width<=max) return text; let t=text; while(t.length>1 && ctx.measureText(t+"…").width>max) t=t.slice(0,-1); return t+"…"; }
+function flamePath(ctx, x, y, s){ // flame ~16x22 units scaled by s, top-left at x,y
+  ctx.save(); ctx.translate(x,y); ctx.scale(s,s);
+  ctx.fill(new Path2D("M8 0c3 5 7 8 7 14a7 7 0 0 1-14 0c0-4 2-6 3-9 .5 2 1.5 3.5 3 4-1-3 0-6 1-9z")); ctx.restore();
+}
+function drawScoreImage(d){
+  const W=1080, PAD=64, rowH=78, headH=430, hlH=170, footH=110;
+  const n=d.rows.length, H=headH+hlH+40+70+n*rowH+footH;
+  const cv=document.createElement("canvas"); cv.width=W; cv.height=H;
+  const ctx=cv.getContext("2d");
+  // sky
+  let g=ctx.createLinearGradient(0,0,0,H); g.addColorStop(0,C.night); g.addColorStop(.45,C.night2); g.addColorStop(1,C.night); ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  let rg=ctx.createRadialGradient(W*.3,headH+20,10,W*.3,headH+20,W*.75); rg.addColorStop(0,"rgba(255,138,61,.45)"); rg.addColorStop(1,"rgba(255,138,61,0)");
+  ctx.fillStyle=rg; ctx.fillRect(0,0,W,H);
+  // palms
+  ctx.save(); ctx.translate(W-420,headH-250); ctx.scale(1.15,1.15); ctx.strokeStyle="#06110D"; ctx.lineCap="round";
+  ctx.lineWidth=7; ctx.stroke(new Path2D("M300 220c4-60 10-110 30-160"));
+  ctx.lineWidth=9; ctx.stroke(new Path2D("M330 60c-30-14-62-10-90 8 28-4 52 0 72 12M330 60c-6-30-26-48-54-56 18 14 30 32 34 52M330 60c22-24 52-30 80-22-26 2-46 12-62 28M330 60c30-2 54 14 66 40-18-16-38-22-60-22M330 60c-16 14-26 36-26 62 8-22 20-38 36-50"));
+  ctx.lineWidth=5; ctx.stroke(new Path2D("M220 220c-2-44 2-80 14-112"));
+  ctx.lineWidth=7; ctx.stroke(new Path2D("M234 108c-20-8-42-4-58 8 18-2 34 2 46 8M234 108c14-16 34-20 52-14-16 2-30 8-40 18M234 108c-4-20-18-32-36-36 12 10 18 22 22 36"));
+  ctx.restore();
+  // torch + title
+  ctx.save(); ctx.shadowColor="rgba(255,138,61,.9)"; ctx.shadowBlur=30;
+  ctx.fillStyle=C.ember; flamePath(ctx,PAD,70,2.6); ctx.fillStyle=C.hi; flamePath(ctx,PAD+10,104,1.35); ctx.restore();
+  ctx.fillStyle="#8A6239"; ctx.fillRect(PAD+16,132,10,150); ctx.fillStyle="#6B4A2B"; ctx.beginPath(); ctx.moveTo(PAD+6,124); ctx.lineTo(PAD+36,124); ctx.lineTo(PAD+30,140); ctx.lineTo(PAD+12,140); ctx.fill();
+  const tx=PAD+72;
+  ctx.textBaseline="alphabetic";
+  ctx.fillStyle=C.hi; ctx.font=`500 22px ${F.mono}`; ctx.fillText("SEASON 51 · FIJI · WEEKLY RECAP", tx, 104);
+  ctx.fillStyle=C.ink; ctx.font=`900 132px ${F.stencil}`; ctx.fillText("SURVIVOR 51", tx, 226);
+  ctx.fillStyle=C.ember; ctx.font=`800 46px ${F.disp}`; ctx.letterSpacing && (ctx.letterSpacing="6px"); ctx.fillText("FANTASY POOL", tx, 284); ctx.letterSpacing && (ctx.letterSpacing="0px");
+  ctx.fillStyle=C.ink; ctx.font=`800 58px ${F.disp}`; ctx.fillText(`EPISODE ${d.ep} STANDINGS`, tx, 368);
+  // tribal band
+  const by=headH-26; ctx.fillStyle=C.night; ctx.fillRect(0,by,W,16);
+  for(let x=0;x<W;x+=16){ ctx.fillStyle=(x/16)%2?C.savu:C.toka; ctx.beginPath(); ctx.moveTo(x,by+16); ctx.lineTo(x+8,by); ctx.lineTo(x+16,by+16); ctx.fill(); }
+  // highlights
+  const hy=headH+10, gap=18, hw=(W-PAD*2-gap*2)/3;
+  const hls=[["TOP SCORE THIS WEEK", d.topWeekTies.map(r=>r.e.name).join(" & "), `${d.topWeekTies[0].week} PTS`],
+    ["BIGGEST CLIMBER", d.climber?d.climber.e.name:(d.prevEp==null?"First week":"No movement"), d.climber?`UP ${d.climber.move} ${d.climber.move===1?"SPOT":"SPOTS"}`:(d.prevEp==null?"STANDINGS START HERE":"SAME AS LAST WEEK")],
+    ["CASTAWAY OF THE WEEK", d.castTop.c.name, `${d.castTop.pts} PTS · ON ${d.owners} ${d.owners===1?"TEAM":"TEAMS"}`]];
+  hls.forEach((h,i)=>{ const x=PAD+i*(hw+gap);
+    ctx.fillStyle="rgba(243,238,228,.06)"; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x,hy,hw,hlH-20,14) : ctx.rect(x,hy,hw,hlH-20); ctx.fill();
+    ctx.strokeStyle=C.line; ctx.lineWidth=1.5; ctx.stroke();
+    ctx.fillStyle=C.hi; ctx.font=`500 17px ${F.mono}`; ctx.fillText(h[0], x+20, hy+38);
+    ctx.fillStyle=C.ink; ctx.fillText(shrink(ctx,h[1].toUpperCase(),hw-40,800,40,24,F.disp), x+20, hy+90);
+    ctx.fillStyle=C.muted; ctx.font=`500 17px ${F.mono}`; ctx.fillText(fit(ctx,h[2],hw-40), x+20, hy+124);
+  });
+  // table header
+  let y=headH+hlH+40;
+  const colRank=PAD+8, colMove=PAD+86, colName=PAD+170, colWeek=W-PAD-180, colTot=W-PAD-12;
+  ctx.fillStyle=C.muted; ctx.font=`500 18px ${F.mono}`;
+  ctx.fillText("#",colRank,y); ctx.fillText("ENTRANT",colName,y);
+  ctx.textAlign="right"; ctx.fillText("THIS WEEK",colWeek,y); ctx.fillText("TOTAL",colTot,y); ctx.textAlign="left";
+  y+=24; ctx.fillStyle=C.ember; ctx.fillRect(PAD,y,W-PAD*2,3); y+=8;
+  d.rows.forEach((r,i)=>{
+    const top=y+i*rowH, mid=top+rowH/2+12;
+    if(r.rank===1){ const lg=ctx.createLinearGradient(PAD,0,W-PAD,0); lg.addColorStop(0,"rgba(255,138,61,.28)"); lg.addColorStop(1,"rgba(255,138,61,0)"); ctx.fillStyle=lg; ctx.fillRect(PAD,top,W-PAD*2,rowH); }
+    else if(i%2){ ctx.fillStyle="rgba(243,238,228,.03)"; ctx.fillRect(PAD,top,W-PAD*2,rowH); }
+    ctx.fillStyle=r.rank===1?C.ember:C.ink; ctx.font=`900 48px ${F.disp}`; ctx.fillText(String(r.rank),colRank,mid+4);
+    if(r.rank===1){ ctx.fillStyle=C.ember; flamePath(ctx,colRank+(r.rank>9?56:32),top+20,1.4); }
+    ctx.font=`600 20px ${F.mono}`;
+    if(r.move==null){ctx.fillStyle=C.muted;ctx.fillText("–",colMove,mid-2);}
+    else if(r.move>0){ctx.fillStyle=C.up;ctx.fillText("▲"+r.move,colMove,mid-2);}
+    else if(r.move<0){ctx.fillStyle=C.down;ctx.fillText("▼"+(-r.move),colMove,mid-2);}
+    else {ctx.fillStyle=C.muted;ctx.fillText("=",colMove,mid-2);}
+    ctx.fillStyle=C.ink; ctx.font=`600 30px ${F.body}`; ctx.fillText(fit(ctx,r.e.name,colWeek-colName-150),colName,mid);
+    ctx.textAlign="right";
+    ctx.fillStyle=C.hi; ctx.font=`600 26px ${F.mono}`; ctx.fillText("+"+r.week,colWeek,mid);
+    ctx.fillStyle=C.ink; ctx.font=`800 46px ${F.disp}`; ctx.fillText(String(r.total),colTot,mid+4);
+    ctx.textAlign="left";
+    ctx.fillStyle=C.line; ctx.fillRect(PAD,top+rowH-1,W-PAD*2,1);
+  });
+  // footer
+  const fy=H-footH+50;
+  ctx.fillStyle=C.muted; ctx.font=`500 18px ${F.mono}`;
+  ctx.fillText(`SCORES THROUGH EPISODE ${d.ep}`, PAD, fy);
+  ctx.textAlign="right"; ctx.fillStyle=C.ember; ctx.font=`800 28px ${F.disp}`; ctx.fillText("OUTWIT · OUTPLAY · OUTLAST", W-PAD, fy+2); ctx.textAlign="left";
+  return cv;
+}
+let imgUrl=null, imgBlob=null, imgEp=null, downloadsNs;
+async function getDownloads(){ return {save: async ({filename,data})=>{ const a=document.createElement("a"); const u=URL.createObjectURL(data); a.href=u; a.download=filename; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),2000); return {status:"saved"}; }}; }
+function imgPanelHTML(){
+  if(!imgUrl) return "";
+  return `<div class="img-panel">
+    <img src="${imgUrl}" alt="Episode ${imgEp} scoreboard image" class="score-img">
+    <div class="img-actions">
+      <button class="btn small-btn" type="button" id="copyImg">Copy image</button>
+      <button class="btn ghost small-btn" type="button" id="saveImg" hidden>Save image</button>
+      <button class="btn ghost small-btn" type="button" id="closeImg">Close</button>
+    </div>
+    <span class="small">On a phone, you can also press and hold the image to save or share it.</span>
+  </div>`;
+}
+async function copyImage(){
+  const st=document.getElementById("recapStatus");
+  try{
+    if(!window.ClipboardItem || !navigator.clipboard || !navigator.clipboard.write) throw new Error("no");
+    await navigator.clipboard.write([new ClipboardItem({"image/png": imgBlob})]);
+    st.textContent="Scoreboard image copied. Paste it into your group chat.";
+  }catch(e){ st.textContent="This browser won't copy images from here. Press and hold (or right-click) the image to copy or save it."; }
+}
+async function makeImage(ep){
+  const st=document.getElementById("recapStatus"); if(st) st.textContent="Making the image…";
+  await fontsReady;
+  const cv=drawScoreImage(recapData(ep));
+  imgBlob = await new Promise(res=>cv.toBlob(res,"image/png"));
+  if(imgUrl) URL.revokeObjectURL(imgUrl);
+  imgUrl = URL.createObjectURL(imgBlob); imgEp = ep;
+  const holder=document.getElementById("imgHolder"); if(!holder) return;
+  holder.innerHTML=imgPanelHTML();
+  if(st) st.textContent="Image ready.";
+  document.getElementById("copyImg").addEventListener("click",copyImage);
+  document.getElementById("closeImg").addEventListener("click",()=>{holder.innerHTML=""; const s=document.getElementById("recapStatus"); if(s) s.textContent="";});
+  const dl=await getDownloads(), sb=document.getElementById("saveImg");
+  if(dl && sb){ sb.hidden=false; sb.addEventListener("click",async()=>{
+    try{ await dl.save({filename:`survivor51-pool-episode-${ep}.png`, data:imgBlob}); document.getElementById("recapStatus").textContent="Image saved."; }
+    catch(e){ document.getElementById("recapStatus").textContent = e&&e.code==="declined" ? "" : "The image couldn't be saved here. Press and hold (or right-click) it instead."; }
+  }); }
+  holder.querySelector(".img-panel").scrollIntoView({block:"nearest"});
+}
+
+/* ---------- Weekly recap ---------- */
+const SHARE_URL = location.origin + "/";
+const SCORED_EPS = () => EPISODES.filter(e=>Object.keys(e.pts).length).map(e=>e.ep);
+const LATEST_EP = () => { const s=SCORED_EPS(); return s.length?s[s.length-1]:0; };
+let recapEp = null, recapMsg = null, commishTab = "picks";
+
+/* Points one entrant earned in one episode, with the castaways that earned them. */
+function weekFor(e, ep){
+  const parts = e.picks.map(id=>({id, pts:RESULTS[id]?.byEp[ep]||0, tag:id===e.mvp?"MVP":""}));
+  if(e.merge && MERGE_EP!=null && ep>MERGE_EP) parts.push({id:e.merge, pts:RESULTS[e.merge]?.byEp[ep]||0, tag:"Merge"});
+  let total = parts.reduce((s,p)=>s+p.pts,0);
+  if(POOL.winner && POOL.winner===e.mvp && ep===LATEST_EP()) total += 30;
+  return {parts, total};
+}
+function totalThrough(e, ep){ return SCORED_EPS().filter(n=>n<=ep).reduce((s,n)=>s+weekFor(e,n).total,0); }
+function standings(ep){
+  const rows = ENTRANTS.map(e=>({e, total:totalThrough(e,ep)})).sort((a,b)=>b.total-a.total||a.e.name.localeCompare(b.e.name));
+  let rank=0, prev=null; rows.forEach((r,i)=>{ if(r.total!==prev){rank=i+1;prev=r.total} r.rank=rank; });
+  return rows;
+}
+function recapData(ep){
+  const eps = SCORED_EPS(), prevEp = eps.filter(n=>n<ep).pop();
+  const now = standings(ep), before = prevEp!=null ? standings(prevEp) : null;
+  const prevRank = before ? Object.fromEntries(before.map(r=>[r.e.key,r.rank])) : {};
+  const rows = now.map(r=>{ const w=weekFor(r.e,ep); return {...r, week:w.total, parts:w.parts, move: before ? prevRank[r.e.key]-r.rank : null}; });
+  const topWeek = [...rows].sort((a,b)=>b.week-a.week)[0];
+  const topWeekTies = rows.filter(r=>r.week===topWeek?.week);
+  const climber = before ? [...rows].filter(r=>r.move>0).sort((a,b)=>b.move-a.move)[0] : null;
+  const castTop = CAST.map(c=>({c, pts:RESULTS[c.id]?.byEp[ep]||0})).sort((a,b)=>b.pts-a.pts)[0];
+  const owners = castTop ? ENTRANTS.filter(e=>e.picks.includes(castTop.c.id)).length : 0;
+  return {ep, prevEp, rows, topWeekTies, climber, castTop, owners};
+}
+function recapText(d){
+  const lines = [`${POOL.name}: Episode ${d.ep} recap`, ""];
+  lines.push(`Top score this week: ${d.topWeekTies.map(r=>r.e.name).join(", ")} (${d.topWeekTies[0].week} pts)`);
+  if(d.climber) lines.push(`Biggest climber: ${d.climber.e.name}, up ${d.climber.move} ${d.climber.move===1?"spot":"spots"}`);
+  lines.push("", `Standings after Episode ${d.ep}:`);
+  d.rows.forEach(r=>lines.push(`${r.rank}. ${r.e.name}: ${r.total} pts (+${r.week} this week)`));
+  lines.push("", `Scoreboard: ${SHARE_URL}#scoreboard`);
+  return lines.join("\n");
+}
+const moveHTML = m => m==null ? `<span class="mv new">–</span>` : m>0 ? `<span class="mv up" aria-label="up ${m}">▲${m}</span>` : m<0 ? `<span class="mv down" aria-label="down ${-m}">▼${-m}</span>` : `<span class="mv same" aria-label="no change">=</span>`;
+
+function highlightsHTML(d){
+  return `<div class="highlights">
+      <div class="hl"><span class="hl-k">Top score this week</span><span class="hl-v">${d.topWeekTies.map(r=>esc(r.e.name)).join(" & ")}</span><span class="hl-n mono">${d.topWeekTies[0].week} pts</span></div>
+      <div class="hl"><span class="hl-k">Biggest climber</span>${d.climber?`<span class="hl-v">${esc(d.climber.e.name)}</span><span class="hl-n mono">Up ${d.climber.move} ${d.climber.move===1?"spot":"spots"}</span>`:`<span class="hl-v">${d.prevEp==null?"First scored week":"No movement"}</span><span class="hl-n mono">${d.prevEp==null?"Standings start here":"Same order as last week"}</span>`}</div>
+      <div class="hl"><span class="hl-k">Castaway of the week</span><span class="hl-v">${esc(d.castTop.c.name)}</span><span class="hl-n mono">${d.castTop.pts} pts · on ${d.owners} ${d.owners===1?"team":"teams"}</span></div>
+    </div>`;
+}
+function recapPage(){
+  const eps = SCORED_EPS();
+  if(!eps.length) return `<section class="page"><h2>Weekly recap</h2><p class="lede">No episodes have been scored yet. The first recap appears once points are posted.</p></section>`;
+  const ep = eps.includes(recapEp) ? recapEp : eps[eps.length-1];
+  const d = recapData(ep);
+  const tabs = eps.map(n=>`<a class="ep-tab" href="#recap-ep${n}" ${n===ep?'aria-current="page"':""}>Ep ${n}</a>`).join("");
+  const rowsHTML = d.rows.map(r=>`
+    <tr class="${r.rank===1?"lead":""}">
+      <td class="rank">${r.rank}</td>
+      <td class="mvcell">${moveHTML(r.move)}</td>
+      <td><strong>${esc(r.e.name)}</strong>
+        <div class="chips">${r.parts.slice().sort((a,b)=>b.pts-a.pts).map(p=>{const c=byId[p.id], out=RESULTS[p.id]?.out===ep;
+          return `<span class="chip ${p.pts===0?"zero":""}">${esc(short(c))}${p.tag?` <b style="color:var(--torch)">${p.tag}</b>`:""}${out?" <b>Out</b>":""}<span class="mono">${p.pts}</span></span>`}).join("")}</div></td>
+      <td class="mono r wk">+${r.week}</td>
+      <td class="total">${r.total}</td>
+    </tr>`).join("");
+  return `<section class="page recap">
+    <div class="recap-head">
+      <div><div class="eyebrow">Weekly recap</div><h2>Episode ${ep}</h2></div>
+      <div class="share">
+        <button class="btn small-btn" type="button" id="makeImg">Scoreboard image</button>
+        <button class="btn ghost small-btn" type="button" id="copyRecap">Copy recap text</button>
+      </div>
+    </div>
+    <nav class="ep-tabs" aria-label="Choose an episode">${tabs}</nav>
+    <span class="small" role="status" id="recapStatus">${recapMsg?esc(recapMsg):""}</span>
+    <div id="imgHolder">${imgEp===ep?imgPanelHTML():""}</div>
+    ${highlightsHTML(d)}
+    <h3 style="margin:26px 0 10px">Standings after Episode ${ep}</h3>
+    <div class="tablewrap"><table class="board recap-board">
+      <thead><tr><th>#</th><th><span class="sr">Change</span></th><th>Entrant &amp; this week's points</th><th class="r">Week</th><th class="r">Total</th></tr></thead>
+      <tbody>${rowsHTML}</tbody></table></div>
+    <p class="small">Movement compares with the standings after ${d.prevEp!=null?`Episode ${d.prevEp}`:"the previous week"}. Points come from the pool's weekly results.</p>
+  </section>`;
+}
+async function copyText(text, okMsg){
+  try{ await navigator.clipboard.writeText(text); recapMsg=okMsg; }
+  catch(e){ recapMsg="Couldn't copy automatically. Select the text below and copy it.";
+    const ta=document.createElement("textarea"); ta.value=text; ta.readOnly=true; ta.className="copy-fallback"; ta.rows=8;
+    document.getElementById("recapStatus").after(ta); ta.focus(); ta.select(); }
+  const st=document.getElementById("recapStatus"); if(st) st.textContent=recapMsg;
+}
+function wireRecap(){
+  const cr=document.getElementById("copyRecap"); if(!cr) return;
+  const ep = SCORED_EPS().includes(recapEp)?recapEp:LATEST_EP();
+  cr.addEventListener("click",()=>copyText(recapText(recapData(ep)),"Recap copied. Paste it into your group chat."));
+  document.getElementById("makeImg").addEventListener("click",()=>makeImage(ep));
+  if(imgEp===ep && document.getElementById("copyImg")){
+    document.getElementById("copyImg").addEventListener("click",copyImage);
+    document.getElementById("closeImg").addEventListener("click",()=>{imgEp=null; document.getElementById("imgHolder").innerHTML="";});
+  }
+
+}
+
+const ROUTES = {rules:rulesPage, scoreboard:()=>revealedThrough>=LATEST_EP()&&revealed?boardPage():gatePage(), recap:recapPage, castaways:castPage, picks:picksPage, submit:submitPage, commissioner:commishPage};
+const currentPage = () => { const r=(location.hash||"").slice(1);
+  const m=/^recap-ep(\d+)$/.exec(r); if(m){ recapEp=+m[1]; commishTab="recap"; return "commissioner"; }
+  if(r==="recap"){ recapEp=null; commishTab="recap"; return "commissioner"; }
+  if(r==="commissioner") commishTab="picks";
+  if(r==="power"){ boardTab="power"; return "scoreboard"; }
+  if(r==="scoreboard") boardTab="standings";
+  return ROUTES[r]?r:"rules"; };
+function route(){
+  const page = currentPage();
+  if(page!=="scoreboard" && page!=="recap"){ revealed=false; revealedThrough=0; }
+  recapMsg=null;
+  document.querySelectorAll("nav.tabs a").forEach(a=>{if(a.dataset.r===page)a.setAttribute("aria-current","page");else a.removeAttribute("aria-current")});
+  const act=document.querySelector('nav.tabs a[aria-current="page"]'), strip=document.querySelector(".tabs-in");
+  if(act && strip){ const l=act.offsetLeft-16, r=act.offsetLeft+act.offsetWidth-strip.clientWidth+40; if(strip.scrollLeft>l) strip.scrollLeft=l; else if(strip.scrollLeft<r) strip.scrollLeft=r; updateFade(); }
+  view.innerHTML = ROUTES[page]();
+  wire();
+}
+function wire(){
+  const rv=document.getElementById("reveal");
+  if(rv) rv.addEventListener("click",()=>{revealed=true; revealedThrough=Math.max(revealedThrough,+rv.dataset.ep||0); view.innerHTML=ROUTES[currentPage()](); wire(); scrollTo(0,0);});
+  wireRecap();
+  view.querySelectorAll("[data-tribe]").forEach(b=>b.addEventListener("click",()=>{tribeFilter=b.dataset.tribe;view.innerHTML=castPage();wire();}));
+  const sel=document.getElementById("entrantSel");
+  if(sel) sel.addEventListener("change",()=>{picksSel=sel.value;view.innerHTML=picksPage();wire();document.getElementById("entrantSel").focus();});
+  wireSubmit();
+}
+function updateFade(){ const st=document.querySelector(".tabs-in"); if(!st) return;
+  document.querySelector("nav.tabs").style.setProperty("--fade", st.scrollLeft+st.clientWidth < st.scrollWidth-4 ? "1" : "0"); }
+document.querySelector(".tabs-in").addEventListener("scroll",updateFade,{passive:true});
+addEventListener("resize",updateFade);
+addEventListener("hashchange",()=>{ route(); const h=document.querySelector(".hero"); const top=h?h.offsetHeight:0; if(scrollY>top) scrollTo(0,top); });
+route();
+</script>
+
+</body>
+</html>

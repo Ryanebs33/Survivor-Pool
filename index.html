@@ -779,7 +779,7 @@ function commishPage(){
   if(!commishUnlocked) return `<section class="page">${head}
     <form id="codeForm" class="codeform" novalidate>
       <div class="field"><label for="codeIn">Commissioner code</label>
-        <input id="codeIn" type="password" inputmode="numeric" autocomplete="off" maxlength="12"></div>
+        <input id="codeIn" type="password" autocomplete="off" maxlength="64"></div>
       <button class="btn" type="submit">Unlock</button>
       <span class="small" role="status">${commishErr?`<span class="err">${esc(commishErr)}</span>`:""}</span>
     </form></section>`;

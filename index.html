@@ -216,6 +216,13 @@ button.pick-link{font:inherit;color:inherit;background:none;border:0;text-align:
 .bp-facts{color:var(--night-muted);font-size:12.5px;margin:4px 0 6px}
 .bp-bio{margin:0;line-height:1.45}
 
+.board-tabs{display:inline-flex;gap:4px;padding:5px;margin:14px 0 26px;background:var(--night);border-radius:14px;box-shadow:0 10px 24px -14px rgba(10,26,20,.6);max-width:100%}
+.board-tabs .ep-tab{font:800 21px/1 var(--display);letter-spacing:.06em;padding:13px 22px;border-radius:10px;border:0;background:transparent;color:var(--night-muted);display:flex;align-items:center;gap:8px;white-space:nowrap;transition:background .15s,color .15s}
+.board-tabs .ep-tab:hover{color:var(--night-ink);background:rgba(243,238,228,.08);border:0}
+.board-tabs .ep-tab[aria-current="page"]{background:var(--torch);color:var(--torch-ink);box-shadow:0 6px 16px -6px color-mix(in srgb,var(--torch) 80%,transparent)}
+.board-tabs .ep-tab:focus-visible{outline:3px solid var(--ember);outline-offset:2px}
+@media (max-width:640px){.board-tabs{display:flex;width:100%}.board-tabs .ep-tab{flex:1;justify-content:center;font-size:18px;padding:12px 10px}}
+
 /* Spoiler gate */
 .gate{background:var(--gate);color:var(--gate-ink);border-radius:12px;padding:48px 24px;text-align:center;display:grid;justify-items:center;gap:14px}
 .gate .flame{width:48px;height:64px}
@@ -683,7 +690,7 @@ function boardPage(){
   return `<section class="page">
     <h2>Scoreboard</h2>
     <p class="meta-line">Through ${esc(POOL.updatedThrough)}</p>
-    <nav class="ep-tabs sub-tabs" aria-label="Scoreboard views">
+    <nav class="board-tabs" aria-label="Scoreboard views">
       <a class="ep-tab" href="#scoreboard" ${boardTab!=="power"?'aria-current="page"':""}>Standings</a>
       <a class="ep-tab" href="#power" ${boardTab==="power"?'aria-current="page"':""}>Power rankings</a></nav>
     ${boardTab==="power" ? powerHTML()+"</section>" : `

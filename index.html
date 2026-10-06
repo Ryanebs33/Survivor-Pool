@@ -726,40 +726,129 @@ const CONF_BANDS = [
   {min:0,  label:"Torch snuffed (spiritually)"}
 ];
 const CONF = {
-  open: [
-    ["{n} sits {r} in the power rankings with {proj} projected points, and honestly the confidence is earned.",
-     "{n} is {r} in the power rankings and should be walking around camp like they own the place.",
-     "Projected for {proj} more points, {n} has every right to start practicing a winner's speech, quietly."],
-    ["{n} is {r} in the power rankings with {proj} projected points, which is good, but not 'stop checking the scoreboard' good.",
-     "{n} lands {r} here, solid enough to sleep at night, just not in the good shelter.",
-     "At {r} with {proj} projected, {n} is in decent shape, the fantasy equivalent of a fire that keeps going if nobody breathes on it."],
-    ["{n} is {r} in the power rankings, which is the definition of 'it could go either way.'",
-     "Projected for {proj}, {n} is sitting {r} with the nervous energy of someone holding a fake idol.",
-     "{n} lands {r} here, comfortably uncomfortable, like sleeping on bamboo."],
-    ["{n} is {r} in the power rankings with {proj} projected, which is not great, Bob.",
-     "At {r}, {n} should be confident in exactly one thing: that there's still time for a miracle.",
-     "{n} sits {r} here, and the numbers are looking at this team the way Jeff looks at a castaway who wants to quit."],
-    ["{n} is {r} in the power rankings, and the confidence meter just asked to be voted out.",
-     "Projected for {proj}, {n} sits {r} with the long-term outlook of a coconut in a hurricane.",
-     "At {r}, {n} should lower expectations, then lower them again, then maybe dig a hole for them."]
+  openTop: [
+    "{n} sits {r} in the power rankings with {proj} projected points, and honestly the confidence is earned.",
+    "{n} is {r} in the power rankings and should be walking around camp like they own the place.",
+    "Projected for {proj} more points, {n} has every right to start practicing a winner's speech, quietly.",
+    "{n} is {r} here, which is the fantasy equivalent of winning immunity and getting the good rice.",
+    "The projections have {n} at {r} with {proj} to come, so go ahead and buy the nice sunscreen.",
+    "{n} lands {r} in the power rankings, solid enough to sleep at night, just not in the good shelter.",
+    "At {r} with {proj} projected, {n} is in great shape, like a fire that keeps going as long as nobody sneezes on it.",
+    "{n} checks in at {r}, the kind of position people pretend not to be jealous of at Tribal.",
+    "With {proj} projected points, {n} is {r} and allowed exactly one smug smile per day.",
+    "{n} is {r} here and looking strong, the way a castaway looks right before the edit gets suspicious.",
+    "Sitting {r} with {proj} projected, {n} has the swagger of someone who just found an idol in plain sight.",
+    "{n} is {r} in the power rankings, which means the math is on your side for once."
   ],
-  mvpAlive: ["MVP {mvp} is still in the game{tierTxt}, so there's at least one reason to keep refreshing.",
-             "The good news: MVP {mvp} is still alive{tierTxt}.",
-             "MVP {mvp} is hanging in there{tierTxt}, which is more than can be said for some of these picks."],
-  mvpOut:   ["The bad news: MVP {mvp} is already gone, taking that 30-point bonus dream with them.",
-             "With MVP {mvp} already voted out, this team is playing without a quarterback and possibly without a plan."],
-  up:       ["The experts like this team more than the scoreboard does, so the comeback narrative writes itself.",
-             "It's {vs} spots higher here than in the standings, which means the best might be ahead, allegedly."],
-  down:     ["It sits {vs} spots lower here than in the standings, so enjoy those points now, because the projections are not impressed.",
-             "The projections have this team {vs} spots below its current standing, which is a polite way of saying 'regression incoming.'"],
-  depth:    ["{live} of {total} castaways are still in, with {best} doing most of the heavy lifting.",
-             "{best} is the best asset on a roster with {live} of {total} still standing."],
-  close: [
-    ["Stay humble. Or don't, it's your torch.", "Just don't get cocky, that's how blindsides happen."],
-    ["Keep calm and keep the fire going.", "Cautious optimism is the move here."],
-    ["Pack a Plan B and maybe a Plan C.", "Light a candle, find an idol, hope for the best."],
-    ["Start writing the excuses now.", "It's not over, but it's definitely clearing its throat."],
-    ["At this point it's less of a fantasy team and more of a cautionary tale.", "Maybe just enjoy the show this season."]
+  openMid: [
+    "{n} is {r} in the power rankings, which is the definition of 'it could go either way.'",
+    "Projected for {proj}, {n} is sitting {r} with the nervous energy of someone holding a fake idol.",
+    "{n} lands {r} here, comfortably uncomfortable, like sleeping on bamboo.",
+    "At {r}, {n} is in the swing-vote zone, where everyone is nice to you and nobody trusts you.",
+    "{n} sits {r} with {proj} projected, a coin flip of a season with a coin that might be counterfeit.",
+    "The power rankings put {n} at {r}, which is fine, in the way soggy rice is technically dinner.",
+    "{n} is {r} here, close enough to dream and far enough to keep the antacids handy.",
+    "{proj} projected points puts {n} at {r}, middle of the pack and nervously eyeing the exits."
+  ],
+  openLow: [
+    "{n} is {r} in the power rankings with {proj} projected, which is not great, Bob.",
+    "At {r}, {n} should be confident in exactly one thing: that there's still time for a miracle.",
+    "{n} sits {r} here, and the numbers are looking at this team the way Jeff looks at a castaway who wants to quit.",
+    "{n} is {r} in the power rankings, and the confidence meter just asked to be voted out.",
+    "Projected for {proj}, {n} sits {r} with the long-term outlook of a coconut in a hurricane.",
+    "At {r}, {n} should lower expectations, then lower them again, then maybe bury them in the sand.",
+    "{n} lands {r} here, which is less of a ranking and more of a weather warning.",
+    "The power rankings have {n} at {r}, a spot usually reserved for teams that lost the puzzle by an hour.",
+    "{n} is {r} with {proj} projected, which is what the producers call 'a redemption arc waiting to happen.'",
+    "Sitting {r}, {n} has the outlook of a castaway who just heard 'the tribe has spoken' in a dream."
+  ],
+  mvpAlive: [
+    "MVP {mvp} is still in the game{tierTxt}, so there's at least one reason to keep refreshing.",
+    "The good news: MVP {mvp} is still alive{tierTxt}.",
+    "MVP {mvp} is hanging in there{tierTxt}, which is more than can be said for some of these picks.",
+    "{mvp} is still standing as MVP{tierTxt}, so the 30-point dream lives on.",
+    "MVP {mvp} survives{tierTxt}, and that alone is worth a small celebratory coconut.",
+    "Your MVP, {mvp}, is very much alive{tierTxt}, which is the bare minimum, but we'll take it.",
+    "{mvp} is still breathing as MVP{tierTxt}, so the dream is alive, if a bit sunburnt.",
+    "MVP {mvp} is still around{tierTxt}, holding this team together like a frayed piece of rope.",
+    "The MVP pick, {mvp}, is still in it{tierTxt}, and so, technically, are you.",
+    "{mvp} carries the MVP title into next week{tierTxt}, so don't jinx it.",
+    "MVP {mvp} is alive and kicking{tierTxt}, unlike your group-chat trash talk.",
+    "Good sign: MVP {mvp} is still on the island{tierTxt}.",
+    "{mvp} remains your MVP{tierTxt}, which is a vote of confidence from exactly one person: you.",
+    "MVP {mvp} is still in{tierTxt}, so there's a pulse here somewhere.",
+    "As long as MVP {mvp} keeps dodging the vote{tierTxt}, you're allowed to hope.",
+    "MVP {mvp} lives to fight another week{tierTxt}, so keep the torch lit.",
+    "{mvp} is still alive as MVP{tierTxt}, the one stock in this portfolio not crashing.",
+    "MVP {mvp} has survived so far{tierTxt}, which is more than your last fantasy team managed."
+  ],
+  mvpOut: [
+    "The bad news: MVP {mvp} is already gone, taking that 30-point bonus dream with them.",
+    "With MVP {mvp} already voted out, this team is playing without a quarterback and possibly without a plan.",
+    "MVP {mvp} is already at Ponderosa eating pancakes, so that bonus is off the table.",
+    "Losing MVP {mvp} this early is the fantasy version of dropping the idol in the ocean.",
+    "MVP {mvp} has left the building, and so has the 30-point bonus.",
+    "MVP {mvp} is out, so the best-case scenario got its torch snuffed too."
+  ],
+  up: [
+    "The experts like this team more than the scoreboard does, so the comeback narrative writes itself.",
+    "It's {vs} spots higher here than in the standings, which means the best might be ahead, allegedly.",
+    "The projections rank this team {vs} spots above where it sits now, so patience might actually pay off.",
+    "Climbing {vs} spots in the projections suggests a sneaky late-game run is on the menu.",
+    "The math says this team is {vs} spots better than the standings show, so the underdog edit is in full swing.",
+    "Projections have it {vs} spots higher than the standings, which is the fantasy equivalent of a hidden advantage.",
+    "Being {vs} spots higher here means the experts see something the scoreboard doesn't, probably.",
+    "Up {vs} spots on projection alone, so start practicing the 'I told you so.'"
+  ],
+  down: [
+    "It sits {vs} spots lower here than in the standings, so enjoy those points now, because the projections are not impressed.",
+    "The projections have this team {vs} spots below its current standing, which is a polite way of saying 'regression incoming.'",
+    "Down {vs} spots compared to the standings, so the early lead might be a mirage in the jungle heat.",
+    "The experts rank this team {vs} spots lower than the scoreboard does, which is a bad sign wrapped in a coconut.",
+    "Sliding {vs} spots in the projections, this team is cashing early-season checks the future can't cover.",
+    "It drops {vs} spots on projection, so the hot start might be cooling faster than a dead campfire.",
+    "Projections put it {vs} spots below the standings, the classic 'peaked at the premiere' warning.",
+    "Being {vs} spots lower here means the points so far might be the best this team ever sees."
+  ],
+  depth: [
+    "{live} of {total} castaways are still in, with {best} doing most of the heavy lifting.",
+    "{best} is the best asset on a roster with {live} of {total} still standing.",
+    "With {live} of {total} still alive, {best} is the one holding the whole tribe together.",
+    "{best} leads a roster that still has {live} of {total} bodies in the game.",
+    "Everyone's leaning on {best}, but at least {live} of {total} are still around to help.",
+    "{live} of {total} still in the game is a decent base, and {best} is the headliner.",
+    "{best} is doing the most for a group that still has {live} of {total} standing.",
+    "The roster's {live}-for-{total} on survivors, with {best} as the team's not-so-secret weapon."
+  ],
+  closeTop: [
+    "Stay humble. Or don't, it's your torch.",
+    "Just don't get cocky, that's how blindsides happen.",
+    "Keep calm and keep the fire going.",
+    "Enjoy it, but keep your bag packed just in case.",
+    "Confidence is earned, arrogance gets voted out. Choose wisely.",
+    "Feel good, but maybe don't say it out loud in the group chat.",
+    "Keep your head down and your idol in your pocket.",
+    "Cautious optimism is the move here.",
+    "Good spot, just don't start planning the victory party yet.",
+    "Ride the wave, and pray it isn't a tsunami."
+  ],
+  closeMid: [
+    "Pack a Plan B and maybe a Plan C.",
+    "Light a candle, find an idol, hope for the best.",
+    "Keep one eye on the scoreboard and the other on the exit.",
+    "Time to start making alliances with the castaways in the TV.",
+    "Not panic time, but definitely panic-adjacent.",
+    "Hope is a strategy, just not a great one."
+  ],
+  closeLow: [
+    "Start writing the excuses now.",
+    "It's not over, but it's definitely clearing its throat.",
+    "At this point it's less of a fantasy team and more of a cautionary tale.",
+    "Maybe just enjoy the show this season.",
+    "Bring snacks, it's going to be a long season.",
+    "The good news is there's nowhere to go but up. Probably.",
+    "Consider this your official invitation to the comeback tour.",
+    "Somewhere, an idol has your name on it. Go find it."
   ]
 };
 const CONF_NATHAN = {
@@ -770,6 +859,17 @@ const CONF_NATHAN = {
           "The tribe has spoken, and it said 'don't get your hopes up, Nathan.'",
           "Confidence level: a wet match in a rainstorm."]
 };
+/* Deal lines like cards so no two teams get the same sentence in a week. */
+function makeDealer(seedKey){
+  const decks = {};
+  return (cats) => {
+    for(const k of cats){
+      if(!decks[k]){ const r=seeded(`${seedKey}|${k}`); decks[k]=CONF[k].slice().sort(()=>r()-.5); }
+      if(decks[k].length) return decks[k].pop();
+    }
+    return CONF[cats[0]][0];   // only if every pool ran dry
+  };
+}
 function confidenceFor(x, N){
   const rankScore = N>1 ? 1 - (x.rank-1)/(N-1) : 1;
   const tier = x.e.mvp ? tierOf(x.e.mvp) : null;
@@ -778,20 +878,22 @@ function confidenceFor(x, N){
   if(isTarget(x.e)) score = Math.max(3, score - 22);
   return Math.min(99, score);
 }
-function confidenceHTML(x, N){
+function confidenceHTML(x, N, deal){
   const score = confidenceFor(x, N), band = CONF_BANDS.findIndex(b=>score>=b.min);
   const rnd = seeded(`${x.e.key}|conf|${LATEST_EP()}`);
   const v = { n:x.e.name, r:ordinal(x.rank), proj:x.proj, mvp:x.e.mvp?short(byId[x.e.mvp]):"",
     tierTxt: x.e.mvp && tierOf(x.e.mvp) ? ` and the experts rate them ${tierOf(x.e.mvp)}-tier` : "",
     vs: Math.abs(x.vsStand), live:x.live, total:x.total, best: x.best?short(byId[x.best.id]):"nobody" };
   const nathan = isTarget(x.e);
+  const grp = band<=1 ? "Top" : band===2 ? "Mid" : "Low";
+  const order = {Top:["Top","Mid","Low"], Mid:["Mid","Top","Low"], Low:["Low","Mid","Top"]}[grp];
   const s = [];
-  s.push(fillT(pick(rnd, nathan ? CONF_NATHAN.open : CONF.open[band]), v));
-  if(x.e.mvp) s.push(fillT(pick(rnd, x.mvpAlive ? CONF.mvpAlive : CONF.mvpOut), v));
-  if(x.vsStand>=2) s.push(fillT(pick(rnd, CONF.up), v));
-  else if(x.vsStand<=-2) s.push(fillT(pick(rnd, CONF.down), v));
-  else if(x.best) s.push(fillT(pick(rnd, CONF.depth), v));
-  s.push(fillT(pick(rnd, nathan ? CONF_NATHAN.close : CONF.close[band]), v));
+  s.push(fillT(nathan ? pick(rnd, CONF_NATHAN.open) : deal(order.map(g=>"open"+g)), v));
+  if(x.e.mvp) s.push(fillT(deal(x.mvpAlive ? ["mvpAlive"] : ["mvpOut"]), v));
+  if(x.vsStand>=2) s.push(fillT(deal(["up","depth"]), v));
+  else if(x.vsStand<=-2) s.push(fillT(deal(["down","depth"]), v));
+  else if(x.best) s.push(fillT(deal(["depth"]), v));
+  s.push(fillT(nathan ? pick(rnd, CONF_NATHAN.close) : deal(order.map(g=>"close"+g)), v));
   return `<div class="bd-title">${esc(x.e.name)} <span class="mono">#${x.rank} power</span></div>
     <div class="conf-meter" role="img" aria-label="Confidence ${score} out of 100">
       <div class="conf-bar"><span style="width:${score}%"></span></div>
@@ -802,12 +904,13 @@ function confidenceHTML(x, N){
 
 function powerHTML(){
   const d = powerData();
+  const dealConf = makeDealer(`conf|${LATEST_EP()}`);
   if(!d.latest) return `<p class="lede">Power rankings appear once the first episode is scored.</p>`;
   const max = Math.max(...d.rows.map(x=>x.proj),1);
   const rows = d.rows.map(x=>`
     <tr class="${x.rank===1?"lead":""}">
       <td class="rank">${x.rank}</td>
-      <td><span class="sb-anchor"><button type="button" class="cp-name sb-name">${esc(x.e.name)}</button><div class="sb-pop" role="tooltip">${confidenceHTML(x, d.rows.length)}</div></span>
+      <td><span class="sb-anchor"><button type="button" class="cp-name sb-name">${esc(x.e.name)}</button><div class="sb-pop" role="tooltip">${confidenceHTML(x, d.rows.length, dealConf)}</div></span>
         <div class="pbar" aria-hidden="true"><span style="width:${Math.round(x.proj/max*100)}%"></span></div>
         <div class="tiers">${["S","A","B","C","D","F"].filter(t=>x.tierCounts[t]).map(t=>`<span class="tier t${t}" title="${x.tierCounts[t]} castaway${x.tierCounts[t]>1?"s":""} in ${t} tier">${t}${x.tierCounts[t]>1?`×${x.tierCounts[t]}`:""}</span>`).join("")}</div>
         <div class="pmeta">${x.live}/${x.total} still in · MVP ${x.e.mvp?esc(short(byId[x.e.mvp]))+(tierOf(x.e.mvp)?` (${tierOf(x.e.mvp)})`:""):"none"} ${x.e.mvp?(x.mvpAlive?'<span class="ok-dot">alive</span>':'<span class="out-dot">out</span>'):""}${x.best?` · Best asset: ${esc(short(byId[x.best.id]))}`:""}</div></td>

@@ -251,6 +251,8 @@ button.pick-link{font:inherit;color:inherit;background:none;border:0;text-align:
 .sb-eps b{color:var(--night-ink);font-weight:600}
 .board tr:has(.sb-anchor:hover),.board tr:has(.sb-anchor:focus-within){position:relative;z-index:30}
 
+.pop-closed .sb-pop,.pop-closed .cp-pop,.pop-closed .bio-pop,.pop-closed .own-pop{display:none!important}
+
 /* Spoiler gate */
 .gate{background:var(--gate);color:var(--gate-ink);border-radius:12px;padding:48px 24px;text-align:center;display:grid;justify-items:center;gap:14px}
 .gate .flame{width:48px;height:64px}
@@ -1416,6 +1418,31 @@ function wire(){
   });
   wireSubmit();
 }
+/* Info cards (points breakdowns, bios, who-picked): tapping the same name again closes the card,
+   and tapping anywhere else closes it too. Works the same with a mouse click. */
+const POP_HOSTS = ".sb-anchor, .cp-item, .pick, .card";
+const POP_TRIGGERS = ".sb-name, .cp-name, .pick-link, .card";
+let popWasOpen = null, lastPointer = "mouse";
+document.addEventListener("pointerdown", ev=>{
+  lastPointer = ev.pointerType || "mouse";
+  const trig = ev.target.closest(POP_TRIGGERS);
+  const host = trig && trig.closest(POP_HOSTS);
+  popWasOpen = host && host.contains(document.activeElement) && !host.classList.contains("pop-closed") ? host : null;
+  const open = document.activeElement && document.activeElement.closest && document.activeElement.closest(POP_HOSTS);
+  if(open && !open.contains(ev.target)) document.activeElement.blur();
+}, true);
+document.addEventListener("click", ev=>{
+  const trig = ev.target.closest(POP_TRIGGERS); if(!trig) return;
+  const host = trig.closest(POP_HOSTS);
+  if(host && host===popWasOpen){ host.classList.add("pop-closed"); document.activeElement.blur(); }
+  else if(host){ host.classList.remove("pop-closed"); }
+  popWasOpen = null;
+});
+document.addEventListener("mouseout", ev=>{
+  if(lastPointer !== "mouse") return;   // taps fire fake mouse events; only a real mouse leaving reopens hover
+  const host = ev.target.closest && ev.target.closest(POP_HOSTS);
+  if(host && host.classList.contains("pop-closed") && !host.contains(ev.relatedTarget)) host.classList.remove("pop-closed");
+});
 function updateFade(){ const st=document.querySelector(".tabs-in"); if(!st) return;
   document.querySelector("nav.tabs").style.setProperty("--fade", st.scrollLeft+st.clientWidth < st.scrollWidth-4 ? "1" : "0"); }
 document.querySelector(".tabs-in").addEventListener("scroll",updateFade,{passive:true});

@@ -269,6 +269,19 @@ button.pick-link{font:inherit;color:inherit;background:none;border:0;text-align:
 .sb-hint{text-align:center;font:500 10px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--night-muted);margin-top:6px}
 @media (hover:hover){.sb-hint{display:none}}
 
+.roast-list{list-style:none;margin:0;padding:0;background:var(--surface);border-radius:10px;box-shadow:0 1px 0 var(--line),0 8px 24px -16px rgba(10,26,20,.35)}
+.roast-list li{display:grid;grid-template-columns:44px minmax(0,1fr);gap:10px;padding:14px 16px;border-bottom:1px solid var(--line)}
+.roast-list li:last-child{border-bottom:0}
+.roast-list li.lead{background:linear-gradient(90deg,color-mix(in srgb,var(--torch) 12%,transparent),transparent 70%)}
+.roast-list .rk{font:900 30px/1 var(--display);color:var(--muted)}
+.roast-list li.lead .rk{color:var(--torch)}
+.rh{display:flex;justify-content:space-between;gap:10px;align-items:baseline;flex-wrap:wrap}
+.rh .mono{font-size:13px;color:var(--muted)}
+.roast-text{margin:4px 0 0;padding:4px 6px;margin-left:-6px;border-radius:6px;line-height:1.45;cursor:text}
+.roast-text:hover{background:var(--bg)}
+.roast-text:focus{outline:2px solid var(--torch);background:var(--bg)}
+.linkish{background:none;border:0;padding:0;margin-top:4px;color:var(--torch);font:600 12px/1 var(--body);cursor:pointer;text-decoration:underline}
+
 /* Spoiler gate */
 .gate{background:var(--gate);color:var(--gate-ink);border-radius:12px;padding:48px 24px;text-align:center;display:grid;justify-items:center;gap:14px}
 .gate .flame{width:48px;height:64px}
@@ -1007,9 +1020,11 @@ function commishPage(){
       <span class="small" role="status">${commishErr?`<span class="err">${esc(commishErr)}</span>`:""}</span>
     </form></section>`;
   head += `<nav class="ep-tabs sub-tabs" aria-label="Commissioner tools">
-      <a class="ep-tab" href="#commissioner" ${commishTab!=="recap"?'aria-current="page"':""}>Picks &amp; deadline</a>
-      <a class="ep-tab" href="#recap" ${commishTab==="recap"?'aria-current="page"':""}>Weekly recap</a></nav>`;
+      <a class="ep-tab" href="#commissioner" ${commishTab==="picks"?'aria-current="page"':""}>Picks &amp; deadline</a>
+      <a class="ep-tab" href="#recap" ${commishTab==="recap"?'aria-current="page"':""}>Weekly recap</a>
+      <a class="ep-tab" href="#roast" ${commishTab==="roast"?'aria-current="page"':""}>Weekly roast</a></nav>`;
   if(commishTab==="recap") return `<section class="page">${head}</section>${recapPage()}`;
+  if(commishTab==="roast") return `<section class="page">${head}</section>${roastPage()}`;
   if(dbState==="loading") return `<section class="page">${head}<p class="lede">Loading the pool…</p></section>`;
   if(dbState==="none") return `<section class="page">${head}<div class="notice"><b>Can't reach the pool right now</b><span>The pool database isn't responding. Try again in a minute.</span></div></section>`;
   const sorted=[...realEntries].sort((a,b)=>a.name.localeCompare(b.name));
@@ -1390,6 +1405,259 @@ async function copyText(text, okMsg){
     document.getElementById("recapStatus").after(ta); ta.focus(); ta.select(); }
   const st=document.getElementById("recapStatus"); if(st) st.textContent=recapMsg;
 }
+/* ---------- Weekly roast (commissioner): one-liners + shareable infographic ---------- */
+let roastEp = null, roastSeed = 0, roastMsg = "";
+const ROAST_EDITS = {};               // ep -> {entrantKey: text} (commissioner's own edits)
+try{ Object.assign(ROAST_EDITS, JSON.parse(localStorage.getItem("s51-roast-edits")||"{}")); }catch(e){}
+const saveRoastEdits = () => { try{ localStorage.setItem("s51-roast-edits", JSON.stringify(ROAST_EDITS)); }catch(e){} };
+
+const ordinal = n => n + (["th","st","nd","rd"][((n%100)-20)%10] || ["th","st","nd","rd"][n%100] || "th");
+function seeded(str){ let h=1779033703^str.length; for(let i=0;i<str.length;i++){ h=Math.imul(h^str.charCodeAt(i),3432918353); h=h<<13|h>>>19; } return () => { h=Math.imul(h^h>>>16,2246822507); h=Math.imul(h^h>>>13,3266489909); return ((h^=h>>>16)>>>0)/4294967296; }; }
+const pick = (rnd, arr) => arr[Math.floor(rnd()*arr.length)];
+const fillT = (t, v) => t.replace(/\{(\w+)\}/g, (_,k)=> v[k] ?? "");
+
+const ROAST = {
+  first: [
+    "{n} leads the pool with {t} points, which is great news for {n} and terrible news for everyone who has to hear about it.",
+    "{n} is in first with {t}, proof that even a torch with a bad wick gets lit once in a while.",
+    "Top of the pile at {t} points, so {n} now has a target on their back bigger than Jeff's ego.",
+    "{n} sits on the throne with {t} points, and {others} people are already whispering about a blindside.",
+    "{n} is running this pool with {t} points, and has already started practicing a humble winner's speech. It's not working."
+  ],
+  top: [
+    "{n} is {r} with {t}, close enough to smell first place and far enough to complain about it all week.",
+    "{r} place and {gap} back, so {n} is playing the classic under-the-radar game, mostly by accident.",
+    "{n} sits {r} with {t}, which is respectable, the most boring compliment we could come up with.",
+    "{n} is {r}, just {gap} behind, hovering like a castaway who swears they're not looking for an idol.",
+    "{n} is {r} with {t}, one good week from first and one bad week from being the punchline of this list.",
+    "{r} place for {n}, the silver-medal energy of someone who always loses the final puzzle by one piece."
+  ],
+  upper: [
+    "{n} is {r} with {t} points: solidly fine, like a rice ration that's only a little bit moldy.",
+    "{t} points puts {n} in {r}, not winning, not losing, just vibing in the shelter.",
+    "{n} is {r}, the fantasy equivalent of making the merge and then never speaking again.",
+    "Sitting {r} at {t}, {n} is a perfectly adequate member of the tribe that nobody will remember at the reunion.",
+    "{n} is {r}, {gap} back, with the quiet confidence of someone who hasn't checked the scoreboard yet.",
+    "{n} checks in at {r}, technically in the hunt, the same way a guy holding a rock is technically making fire."
+  ],
+  middle: [
+    "{n} is parked in {r}, the Survivor equivalent of sitting on the log during the reward challenge.",
+    "Middle of the pack at {t}, and {n}'s strategy appears to be hoping everyone else trips over a coconut.",
+    "{n} is {r} with {t}, {gap} back and acting like that's all part of the plan.",
+    "{r} place for {n}, a strategy best described as 'floater with commitment issues.'",
+    "{n} is {r} with {t}, firmly in the zone where Jeff stops saying your name during challenges.",
+    "{n} is {r}, {gap} off the pace, and has the confessional energy of a beige wall."
+  ],
+  lower: [
+    "{n} is down in {r} with {t}, a situation Jeff would call 'a tribe in crisis' and we'd call 'a cry for help.'",
+    "{r} place and {gap} off the lead, so {n} clearly drafted by pulling names out of Jeff's urn blindfolded.",
+    "{n} is {r} with {t}, swimming upstream like the loser of every puzzle challenge ever.",
+    "At {t} points {n} is {r}, which is technically still in the game, the same way a soggy flint is technically a fire starter.",
+    "{n} is {r}, {gap} back, and this team has the survival instincts of a coconut rolling toward the ocean.",
+    "{r} place for {n}, a draft so questionable that even the producers want to edit it out."
+  ],
+  last: [
+    "Dead last with {t}, {n}: the tribe has spoken, and it said 'yikes.'",
+    "{n} brings up the rear at {t} points, guaranteed to finish ahead of absolutely nobody.",
+    "Last place, {gap} back, making {n}'s team less 'Fantasy Tribe' and more 'Fantasy Island, population: regret.'",
+    "{n} is in the basement with {t}, and honestly Exile Island has better vibes."
+  ],
+  // optional second sentence, first that applies
+  mvpOut: ["Picking {mvp} as MVP has aged like an unrefrigerated fish.", "MVP {mvp} is already eating real food at Ponderosa, so that's going great."],
+  lostNow: ["Also, {lost} just got their torch snuffed, so pour one out.", "And {lost} is gone, which is the kind of loss you can't fix by crying on camera."],
+  climb: ["Up {mv} spots this week, so somebody's been praying to the idol gods.", "A {mv}-spot jump this week, the biggest glow-up since someone found soap on reward."],
+  fall: ["Down {mv} spots, sliding faster than a castaway on a wet log.", "Dropped {mv} spots this week, which is very 'blindsided at Tribal' of you."],
+  topWeek: ["Best week in the pool at {w}, so the smugness is earned, barely.", "Top score this week with {w}, so expect to hear about it constantly."],
+  lowWeek: ["Only {w} this week, less than {ctop} scored all by themselves.", "{w} points this week, which is what we in the business call 'a rebuilding year.'"],
+  carried: ["{best} scored {bestp} of those {w} points this week, so tip your castaway.", "Without {best}'s {bestp} points this team would be a pile of rocks and a broken machete.",
+    "{best} chipped in {bestp}, carrying this team harder than a castaway hauling water up a hill.",
+    "Shout out to {best} for {bestp} points, the only thing standing between this team and Exile Island."],
+  mvpDud: ["MVP {mvp} put up {mvpp} this week, which is technically a number.",
+    "Their MVP {mvp} managed {mvpp} this week, so maybe check the definition of 'most valuable.'",
+    "MVP {mvp} scored {mvpp}, a performance best described as 'present.'",
+    "{mvp} was named MVP and responded with {mvpp} point{mvps}. Inspiring stuff."]
+};
+
+function roastData(ep){
+  const d = recapData(ep), N = d.rows.length;
+  // Deal templates like cards so nobody in the same week gets the same joke (until a pile runs out).
+  const decks = {};
+  const deal = (k) => { if(!decks[k] || !decks[k].length){ const r=seeded(`${k}|${ep}|${roastSeed}|${decks[k]?1:0}`); decks[k]=ROAST[k].slice().sort(()=>r()-.5); } return decks[k].pop(); };
+  const lead = d.rows[0]?.total || 0;
+  const weeks = d.rows.map(r=>r.week), maxW = Math.max(...weeks), minW = Math.min(...weeks);
+  const outNow = (EPISODES.find(e=>e.ep===ep)?.out)||[];
+  const lines = d.rows.map((r,i)=>{
+    const e = r.e, rnd = seeded(`${e.key}|${ep}|${roastSeed}`);
+    const parts = r.parts.slice().sort((a,b)=>b.pts-a.pts);
+    const best = parts[0], mvpPart = r.parts.find(p=>p.id===e.mvp);
+    const v = { n:e.name, t:r.total, w:r.week, r:ordinal(r.rank), gap:lead-r.total, others:N-1,
+      best: best?short(byId[best.id]):"", bestp: best?.pts||0, mvp: e.mvp?short(byId[e.mvp]):"", mvpp: mvpPart?.pts??0, mvps: (mvpPart?.pts??0)===1?"":"s",
+      mv: Math.abs(r.move||0), ctop: short(d.castTop.c),
+      lost: e.picks.filter(id=>outNow.includes(id)).map(id=>short(byId[id])).join(" and ") };
+    const pct = N>1 ? (r.rank-1)/(N-1) : 0;
+    const band = r.rank===1 ? "first" : i===N-1 && r.total<lead ? "last" : r.rank<=3 ? "top" : pct<=.4 ? "upper" : pct<=.65 ? "middle" : "lower";
+    let text = fillT(deal(band), v);
+    const mvpGone = e.mvp && RESULTS[e.mvp]?.out!=null;
+    const extra =
+      v.lost ? "lostNow" :
+      mvpGone ? "mvpOut" :
+      (r.move||0)>=3 ? "climb" : (r.move||0)<=-3 ? "fall" :
+      d.prevEp!=null && r.week===maxW && band!=="first" ? "topWeek" :
+      d.prevEp!=null && r.week===minW && N>2 ? "lowWeek" :
+      best && r.week>0 && best.pts/r.week>=.4 ? "carried" :
+      mvpPart && !mvpGone && mvpPart.pts<=1 ? "mvpDud" : null;
+    if(extra) text += " " + fillT(deal(extra), v);
+    const edited = ROAST_EDITS[ep]?.[e.key];
+    return {...r, text: edited ?? text, auto:text, edited: edited!=null};
+  });
+  const owners = id => ENTRANTS.filter(e=>e.picks.includes(id)).length;
+  const mostPicked = CAST.filter(c=>RESULTS[c.id].out==null).map(c=>({c,n:owners(c.id)})).sort((a,b)=>b.n-a.n)[0];
+  const avg = Math.round(d.rows.reduce((s,r)=>s+r.total,0)/Math.max(N,1));
+  const snuffed = outNow.map(id=>({c:byId[id], n:owners(id), mvps:ENTRANTS.filter(e=>e.mvp===id).length}));
+  return {...d, lines, mostPicked, avg, snuffed, last:d.rows[N-1]};
+}
+
+function roastPage(){
+  const eps = SCORED_EPS();
+  if(!eps.length) return `<section class="page"><h2>Weekly roast</h2><p class="lede">The roast appears once the first episode is scored.</p></section>`;
+  const ep = eps.includes(roastEp) ? roastEp : eps[eps.length-1];
+  const d = roastData(ep);
+  return `<section class="page recap roast">
+    <div class="recap-head">
+      <div><div class="eyebrow">Weekly roast</div><h2>Episode ${ep}</h2></div>
+      <div class="share">
+        <button class="btn small-btn" type="button" id="roastImgBtn">Roast infographic</button>
+        <button class="btn ghost small-btn" type="button" id="roastCopy">Copy roast text</button>
+        <button class="btn ghost small-btn" type="button" id="roastShuffle">New jokes</button>
+      </div>
+    </div>
+    <nav class="ep-tabs" aria-label="Choose an episode">${eps.map(n=>`<a class="ep-tab" href="#roast-ep${n}" ${n===ep?'aria-current="page"':""}>Ep ${n}</a>`).join("")}</nav>
+    <span class="small" role="status" id="roastStatus">${esc(roastMsg)}</span>
+    <div id="roastImgHolder"></div>
+    <p class="small" style="margin:14px 0 10px">Tap any line to edit it. Your edits are used in the copied text and the infographic.</p>
+    <ol class="roast-list">${d.lines.map(x=>`
+      <li class="${x.rank===1?"lead":""}">
+        <span class="rk">${x.rank}</span>
+        <div class="rb"><div class="rh"><strong>${esc(x.e.name)}</strong><span class="mono">${x.total} pts · +${x.week}</span></div>
+          <p class="roast-text" contenteditable="true" spellcheck="true" data-key="${esc(x.e.key)}">${esc(x.text)}</p>
+          ${x.edited?`<button type="button" class="linkish" data-reset="${esc(x.e.key)}">Undo my edit</button>`:""}</div>
+      </li>`).join("")}</ol>
+  </section>`;
+}
+
+function wrapText(ctx, text, maxW){
+  const words = text.split(/\s+/), lines=[]; let cur="";
+  for(const w of words){ const t = cur ? cur+" "+w : w; if(ctx.measureText(t).width>maxW && cur){ lines.push(cur); cur=w; } else cur=t; }
+  if(cur) lines.push(cur); return lines;
+}
+function drawRoastImage(d){
+  const W=1080, PAD=60, headH=360;
+  const meas = document.createElement("canvas").getContext("2d");
+  meas.font = `400 23px ${F.body}`;
+  const textW = W-PAD*2-110;
+  const rows = d.lines.map(x=>({x, lines: wrapText(meas, x.text, textW)}));
+  const rowHs = rows.map(r=>92 + r.lines.length*31 + 16);
+  const tilesH = 2*150 + 16;
+  const H = headH + 30 + tilesH + 90 + rowHs.reduce((a,b)=>a+b,0) + 110;
+  const cv=document.createElement("canvas"); cv.width=W; cv.height=H; const ctx=cv.getContext("2d");
+  // background
+  let g=ctx.createLinearGradient(0,0,0,H); g.addColorStop(0,C.night); g.addColorStop(.3,C.night2); g.addColorStop(1,C.night); ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  let rg=ctx.createRadialGradient(W*.75,headH-40,10,W*.75,headH-40,W*.7); rg.addColorStop(0,"rgba(255,138,61,.5)"); rg.addColorStop(1,"rgba(255,138,61,0)"); ctx.fillStyle=rg; ctx.fillRect(0,0,W,H);
+  // big flames (roast!)
+  ctx.save(); ctx.shadowColor="rgba(255,138,61,.9)"; ctx.shadowBlur=40;
+  [[W-150,36,5.2,C.ember],[W-110,96,2.8,C.hi],[W-200,92,3,C.ember],[W-80,30,2.2,C.ember]].forEach(([x,y,s,c])=>{ctx.fillStyle=c; flamePath(ctx,x,y,s);});
+  ctx.restore();
+  ctx.textBaseline="alphabetic";
+  ctx.fillStyle=C.hi; ctx.font=`500 22px ${F.mono}`; ctx.fillText(`SURVIVOR 51 FANTASY POOL · EPISODE ${d.ep}`, PAD, 92);
+  ctx.fillStyle=C.ink; ctx.font=`900 136px ${F.stencil}`; ctx.fillText("THE ROAST", PAD, 230);
+  ctx.fillStyle=C.ember; ctx.font=`800 40px ${F.disp}`; if(ctx.letterSpacing!==undefined) ctx.letterSpacing="5px"; ctx.fillText("THE TRIBE HAS SPOKEN. IT WAS RUDE.", PAD, 296); if(ctx.letterSpacing!==undefined) ctx.letterSpacing="0px";
+  // tribal band
+  const by=headH-14; for(let x=0;x<W;x+=16){ ctx.fillStyle=(x/16)%2?C.savu:C.toka; ctx.beginPath(); ctx.moveTo(x,by+16); ctx.lineTo(x+8,by); ctx.lineTo(x+16,by+16); ctx.fill(); }
+  // stat tiles
+  const tiles = [
+    ["IN THE LEAD", d.rows[0].e.name, `${d.rows[0].total} PTS`],
+    ["THE BASEMENT", d.last.e.name, `${d.last.total} PTS · ${d.rows[0].total-d.last.total} BACK`],
+    ["BIGGEST CLIMBER", d.climber?d.climber.e.name:"Nobody yet", d.climber?`UP ${d.climber.move}`:(d.prevEp==null?"FIRST SCORED WEEK":"NO MOVEMENT")],
+    ["CASTAWAY OF THE WEEK", d.castTop.c.name, `${d.castTop.pts} PTS · ON ${d.owners} TEAMS`],
+    ["TORCH SNUFFED", d.snuffed.length?d.snuffed.map(s=>short(s.c)).join(" & "):"Nobody", d.snuffed.length?`ON ${d.snuffed.reduce((a,s)=>a+s.n,0)} TEAMS · ${d.snuffed.reduce((a,s)=>a+s.mvps,0)} MVPs`:"EVERYONE SURVIVED"],
+    ["POOL AVERAGE", `${d.avg} PTS`, `MOST PICKED: ${d.mostPicked?short(d.mostPicked.c).toUpperCase()+" ("+d.mostPicked.n+")":"—"}`]
+  ];
+  const ty=headH+30, gap=16, tw=(W-PAD*2-gap*2)/3, th=150;
+  tiles.forEach((t,i)=>{ const x=PAD+(i%3)*(tw+gap), y=ty+Math.floor(i/3)*(th+gap);
+    ctx.fillStyle="rgba(243,238,228,.06)"; ctx.beginPath(); ctx.roundRect?ctx.roundRect(x,y,tw,th,14):ctx.rect(x,y,tw,th); ctx.fill(); ctx.strokeStyle=C.line; ctx.lineWidth=1.5; ctx.stroke();
+    ctx.fillStyle=C.hi; ctx.font=`500 16px ${F.mono}`; ctx.fillText(t[0], x+18, y+36);
+    ctx.fillStyle=C.ink; ctx.fillText(shrink(ctx, t[1].toUpperCase(), tw-36, 800, 38, 22, F.disp), x+18, y+88);
+    ctx.fillStyle=C.muted; ctx.font=`500 15px ${F.mono}`; ctx.fillText(fit(ctx,t[2],tw-36), x+18, y+122);
+  });
+  // list
+  let y = ty + tilesH + 64;
+  ctx.fillStyle=C.ink; ctx.font=`800 40px ${F.disp}`; ctx.fillText(`STANDINGS & ROASTS`, PAD, y); 
+  ctx.fillStyle=C.ember; ctx.fillRect(PAD, y+14, W-PAD*2, 3); y += 34;
+  const maxT = Math.max(...d.rows.map(r=>r.total),1);
+  rows.forEach(({x,lines},i)=>{
+    const top=y, h=rowHs[i];
+    if(x.rank===1){ const lg=ctx.createLinearGradient(PAD,0,W-PAD,0); lg.addColorStop(0,"rgba(255,138,61,.25)"); lg.addColorStop(1,"rgba(255,138,61,0)"); ctx.fillStyle=lg; ctx.fillRect(PAD,top,W-PAD*2,h); }
+    else if(i%2){ ctx.fillStyle="rgba(243,238,228,.03)"; ctx.fillRect(PAD,top,W-PAD*2,h); }
+    ctx.fillStyle = x.rank===1?C.ember:C.ink; ctx.font=`900 44px ${F.disp}`; ctx.fillText(String(x.rank), PAD+14, top+52);
+    const nx = PAD+96;
+    ctx.fillStyle=C.ink; ctx.font=`700 28px ${F.body}`; ctx.fillText(fit(ctx,x.e.name, 420), nx, top+42);
+    // points bar
+    const bw = 260, bx = W-PAD-bw-120, bh=10;
+    ctx.fillStyle="rgba(243,238,228,.12)"; ctx.fillRect(bx, top+30, bw, bh);
+    const bg=ctx.createLinearGradient(bx,0,bx+bw,0); bg.addColorStop(0,C.toka); bg.addColorStop(1,C.ember); ctx.fillStyle=bg; ctx.fillRect(bx, top+30, Math.max(4,bw*x.total/maxT), bh);
+    ctx.textAlign="right"; ctx.fillStyle=C.ink; ctx.font=`800 38px ${F.disp}`; ctx.fillText(String(x.total), W-PAD-14, top+44);
+    ctx.fillStyle=C.hi; ctx.font=`500 15px ${F.mono}`; ctx.fillText(`+${x.week} THIS WEEK`, W-PAD-14, top+68); ctx.textAlign="left";
+    ctx.fillStyle=C.muted; ctx.font=`400 23px ${F.body}`;
+    lines.forEach((ln,k)=>ctx.fillText(ln, nx, top+102+k*31));
+    ctx.fillStyle=C.line; ctx.fillRect(PAD, top+h-1, W-PAD*2, 1);
+    y += h;
+  });
+  ctx.fillStyle=C.muted; ctx.font=`500 17px ${F.mono}`; ctx.fillText(`SCORES THROUGH EPISODE ${d.ep} · ALL IN GOOD FUN`, PAD, H-50);
+  ctx.textAlign="right"; ctx.fillStyle=C.ember; ctx.font=`800 26px ${F.disp}`; ctx.fillText("OUTWIT · OUTPLAY · OUTLAST", W-PAD, H-48); ctx.textAlign="left";
+  return cv;
+}
+let roastBlob=null, roastUrl=null;
+async function makeRoastImage(ep){
+  const st=document.getElementById("roastStatus"); if(st) st.textContent="Making the infographic…";
+  await fontsReady;
+  const cv = drawRoastImage(roastData(ep));
+  roastBlob = await new Promise(res=>cv.toBlob(res,"image/png"));
+  if(roastUrl) URL.revokeObjectURL(roastUrl); roastUrl = URL.createObjectURL(roastBlob);
+  const holder=document.getElementById("roastImgHolder"); if(!holder) return;
+  holder.innerHTML = `<div class="img-panel"><img src="${roastUrl}" alt="Episode ${ep} roast infographic" class="score-img">
+    <div class="img-actions"><button class="btn small-btn" type="button" id="roastCopyImg">Copy image</button>
+    <button class="btn ghost small-btn" type="button" id="roastSaveImg">Save image</button>
+    <button class="btn ghost small-btn" type="button" id="roastCloseImg">Close</button></div>
+    <span class="small">On a phone, you can also press and hold the image to save or share it.</span></div>`;
+  if(st) st.textContent="Infographic ready.";
+  document.getElementById("roastCopyImg").addEventListener("click", async()=>{
+    try{ if(!window.ClipboardItem||!navigator.clipboard?.write) throw 0; await navigator.clipboard.write([new ClipboardItem({"image/png":roastBlob})]); st.textContent="Infographic copied. Paste it into your group chat."; }
+    catch(e){ st.textContent="This browser won't copy images. Press and hold (or right-click) the image to copy or save it."; } });
+  document.getElementById("roastSaveImg").addEventListener("click", async()=>{ const dl=await getDownloads(); try{ await dl.save({filename:`survivor51-roast-episode-${ep}.png`, data:roastBlob}); st.textContent="Image saved."; }catch(e){ st.textContent="Couldn't save here. Press and hold (or right-click) the image instead."; } });
+  document.getElementById("roastCloseImg").addEventListener("click", ()=>{ holder.innerHTML=""; st.textContent=""; });
+  holder.scrollIntoView({block:"nearest"});
+}
+function wireRoast(){
+  const btn=document.getElementById("roastImgBtn"); if(!btn) return;
+  const eps=SCORED_EPS(), ep = eps.includes(roastEp)?roastEp:eps[eps.length-1];
+  btn.addEventListener("click",()=>makeRoastImage(ep));
+  document.getElementById("roastShuffle").addEventListener("click",()=>{ roastSeed++; roastMsg="New jokes loaded. Your own edits were kept."; rerender(); });
+  document.getElementById("roastCopy").addEventListener("click", async()=>{
+    const d=roastData(ep); const text=[`${POOL.name}: Episode ${ep} roast`, "", ...d.lines.map(x=>`${x.rank}. ${x.e.name} (${x.total} pts): ${x.text}`)].join("\n");
+    const st=document.getElementById("roastStatus");
+    try{ await navigator.clipboard.writeText(text); st.textContent="Roast copied. Paste it into your group chat."; }catch(e){ st.textContent="Couldn't copy automatically."; }
+  });
+  view.querySelectorAll(".roast-text").forEach(p=>{
+    p.addEventListener("blur",()=>{ const key=p.dataset.key, val=p.textContent.trim();
+      const auto = roastData(ep).lines.find(x=>x.e.key===key)?.auto;
+      ROAST_EDITS[ep] = ROAST_EDITS[ep]||{};
+      if(!val || val===auto) delete ROAST_EDITS[ep][key]; else ROAST_EDITS[ep][key]=val;
+      saveRoastEdits(); });
+    p.addEventListener("keydown",ev=>{ if(ev.key==="Enter"){ ev.preventDefault(); p.blur(); } });
+  });
+  view.querySelectorAll("[data-reset]").forEach(b=>b.addEventListener("click",()=>{ delete ROAST_EDITS[ep]?.[b.dataset.reset]; saveRoastEdits(); rerender(); }));
+}
+
 function wireRecap(){
   const cr=document.getElementById("copyRecap"); if(!cr) return;
   const ep = SCORED_EPS().includes(recapEp)?recapEp:LATEST_EP();
@@ -1408,6 +1676,7 @@ const currentPage = () => { const r=(location.hash||"").slice(1);
   const m=/^recap-ep(\d+)$/.exec(r); if(m){ recapEp=+m[1]; commishTab="recap"; return "commissioner"; }
   if(r==="recap"){ recapEp=null; commishTab="recap"; return "commissioner"; }
   if(r==="commissioner") commishTab="picks";
+  const rm=/^roast(?:-ep(\d+))?$/.exec(r); if(rm){ roastEp=rm[1]?+rm[1]:null; commishTab="roast"; roastMsg=""; return "commissioner"; }
   if(r==="power"){ boardTab="power"; return "scoreboard"; }
   if(r==="scoreboard") boardTab="standings";
   const cm=/^castaway-([a-z]+)$/.exec(r); if(cm && byId[cm[1]]){ focusCast=cm[1]; tribeFilter="All"; return "castaways"; }
@@ -1433,6 +1702,7 @@ function wire(){
   const rv=document.getElementById("reveal");
   if(rv) rv.addEventListener("click",()=>{revealed=true; revealedThrough=Math.max(revealedThrough,+rv.dataset.ep||0); view.innerHTML=ROUTES[currentPage()](); wire(); scrollTo(0,0);});
   wireRecap();
+  wireRoast();
   view.querySelectorAll("[data-tribe]").forEach(b=>b.addEventListener("click",()=>{tribeFilter=b.dataset.tribe;view.innerHTML=castPage();wire();}));
   const sel=document.getElementById("entrantSel");
   if(sel) sel.addEventListener("change",()=>{picksSel=sel.value;view.innerHTML=picksPage();wire();document.getElementById("entrantSel").focus();});

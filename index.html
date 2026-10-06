@@ -1416,6 +1416,30 @@ function seeded(str){ let h=1779033703^str.length; for(let i=0;i<str.length;i++)
 const pick = (rnd, arr) => arr[Math.floor(rnd()*arr.length)];
 const fillT = (t, v) => t.replace(/\{(\w+)\}/g, (_,k)=> v[k] ?? "");
 
+/* People who always get the extra-spicy treatment, whatever their placement (match by name, any case). */
+const ROAST_TARGETS = ["nathan"];
+const isTarget = e => ROAST_TARGETS.includes(String(e.name).trim().toLowerCase());
+const ROAST_HARSH = {
+  first: [
+    "{n} is somehow in first with {t}, which is the strongest evidence yet that this game is rigged.",
+    "{n} leads with {t} points, a fluke so big Jeff is demanding a recount.",
+    "First place, {n}? Enjoy it, because even a blind chicken finds an idol sometimes.",
+    "{n} is on top with {t}, and the entire pool is now united by one goal: blindsiding {n}."
+  ],
+  rest: [
+    "{n} is {r} with {t}, drafting with all the strategic genius of a seagull fighting over a french fry.",
+    "{r} place for {n}, which is exactly where everyone hoped {n} would be.",
+    "{n} sits {r}, {gap} back, with a game plan that makes eating bugs look like a good decision.",
+    "{n} is {r} with {t}, and even the camp rat is embarrassed for this team."
+  ],
+  extra: [
+    "Somewhere, a Survivor superfan is crying, and it's because of {n}'s draft.",
+    "If this team were a tribe, it would have voted itself out by now.",
+    "The jury has seen enough, and they're not voting for {n}.",
+    "{n}'s picks have the staying power of a sandcastle at high tide.",
+    "Honestly, {n}, Jeff has seen better strategy from people who quit on day one."
+  ]
+};
 const ROAST = {
   first: [
     "{n} leads the pool with {t} points, which is great news for {n} and terrible news for everyone who has to hear about it.",
@@ -1496,7 +1520,8 @@ function roastData(ep){
       lost: e.picks.filter(id=>outNow.includes(id)).map(id=>short(byId[id])).join(" and ") };
     const pct = N>1 ? (r.rank-1)/(N-1) : 0;
     const band = r.rank===1 ? "first" : i===N-1 && r.total<lead ? "last" : r.rank<=3 ? "top" : pct<=.4 ? "upper" : pct<=.65 ? "middle" : "lower";
-    let text = fillT(deal(band), v);
+    const target = isTarget(e);
+    let text = target ? fillT(pick(rnd, band==="first" ? ROAST_HARSH.first : ROAST_HARSH.rest), v) : fillT(deal(band), v);
     const mvpGone = e.mvp && RESULTS[e.mvp]?.out!=null;
     const extra =
       v.lost ? "lostNow" :
@@ -1506,7 +1531,8 @@ function roastData(ep){
       d.prevEp!=null && r.week===minW && N>2 ? "lowWeek" :
       best && r.week>0 && best.pts/r.week>=.4 ? "carried" :
       mvpPart && !mvpGone && mvpPart.pts<=1 ? "mvpDud" : null;
-    if(extra) text += " " + fillT(deal(extra), v);
+    if(target) text += " " + fillT(pick(rnd, ROAST_HARSH.extra), v);
+    else if(extra) text += " " + fillT(deal(extra), v);
     const edited = ROAST_EDITS[ep]?.[e.key];
     return {...r, text: edited ?? text, auto:text, edited: edited!=null};
   });

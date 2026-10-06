@@ -282,6 +282,12 @@ button.pick-link{font:inherit;color:inherit;background:none;border:0;text-align:
 .roast-text:focus{outline:2px solid var(--torch);background:var(--bg)}
 .linkish{background:none;border:0;padding:0;margin-top:4px;color:var(--torch);font:600 12px/1 var(--body);cursor:pointer;text-decoration:underline}
 
+/* upward cards for names near the bottom of a list */
+.sb-pop.up{top:auto;bottom:calc(100% + 8px)}
+.sb-pop.up::before{top:auto;bottom:-10px}
+.cp-pop.up{top:auto;bottom:calc(100% + 4px)}
+.cp-pop.up::before{top:auto;bottom:-6px}
+
 /* Spoiler gate */
 .gate{background:var(--gate);color:var(--gate-ink);border-radius:12px;padding:48px 24px;text-align:center;display:grid;justify-items:center;gap:14px}
 .gate .flame{width:48px;height:64px}
@@ -1724,6 +1730,14 @@ function route(){
       setTimeout(()=>card.classList.remove("flash"), 2200); });
   }
 }
+/* Cards near the bottom of a list open upward when there isn't room below the name. */
+function flipUp(anchor, pop){
+  if(!anchor || !pop) return;
+  pop.classList.remove("up");
+  const a = anchor.getBoundingClientRect(), h = pop.offsetHeight, vh = window.innerHeight;
+  const below = vh - a.bottom, above = a.top;
+  if(h + 16 > below && h + 16 <= above) pop.classList.add("up");   // only flip when it fits above; otherwise keep opening down
+}
 function wire(){
   const rv=document.getElementById("reveal");
   if(rv) rv.addEventListener("click",()=>{revealed=true; revealedThrough=Math.max(revealedThrough,+rv.dataset.ep||0); view.innerHTML=ROUTES[currentPage()](); wire(); scrollTo(0,0);});
@@ -1742,10 +1756,14 @@ function wire(){
     pop.querySelectorAll(".sb-arrow").forEach(btn=>btn.addEventListener("click",ev=>{ev.stopPropagation(); go(idx()+(+btn.dataset.dir));}));
   });
   view.querySelectorAll(".sb-anchor").forEach(a=>{
-    const place=()=>{ const pop=a.querySelector(".sb-pop"); pop.style.left="0px";
+    const place=()=>{ const pop=a.querySelector(".sb-pop"); pop.style.left="0px"; flipUp(a, pop);
       const r=pop.getBoundingClientRect(), maxR=document.documentElement.clientWidth-12;
       if(r.right>maxR) pop.style.left=Math.max(12-a.getBoundingClientRect().left, maxR-r.right)+"px"; };
     a.addEventListener("mouseenter",place); a.addEventListener("focusin",place);
+  });
+  view.querySelectorAll(".cp-item").forEach(li=>{
+    const place=()=>flipUp(li.querySelector(".cp-name"), li.querySelector(".cp-pop"));
+    li.addEventListener("mouseenter",place); li.addEventListener("focusin",place);
   });
   view.querySelectorAll(".pick").forEach(li=>{
     const place=()=>{ const pop=li.querySelector(".bio-pop"); if(!pop) return;

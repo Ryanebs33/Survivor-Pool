@@ -317,6 +317,13 @@ button.pick-link{font:inherit;color:inherit;background:none;border:0;text-align:
   .hl6 .hl-n{font-size:10px;line-height:1.25}
 }
 
+.ov-btn.pr-btn{font:500 10.5px/1 var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:4px 8px;cursor:pointer;background:transparent}
+.ov-btn.pr-btn:hover{color:var(--ink);border-color:var(--muted)}
+.ov-btn.pr-btn[aria-expanded="true"]{color:var(--torch);border-color:var(--torch)}
+.pr-panel{margin:0 0 14px;display:grid;gap:10px;justify-items:start}
+.pr-gate{display:grid;gap:6px;background:var(--bg);border:1px dashed var(--torch);border-radius:10px;padding:12px 14px;font-size:14px;width:100%}
+.pr-gate b{color:var(--torch)}
+
 /* Spoiler gate */
 .gate{background:var(--gate);color:var(--gate-ink);border-radius:12px;padding:48px 24px;text-align:center;display:grid;justify-items:center;gap:14px}
 .gate .flame{width:48px;height:64px}
@@ -901,6 +908,15 @@ function confidenceFor(x, N){
   return Math.min(99, score);
 }
 function confidenceHTML(x, N, deal){
+  const c = confidenceParts(x, N, deal);
+  return `<div class="bd-title">${esc(x.e.name)} <span class="mono">#${x.rank} power</span></div>
+    <div class="conf-meter" role="img" aria-label="Confidence ${c.score} out of 100">
+      <div class="conf-bar"><span style="width:${c.score}%"></span></div>
+      <div class="conf-row"><span class="conf-label">${c.label}</span><span class="mono">${c.score}/100</span></div>
+    </div>
+    <p class="conf-text">${esc(c.text)}</p>`;
+}
+function confidenceParts(x, N, deal){
   const score = confidenceFor(x, N), band = CONF_BANDS.findIndex(b=>score>=b.min);
   const rnd = seeded(`${x.e.key}|conf|${LATEST_EP()}`);
   const v = { n:x.e.name, r:ordinal(x.rank), proj:x.proj, mvp:x.e.mvp?short(byId[x.e.mvp]):"",
@@ -916,12 +932,7 @@ function confidenceHTML(x, N, deal){
   else if(x.vsStand<=-2) s.push(fillT(deal(["down","depth"]), v));
   else if(x.best) s.push(fillT(deal(["depth"]), v));
   s.push(fillT(nathan ? pick(rnd, CONF_NATHAN.close) : deal(order.map(g=>"close"+g)), v));
-  return `<div class="bd-title">${esc(x.e.name)} <span class="mono">#${x.rank} power</span></div>
-    <div class="conf-meter" role="img" aria-label="Confidence ${score} out of 100">
-      <div class="conf-bar"><span style="width:${score}%"></span></div>
-      <div class="conf-row"><span class="conf-label">${CONF_BANDS[band].label}</span><span class="mono">${score}/100</span></div>
-    </div>
-    <p class="conf-text">${esc(s.join(" "))}</p>`;
+  return {score, band, label:CONF_BANDS[band].label, text:s.join(" ")};
 }
 
 function powerHTML(){
@@ -1119,7 +1130,8 @@ function entryCard(e){
   const mergeSlot = e.merge ? `<ul class="pick-list">${pickLi(e.merge)}</ul>`
     : `<ul class="pick-list"><li class="pick empty">${POOL.merged?"No merge pick made":"Opens after the merge"}</li></ul>`;
   return `<article class="entry">
-    <div class="entry-head"><h3>${esc(e.name)}</h3>${m?`<span class="meta-line" style="margin:0">MVP · ${esc(m.name)}</span>`:""}</div>
+    <div class="entry-head"><div class="pw-name"><h3>${esc(e.name)}</h3><button type="button" class="ov-btn pr-btn" data-key="${esc(e.key)}" aria-expanded="false">Weekly recap</button></div>${m?`<span class="meta-line" style="margin:0">MVP · ${esc(m.name)}</span>`:""}</div>
+    <div class="pr-panel" data-key="${esc(e.key)}" hidden></div>
     <div class="group-label tribe Toka">Toka picks</div>
     <ul class="pick-list">${e.toka.map(id=>pickLi(id,e.mvp)).join("")}</ul>
     <div class="group-label tribe Savu">Savu picks</div>
@@ -1377,7 +1389,7 @@ function applyEntries(snap){
   myEntry = myId ? (realEntries.find(e=>e.key===myId)||null) : null;
   document.getElementById("sampleNote").hidden = !usingSample;
   const page=currentPage();
-  const cardOpen = !!view.querySelector(".open");
+  const cardOpen = !!view.querySelector(".open, .pr-panel:not([hidden])");
   if((page==="picks" || page==="scoreboard" || page==="recap") && !cardOpen) { view.innerHTML = ROUTES[page](); wire(); }
   if(page==="castaways" && !cardOpen && !view.contains(document.activeElement)) { view.innerHTML = ROUTES[page](); wire(); }
   if(page==="submit" && !saving && !FORMS.self.loaded && myEntry) rerender();
@@ -1919,6 +1931,151 @@ function wireRoast(){
   view.querySelectorAll("[data-reset]").forEach(b=>b.addEventListener("click",()=>{ delete ROAST_EDITS[ep]?.[b.dataset.reset]; saveRoastEdits(); rerender(); }));
 }
 
+/* ---------- Picks tab: one person's weekly recap infographic ---------- */
+function powerOutlooks(){
+  const d = powerData(), deal = makeDealer(`conf|${LATEST_EP()}`), out = {};
+  d.rows.forEach(x=>{ out[x.e.key] = {...confidenceParts(x, d.rows.length, deal), x}; });
+  return out;
+}
+function personData(key){
+  const ep = LATEST_EP(); if(!ep) return null;
+  const rd = recapData(ep), row = rd.rows.find(r=>r.e.key===key); if(!row) return null;
+  const e = row.e, N = rd.rows.length;
+  const pw = powerOutlooks()[key];
+  const roast = roastData(ep).lines.find(l=>l.e.key===key)?.text || "";
+  const ids = [...e.picks.map(id=>({id, tag:id===e.mvp?"MVP":""})), ...(e.merge?[{id:e.merge, tag:"MERGE"}]:[])];
+  const cast = ids.map(({id,tag})=>{ const r=RESULTS[id];
+    const season = tag==="MERGE" ? (r.after||0) : r.pts;
+    const week = tag==="MERGE" && !(MERGE_EP!=null && ep>MERGE_EP) ? 0 : (r.byEp[ep]||0);
+    return {c:byId[id], tag, season, week, out:r.out, tier:tierOf(id)}; })
+    .sort((a,b)=>(a.out!=null)-(b.out!=null) || b.season-a.season || b.week-a.week);
+  const alive = cast.filter(x=>x.out==null).length;
+  const best = [...cast].sort((a,b)=>b.week-a.week)[0];
+  return {ep, e, N, row, pw, roast, cast, alive, best, leaderGap: rd.rows[0].total-row.total};
+}
+function drawPersonImage(p){
+  const W=1080, PAD=56;
+  const meas=document.createElement("canvas").getContext("2d");
+  meas.font=`400 25px ${F.body}`;
+  const outlookLines = wrapText(meas, p.pw.text, W-PAD*2-48);
+  const roastLines = wrapText(meas, p.roast, W-PAD*2-48);
+  const headH=300, tileH=150, castRow=62;
+  const castH = 70 + p.cast.length*castRow;
+  const outlookH = 120 + outlookLines.length*35;
+  const roastH = 90 + roastLines.length*35;
+  const H = headH + 30 + tileH*2 + 16 + 40 + castH + 30 + outlookH + 24 + roastH + 100;
+  const cv=document.createElement("canvas"); cv.width=W; cv.height=H; const ctx=cv.getContext("2d");
+  let g=ctx.createLinearGradient(0,0,0,H); g.addColorStop(0,C.night); g.addColorStop(.25,C.night2); g.addColorStop(1,C.night); ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  let rg=ctx.createRadialGradient(W*.8,headH-60,10,W*.8,headH-60,W*.65); rg.addColorStop(0,"rgba(255,138,61,.45)"); rg.addColorStop(1,"rgba(255,138,61,0)"); ctx.fillStyle=rg; ctx.fillRect(0,0,W,H);
+  // palms
+  ctx.save(); ctx.translate(W-360,headH-250); ctx.strokeStyle="#06110D"; ctx.lineCap="round";
+  ctx.lineWidth=7; ctx.stroke(new Path2D("M300 220c4-60 10-110 30-160"));
+  ctx.lineWidth=9; ctx.stroke(new Path2D("M330 60c-30-14-62-10-90 8 28-4 52 0 72 12M330 60c-6-30-26-48-54-56 18 14 30 32 34 52M330 60c22-24 52-30 80-22-26 2-46 12-62 28M330 60c30-2 54 14 66 40-18-16-38-22-60-22M330 60c-16 14-26 36-26 62 8-22 20-38 36-50"));
+  ctx.restore();
+  ctx.save(); ctx.shadowColor="rgba(255,138,61,.9)"; ctx.shadowBlur=28; ctx.fillStyle=C.ember; flamePath(ctx,PAD,64,2.2); ctx.fillStyle=C.hi; flamePath(ctx,PAD+8,92,1.15); ctx.restore();
+  ctx.fillStyle="#8A6239"; ctx.fillRect(PAD+14,114,9,120);
+  const tx=PAD+62; ctx.textBaseline="alphabetic";
+  ctx.fillStyle=C.hi; ctx.font=`500 21px ${F.mono}`; ctx.fillText(`SURVIVOR 51 FANTASY POOL · EPISODE ${p.ep}`, tx, 92);
+  ctx.fillStyle=C.ink; ctx.fillText(shrink(ctx, p.e.name.toUpperCase(), W-tx-PAD-180, 900, 116, 60, F.stencil), tx, 200);
+  ctx.fillStyle=C.ember; ctx.font=`800 38px ${F.disp}`; if(ctx.letterSpacing!==undefined) ctx.letterSpacing="5px"; ctx.fillText("WEEKLY RECAP", tx, 252); if(ctx.letterSpacing!==undefined) ctx.letterSpacing="0px";
+  const by=headH-14; for(let x=0;x<W;x+=16){ ctx.fillStyle=(x/16)%2?C.savu:C.toka; ctx.beginPath(); ctx.moveTo(x,by+16); ctx.lineTo(x+8,by); ctx.lineTo(x+16,by+16); ctx.fill(); }
+  // tiles
+  const mv = p.row.move;
+  const tiles = [
+    ["STANDING", `#${p.row.rank} OF ${p.N}`, mv==null?"FIRST SCORED WEEK":mv>0?`UP ${mv}`:mv<0?`DOWN ${-mv}`:"NO CHANGE"],
+    ["TOTAL POINTS", `${p.row.total}`, `+${p.row.week} THIS WEEK${p.leaderGap?` · ${p.leaderGap} BACK`:" · IN THE LEAD"}`],
+    ["POWER RANKING", `#${p.pw.x.rank} OF ${p.N}`, `${p.pw.x.proj} PROJECTED PTS`],
+    ["CONFIDENCE", `${p.pw.score}/100`, p.pw.label.toUpperCase()],
+    ["CASTAWAYS LEFT", `${p.alive} OF ${p.cast.length}`, p.e.mvp ? `MVP ${short(byId[p.e.mvp]).toUpperCase()} ${RESULTS[p.e.mvp].out==null?"ALIVE":"OUT"}` : "NO MVP"],
+    ["BEST THIS WEEK", p.best ? p.best.c.name : "—", p.best ? `+${p.best.week} PTS` : ""]
+  ];
+  const ty=headH+30, gap=16, tw=(W-PAD*2-gap*2)/3;
+  tiles.forEach((t,i)=>{ const x=PAD+(i%3)*(tw+gap), y=ty+Math.floor(i/3)*(tileH+gap);
+    ctx.fillStyle="rgba(243,238,228,.06)"; ctx.beginPath(); ctx.roundRect?ctx.roundRect(x,y,tw,tileH,14):ctx.rect(x,y,tw,tileH); ctx.fill(); ctx.strokeStyle=C.line; ctx.lineWidth=1.5; ctx.stroke();
+    ctx.fillStyle=C.hi; ctx.font=`500 16px ${F.mono}`; ctx.fillText(t[0], x+18, y+36);
+    ctx.fillStyle=C.ink; ctx.fillText(shrink(ctx, String(t[1]).toUpperCase(), tw-36, 800, 44, 22, F.disp), x+18, y+92);
+    ctx.fillStyle=C.muted; ctx.font=`500 15px ${F.mono}`; ctx.fillText(fit(ctx,t[2],tw-36), x+18, y+126);
+    if(i===3){ const bw=tw-36; ctx.fillStyle="rgba(243,238,228,.14)"; ctx.fillRect(x+18,y+134,bw,6); const cg=ctx.createLinearGradient(x+18,0,x+18+bw,0); cg.addColorStop(0,"#B4442A"); cg.addColorStop(.6,C.ember); cg.addColorStop(1,C.hi); ctx.fillStyle=cg; ctx.fillRect(x+18,y+134,bw*p.pw.score/100,6); }
+  });
+  // the tribe
+  let y = ty + tileH*2 + gap + 56;
+  ctx.fillStyle=C.ink; ctx.font=`800 38px ${F.disp}`; ctx.fillText("THE TRIBE", PAD, y);
+  ctx.fillStyle=C.muted; ctx.font=`500 15px ${F.mono}`; ctx.textAlign="right"; ctx.fillText("THIS WEEK", W-PAD-170, y); ctx.fillText("SEASON", W-PAD-14, y); ctx.textAlign="left";
+  ctx.fillStyle=C.ember; ctx.fillRect(PAD, y+14, W-PAD*2, 3); y += 22;
+  p.cast.forEach((x,i)=>{
+    const top=y+i*castRow, mid=top+castRow/2+9, gone=x.out!=null;
+    if(i%2){ ctx.fillStyle="rgba(243,238,228,.03)"; ctx.fillRect(PAD,top,W-PAD*2,castRow); }
+    ctx.fillStyle = x.c.tribe==="Toka"?C.toka:C.savu; ctx.beginPath(); ctx.arc(PAD+20, mid-8, 8, 0, Math.PI*2); ctx.fill();
+    ctx.globalAlpha = gone ? .5 : 1;
+    ctx.fillStyle=C.ink; ctx.font=`600 27px ${F.body}`; const nm=fit(ctx,x.c.name,420); ctx.fillText(nm, PAD+44, mid);
+    let nx = PAD+44+ctx.measureText(nm).width+12;
+    if(gone){ ctx.fillStyle=C.muted; ctx.fillRect(PAD+44, mid-9, ctx.measureText(nm).width, 2); }
+    ctx.globalAlpha=1;
+    const tag=(label,bg,fg)=>{ ctx.font=`600 13px ${F.mono}`; const w=ctx.measureText(label).width+14; ctx.fillStyle=bg; ctx.beginPath(); ctx.roundRect?ctx.roundRect(nx,mid-20,w,24,5):ctx.rect(nx,mid-20,w,24); ctx.fill(); ctx.fillStyle=fg; ctx.fillText(label, nx+7, mid-3); nx+=w+8; };
+    if(x.tag) tag(x.tag, C.ember, C.night);
+    if(x.tier) tag(`${x.tier}-TIER`, "rgba(243,238,228,.12)", C.ink);
+    if(gone) tag(`OUT EP ${x.out}`, "rgba(255,138,107,.2)", C.down);
+    ctx.textAlign="right";
+    ctx.fillStyle=C.hi; ctx.font=`600 24px ${F.mono}`; ctx.fillText(`+${x.week}`, W-PAD-170, mid);
+    ctx.fillStyle=C.ink; ctx.font=`800 36px ${F.disp}`; ctx.fillText(String(x.season), W-PAD-14, mid+2);
+    ctx.textAlign="left";
+  });
+  y += p.cast.length*castRow + 30;
+  // outlook box
+  const box=(title, lines, h, accent)=>{
+    ctx.fillStyle="rgba(243,238,228,.05)"; ctx.beginPath(); ctx.roundRect?ctx.roundRect(PAD,y,W-PAD*2,h,16):ctx.rect(PAD,y,W-PAD*2,h); ctx.fill();
+    ctx.fillStyle=accent; ctx.fillRect(PAD, y+18, 5, h-36);
+    ctx.fillStyle=C.ink; ctx.font=`800 34px ${F.disp}`; ctx.fillText(title, PAD+24, y+50);
+    return y+50;
+  };
+  let by2 = box("THE OUTLOOK", outlookLines, outlookH, C.savu);
+  ctx.fillStyle=C.hi; ctx.font=`500 16px ${F.mono}`; ctx.textAlign="right"; ctx.fillText(`${p.pw.label.toUpperCase()} · ${p.pw.score}/100`, W-PAD-24, by2-4); ctx.textAlign="left";
+  ctx.fillStyle="rgba(243,238,228,.14)"; ctx.fillRect(PAD+24, by2+18, W-PAD*2-48, 8);
+  const cg=ctx.createLinearGradient(PAD+24,0,W-PAD-24,0); cg.addColorStop(0,"#B4442A"); cg.addColorStop(.6,C.ember); cg.addColorStop(1,C.hi);
+  ctx.fillStyle=cg; ctx.fillRect(PAD+24, by2+18, (W-PAD*2-48)*p.pw.score/100, 8);
+  ctx.fillStyle=C.muted; ctx.font=`400 25px ${F.body}`; outlookLines.forEach((ln,k)=>ctx.fillText(ln, PAD+24, by2+66+k*35));
+  y += outlookH + 24;
+  by2 = box("THE ROAST", roastLines, roastH, C.ember);
+  ctx.fillStyle=C.muted; ctx.font=`400 25px ${F.body}`; roastLines.forEach((ln,k)=>ctx.fillText(ln, PAD+24, by2+44+k*35));
+  ctx.fillStyle=C.muted; ctx.font=`500 17px ${F.mono}`; ctx.fillText(`SCORES THROUGH EPISODE ${p.ep} · ALL IN GOOD FUN`, PAD, H-44);
+  ctx.textAlign="right"; ctx.fillStyle=C.ember; ctx.font=`800 26px ${F.disp}`; ctx.fillText("OUTWIT · OUTPLAY · OUTLAST", W-PAD, H-42); ctx.textAlign="left";
+  return cv;
+}
+let prBlob=null, prUrl=null;
+function wirePersonRecap(){
+  view.querySelectorAll(".pr-btn").forEach(btn=>btn.addEventListener("click",()=>{
+    const key=btn.dataset.key, panel=view.querySelector(`.pr-panel[data-key="${CSS.escape(key)}"]`);
+    const wasOpen=!panel.hidden;
+    view.querySelectorAll(".pr-panel").forEach(p=>{ p.hidden=true; p.innerHTML=""; });
+    view.querySelectorAll(".pr-btn").forEach(b=>b.setAttribute("aria-expanded","false"));
+    if(wasOpen) return;
+    btn.setAttribute("aria-expanded","true"); panel.hidden=false;
+    if(!LATEST_EP()){ panel.innerHTML=`<p class="small">No episodes have been scored yet.</p>`; return; }
+    panel.innerHTML=`<div class="pr-gate"><b>Spoiler warning</b><span>This recap shows scores, rankings and who's been voted out through Episode ${LATEST_EP()}.</span>
+      <div class="img-actions"><button class="btn small-btn" type="button" data-go>Show recap</button><button class="btn ghost small-btn" type="button" data-cancel>Cancel</button></div></div>`;
+    panel.querySelector("[data-cancel]").addEventListener("click",()=>{ panel.hidden=true; panel.innerHTML=""; btn.setAttribute("aria-expanded","false"); });
+    panel.querySelector("[data-go]").addEventListener("click", async()=>{
+      panel.innerHTML=`<p class="small">Making the recap…</p>`;
+      await fontsReady;
+      const data=personData(key); if(!data){ panel.innerHTML=`<p class="small">No recap available for this entry yet.</p>`; return; }
+      const cv=drawPersonImage(data);
+      prBlob=await new Promise(r=>cv.toBlob(r,"image/png"));
+      if(prUrl) URL.revokeObjectURL(prUrl); prUrl=URL.createObjectURL(prBlob);
+      panel.innerHTML=`<img src="${prUrl}" alt="Episode ${data.ep} recap for ${esc(data.e.name)}" class="score-img">
+        <div class="img-actions"><button class="btn small-btn" type="button" data-copy>Copy image</button>
+        <button class="btn ghost small-btn" type="button" data-save>Save image</button>
+        <button class="btn ghost small-btn" type="button" data-close>Close</button></div>
+        <span class="small" role="status">On a phone, you can also press and hold the image to save or share it.</span>`;
+      const st=panel.querySelector("[role=status]");
+      panel.querySelector("[data-copy]").addEventListener("click", async()=>{
+        try{ if(!window.ClipboardItem||!navigator.clipboard?.write) throw 0; await navigator.clipboard.write([new ClipboardItem({"image/png":prBlob})]); st.textContent="Recap copied. Paste it anywhere."; }
+        catch(e){ st.textContent="This browser won't copy images. Press and hold (or right-click) the image to copy or save it."; } });
+      panel.querySelector("[data-save]").addEventListener("click", async()=>{ const dl=await getDownloads(); try{ await dl.save({filename:`survivor51-${data.e.name.replace(/[^a-z0-9]+/gi,"-").toLowerCase()}-episode-${data.ep}.png`, data:prBlob}); st.textContent="Image saved."; }catch(e){ st.textContent="Couldn't save here. Press and hold (or right-click) the image instead."; } });
+      panel.querySelector("[data-close]").addEventListener("click",()=>{ panel.hidden=true; panel.innerHTML=""; btn.setAttribute("aria-expanded","false"); });
+    });
+  }));
+}
+
 function wireRecap(){
   const cr=document.getElementById("copyRecap"); if(!cr) return;
   const ep = SCORED_EPS().includes(recapEp)?recapEp:LATEST_EP();
@@ -1973,6 +2130,7 @@ function wire(){
   const rv=document.getElementById("reveal");
   if(rv) rv.addEventListener("click",()=>{revealed=true; revealedThrough=Math.max(revealedThrough,+rv.dataset.ep||0); view.innerHTML=ROUTES[currentPage()](); wire(); scrollTo(0,0);});
   wireRecap();
+  wirePersonRecap();
   wireRoast();
   view.querySelectorAll("[data-tribe]").forEach(b=>b.addEventListener("click",()=>{tribeFilter=b.dataset.tribe;view.innerHTML=castPage();wire();}));
   const sel=document.getElementById("entrantSel");

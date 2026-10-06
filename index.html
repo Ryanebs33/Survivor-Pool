@@ -295,6 +295,11 @@ button.pick-link{font:inherit;color:inherit;background:none;border:0;text-align:
 .conf-row .mono{color:var(--night-ink)}
 .conf-text{margin:0;line-height:1.5;font-size:13.5px}
 
+.pw-name{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.cp-name.ov-btn{font:500 10.5px/1 var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted);text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:4px 8px;cursor:pointer;background:transparent}
+.cp-name.ov-btn:hover{color:var(--ink);border-color:var(--muted)}
+.sb-anchor:focus-within .ov-btn{color:var(--torch);border-color:var(--torch)}
+
 /* Spoiler gate */
 .gate{background:var(--gate);color:var(--gate-ink);border-radius:12px;padding:48px 24px;text-align:center;display:grid;justify-items:center;gap:14px}
 .gate .flame{width:48px;height:64px}
@@ -910,7 +915,7 @@ function powerHTML(){
   const rows = d.rows.map(x=>`
     <tr class="${x.rank===1?"lead":""}">
       <td class="rank">${x.rank}</td>
-      <td><span class="sb-anchor"><button type="button" class="cp-name sb-name">${esc(x.e.name)}</button><div class="sb-pop" role="tooltip">${confidenceHTML(x, d.rows.length, dealConf)}</div></span>
+      <td><div class="pw-name"><strong>${esc(x.e.name)}</strong><span class="sb-anchor"><button type="button" class="cp-name sb-name ov-btn" aria-label="Overview for ${esc(x.e.name)}">Overview</button><div class="sb-pop" role="tooltip">${confidenceHTML(x, d.rows.length, dealConf)}</div></span></div>
         <div class="pbar" aria-hidden="true"><span style="width:${Math.round(x.proj/max*100)}%"></span></div>
         <div class="tiers">${["S","A","B","C","D","F"].filter(t=>x.tierCounts[t]).map(t=>`<span class="tier t${t}" title="${x.tierCounts[t]} castaway${x.tierCounts[t]>1?"s":""} in ${t} tier">${t}${x.tierCounts[t]>1?`×${x.tierCounts[t]}`:""}</span>`).join("")}</div>
         <div class="pmeta">${x.live}/${x.total} still in · MVP ${x.e.mvp?esc(short(byId[x.e.mvp]))+(tierOf(x.e.mvp)?` (${tierOf(x.e.mvp)})`:""):"none"} ${x.e.mvp?(x.mvpAlive?'<span class="ok-dot">alive</span>':'<span class="out-dot">out</span>'):""}${x.best?` · Best asset: ${esc(short(byId[x.best.id]))}`:""}</div></td>

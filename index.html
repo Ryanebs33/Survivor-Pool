@@ -2005,7 +2005,8 @@ function wire(){
   wireSubmit();
 }
 /* Info cards (points breakdowns, bios, who-picked, outlooks): pressing a name opens its card,
-   and the card stays open until that same name or button is pressed again. */
+   and the card stays open until that same name or button is pressed again. Opening a new card
+   closes the previous one, so only one is ever open. */
 const POP_HOSTS = ".sb-anchor, .cp-item, .pick, .card";
 const POP_TRIGGERS = ".sb-name, .cp-name, .pick-link, .card";
 const POP_BODIES = ".sb-pop, .cp-pop, .bio-pop, .own-pop";
@@ -2019,6 +2020,8 @@ document.addEventListener("click", ev=>{
     host.classList.remove("open"); host.classList.add("pop-closed");
     if(host.contains(document.activeElement)) document.activeElement.blur();
   } else {
+    // only one card at a time: close any other open card first
+    document.querySelectorAll(".open").forEach(o=>{ if(o!==host && o.matches(POP_HOSTS)){ o.classList.remove("open"); o.classList.add("pop-closed"); } });
     host.classList.add("open"); host.classList.remove("pop-closed");
     host.dispatchEvent(new Event("focusin"));               // run the card's placement (flip up / keep on screen)
   }

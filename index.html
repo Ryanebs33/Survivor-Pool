@@ -282,6 +282,13 @@ button.pick-link{font:inherit;color:inherit;background:none;border:0;text-align:
 .roast-text:focus{outline:2px solid var(--torch);background:var(--bg)}
 .linkish{background:none;border:0;padding:0;margin-top:4px;color:var(--torch);font:600 12px/1 var(--body);cursor:pointer;text-decoration:underline}
 
+/* floating info cards */
+.sb-pop,.cp-pop,.bio-pop,.own-pop{z-index:60}
+.sb-pop[data-side],.cp-pop[data-side],.bio-pop[data-side],.own-pop[data-side]{right:auto}
+.cp-pop[data-side]::before,.bio-pop[data-side]::before,.own-pop[data-side]::before{display:none}
+.sb-pop[data-side="above"]::before{top:auto;bottom:-10px}
+.sb-pop[data-side="center"]::before{display:none}
+
 /* Spoiler gate */
 .gate{background:var(--gate);color:var(--gate-ink);border-radius:12px;padding:48px 24px;text-align:center;display:grid;justify-items:center;gap:14px}
 .gate .flame{width:48px;height:64px}
@@ -383,7 +390,7 @@ h2::before{content:"";width:16px;height:22px;flex:0 0 auto;background:var(--torc
 .gate h2{justify-content:center}
 .card,.entry,.cat,.cast-pts,.board,.admin-bar{box-shadow:0 1px 0 var(--line),0 8px 24px -16px rgba(10,26,20,.35)}
 .card{transition:transform .15s ease, box-shadow .15s ease}
-@media (prefers-reduced-motion:no-preference){.card:hover{transform:translateY(-2px)}}
+.card:hover{box-shadow:0 1px 0 var(--line),0 14px 30px -16px rgba(10,26,20,.45)}  /* no transform: it would break the floating who-picked card */
 .cat-head{border-bottom-color:var(--torch)}
 .board tr.lead td{background:linear-gradient(90deg,color-mix(in srgb,var(--torch) 12%,transparent),transparent 70%)}
 .board tr.lead .rank::after{content:"";display:inline-block;width:12px;height:17px;margin-left:4px;vertical-align:2px;background:var(--torch);
@@ -1741,18 +1748,6 @@ function wire(){
     dots.forEach(d=>d.addEventListener("click",ev=>{ev.stopPropagation(); go(+d.dataset.i);}));
     pop.querySelectorAll(".sb-arrow").forEach(btn=>btn.addEventListener("click",ev=>{ev.stopPropagation(); go(idx()+(+btn.dataset.dir));}));
   });
-  view.querySelectorAll(".sb-anchor").forEach(a=>{
-    const place=()=>{ const pop=a.querySelector(".sb-pop"); pop.style.left="0px";
-      const r=pop.getBoundingClientRect(), maxR=document.documentElement.clientWidth-12;
-      if(r.right>maxR) pop.style.left=Math.max(12-a.getBoundingClientRect().left, maxR-r.right)+"px"; };
-    a.addEventListener("mouseenter",place); a.addEventListener("focusin",place);
-  });
-  view.querySelectorAll(".pick").forEach(li=>{
-    const place=()=>{ const pop=li.querySelector(".bio-pop"); if(!pop) return;
-      pop.classList.remove("flip"); const r=pop.getBoundingClientRect();
-      if(r.right > document.documentElement.clientWidth-12) pop.classList.add("flip"); };
-    li.addEventListener("mouseenter",place); li.addEventListener("focusin",place);
-  });
   wireSubmit();
 }
 /* Info cards (points breakdowns, bios, who-picked): tapping the same name again closes the card,
@@ -1780,6 +1775,34 @@ document.addEventListener("mouseout", ev=>{
   const host = ev.target.closest && ev.target.closest(POP_HOSTS);
   if(host && host.classList.contains("pop-closed") && !host.contains(ev.relatedTarget)) host.classList.remove("pop-closed");
 });
+/* Keep every info card fully on screen: open below the name if it fits, otherwise above,
+   otherwise centred in the window. Cards float over the page instead of pushing it down. */
+const POP_MAP = [[".sb-anchor",".sb-pop",".sb-name"],[".cp-item",".cp-pop",".cp-name"],[".pick",".bio-pop",".pick-link"],[".card",".own-pop",null]];
+let openPop = null;
+function placePop(host){
+  const m = POP_MAP.find(([h])=>host.matches(h)); if(!m) return;
+  const pop = host.querySelector(m[1]); if(!pop || getComputedStyle(pop).display==="none") return;
+  const anchor = m[2] ? host.querySelector(m[2]) : host;
+  const vw = document.documentElement.clientWidth, vh = window.innerHeight, gap = 8, edge = 12;
+  const a = anchor.getBoundingClientRect();
+  const w = Math.min(m[1]===".own-pop" ? Math.max(a.width, 280) : 360, vw - edge*2);
+  Object.assign(pop.style, {position:"fixed", width:w+"px", maxHeight:"", overflowY:"", left:"0px", top:"0px"});
+  const h = pop.offsetHeight;
+  let top, side;
+  if(a.bottom + gap + h <= vh - edge){ top = a.bottom + gap; side = "below"; }
+  else if(a.top - gap - h >= edge){ top = a.top - gap - h; side = "above"; }
+  else { top = Math.max(edge, (vh - h) / 2); side = "center";
+         if(h > vh - edge*2){ top = edge; pop.style.maxHeight = (vh - edge*2)+"px"; pop.style.overflowY = "auto"; } }
+  const left = Math.min(Math.max(edge, a.left), vw - w - edge);
+  pop.style.left = left+"px"; pop.style.top = top+"px"; pop.dataset.side = side;
+  openPop = host;
+}
+const popHostOf = el => el && el.closest && POP_MAP.map(([h])=>el.closest(h)).find(Boolean);
+document.addEventListener("mouseover", ev=>{ const h=popHostOf(ev.target); if(h && h!==openPop){ placePop(h); requestAnimationFrame(()=>placePop(h)); } });
+document.addEventListener("mouseout", ev=>{ const h=popHostOf(ev.target); if(h && h===openPop && !h.contains(ev.relatedTarget)) openPop=null; });
+document.addEventListener("focusin", ev=>{ const h=popHostOf(ev.target); if(h){ placePop(h); requestAnimationFrame(()=>placePop(h)); } });
+addEventListener("scroll", ()=>{ if(openPop) requestAnimationFrame(()=>openPop && placePop(openPop)); }, {passive:true});
+addEventListener("resize", ()=>{ if(openPop) placePop(openPop); });
 function updateFade(){ const st=document.querySelector(".tabs-in"); if(!st) return;
   document.querySelector("nav.tabs").style.setProperty("--fade", st.scrollLeft+st.clientWidth < st.scrollWidth-4 ? "1" : "0"); }
 document.querySelector(".tabs-in").addEventListener("scroll",updateFade,{passive:true});

@@ -236,6 +236,21 @@ button.pick-link{font:inherit;color:inherit;background:none;border:0;text-align:
 .own-pop .mvp-tag{margin-left:6px}
 .own-tag{font:500 10px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--flame-hi);margin-left:6px}
 
+.stand-wrap{overflow:visible}
+.stand-wrap .board{overflow:visible}
+.sb-anchor{position:relative;display:inline-block}
+.sb-name{font-weight:600}
+.sb-pop{display:none;position:absolute;z-index:30;left:0;top:calc(100% + 8px);width:min(360px,calc(100vw - 24px));background:var(--night);color:var(--night-ink);border-radius:10px;padding:12px 14px;box-shadow:0 14px 34px -12px rgba(0,0,0,.55);font-size:13px;font-weight:400;text-align:left}
+.sb-anchor:hover .sb-pop,.sb-anchor:focus-within .sb-pop{display:block}
+.sb-list{list-style:none;margin:0;padding:0}
+.sb-list li{padding:6px 0;border-top:1px solid rgba(243,238,228,.1)}
+.sb-row{display:flex;justify-content:space-between;gap:10px;font-weight:600}
+.sb-row .mvp-tag{margin-left:6px}
+.sb-cats{color:var(--night-muted);font-size:11.5px;line-height:1.4;margin-top:2px}
+.sb-eps{display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:1px solid rgba(243,238,228,.15);font:500 11px/1.3 var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--flame-hi)}
+.sb-eps b{color:var(--night-ink);font-weight:600}
+.board tr:has(.sb-anchor:hover),.board tr:has(.sb-anchor:focus-within){position:relative;z-index:30}
+
 /* Spoiler gate */
 .gate{background:var(--gate);color:var(--gate-ink);border-radius:12px;padding:48px 24px;text-align:center;display:grid;justify-items:center;gap:14px}
 .gate .flame{width:48px;height:64px}
@@ -685,6 +700,38 @@ function powerHTML(){
     </details>`;
 }
 
+const SHORT_CAT = {"Wins a group Reward Challenge":"Group reward","Wins a group Immunity Challenge":"Group immunity",
+  "Says a curse word that is bleeped":"Curse word","Survived the week":"Survived","Found a hidden immunity idol":"Found idol",
+  "Treated for a medical emergency":"Medical emergency","Torch snuffed as a result of a blindside":"Blindsided","Other point categories":"Other"};
+/* A castaway's points by category across scored episodes (optionally only after a given episode). */
+function castCats(id, afterEp){
+  const r=RESULTS[id], cats=new Map(); let total=0;
+  EPISODES.forEach(e=>{
+    if(!Object.keys(e.pts).length) return;
+    if(afterEp!=null && e.ep<=afterEp) return;
+    if(r.out!=null && e.ep>r.out) return;
+    const t=r.byEp[e.ep]||0; total+=t; let used=0;
+    const surv = r.out===e.ep ? 0 : (MERGE_EP!=null && e.ep>MERGE_EP ? 3 : 1);
+    if(surv && t>=surv){ cats.set("Survived the week",(cats.get("Survived the week")||0)+surv); used+=surv; }
+    (e.detail?.[id]||[]).forEach(([l,p])=>{ cats.set(l,(cats.get(l)||0)+p); used+=p; });
+    if(t-used>0) cats.set("Other point categories",(cats.get("Other point categories")||0)+(t-used));
+  });
+  return {total, cats:[...cats.entries()].sort((a,b)=>b[1]-a[1])};
+}
+/* How an entrant's team earned its points, castaway by castaway. */
+function entrantBreakdownHTML(e){
+  const rows = e.picks.map(id=>({id, tag:id===e.mvp?"MVP":"", ...castCats(id)}));
+  if(e.merge) rows.push({id:e.merge, tag:"Merge", ...castCats(e.merge, MERGE_EP ?? Infinity)});
+  rows.sort((a,b)=>b.total-a.total);
+  const mvpBonus = POOL.winner && POOL.winner===e.mvp ? 30 : 0;
+  const epTotals = SCORED_EPS().map(ep=>[ep, weekFor(e,ep).total]);
+  return `<div class="bd-title">${esc(e.name)} <span class="mono">${score(e)} pts</span></div>
+    <ul class="sb-list">${rows.map(x=>{const c=byId[x.id], out=RESULTS[x.id].out;
+      return `<li><div class="sb-row"><span>${esc(c.name)}${x.tag?`<span class="mvp-tag">${x.tag}</span>`:""}${out!=null?` <span class="bd-out">Out Ep ${out}</span>`:""}</span><span class="mono">+${x.total}</span></div>
+        ${x.cats.length?`<div class="sb-cats">${x.cats.map(([l,p])=>`${esc(SHORT_CAT[l]||l)} +${p}`).join(" · ")}</div>`:`<div class="sb-cats">No points yet</div>`}</li>`}).join("")}
+      ${mvpBonus?`<li><div class="sb-row"><span>MVP won the game</span><span class="mono">+30</span></div></li>`:""}</ul>
+    ${epTotals.length?`<div class="sb-eps">${epTotals.map(([ep,t])=>`<span>Ep ${ep} <b class="mono">+${t}</b></span>`).join("")}</div>`:""}`;
+}
 /* How one castaway earned their points, episode by episode. */
 function breakdownHTML(c){
   const r = RESULTS[c.id];
@@ -714,7 +761,7 @@ function boardPage(){
     const chips = e.picks.map(id=>chip(id,RESULTS[id]?.pts||0,id===e.mvp?"MVP":"")).join("")
       + (e.merge?chip(e.merge,RESULTS[e.merge]?.after||0,"Merge"):"");
     return `<tr class="${rank===1?'lead':''}"><td class="rank">${rank}</td>
-      <td><strong>${esc(e.name)}</strong><div class="chips">${chips}</div></td>
+      <td><span class="sb-anchor"><button type="button" class="cp-name sb-name">${esc(e.name)}</button><div class="sb-pop" role="tooltip">${entrantBreakdownHTML(e)}</div></span><div class="chips">${chips}</div></td>
       <td class="mono">${left}/${e.picks.length+(e.merge?1:0)}</td><td class="total">${e.total}</td></tr>`;
   }).join("");
   const castRank = CAST.map(c=>({c,r:RESULTS[c.id]||{pts:0,out:null}})).sort((a,b)=>b.r.pts-a.r.pts||a.c.name.localeCompare(b.c.name));
@@ -729,7 +776,7 @@ function boardPage(){
     ${boardTab==="power" ? powerHTML()+"</section>" : `
     ${LATEST_EP()?`<h3 class="wk-title">Episode ${LATEST_EP()} highlights</h3>${highlightsHTML(recapData(LATEST_EP()))}<h3 class="wk-title wk-standings">Standings</h3>`:""}
     <div class="split">
-      <div class="tablewrap"><table class="board">
+      <div class="tablewrap stand-wrap"><table class="board">
         <thead><tr><th>#</th><th>Entrant &amp; picks</th><th>Left</th><th class="r">Pts</th></tr></thead>
         <tbody>${rows}</tbody></table></div>
       <div><h3 style="margin-bottom:10px">Castaway points</h3><div class="cast-pts"><ul>${castList}</ul></div></div>
@@ -1355,6 +1402,12 @@ function wire(){
   view.querySelectorAll("[data-tribe]").forEach(b=>b.addEventListener("click",()=>{tribeFilter=b.dataset.tribe;view.innerHTML=castPage();wire();}));
   const sel=document.getElementById("entrantSel");
   if(sel) sel.addEventListener("change",()=>{picksSel=sel.value;view.innerHTML=picksPage();wire();document.getElementById("entrantSel").focus();});
+  view.querySelectorAll(".sb-anchor").forEach(a=>{
+    const place=()=>{ const pop=a.querySelector(".sb-pop"); pop.style.left="0px";
+      const r=pop.getBoundingClientRect(), maxR=document.documentElement.clientWidth-12;
+      if(r.right>maxR) pop.style.left=Math.max(12-a.getBoundingClientRect().left, maxR-r.right)+"px"; };
+    a.addEventListener("mouseenter",place); a.addEventListener("focusin",place);
+  });
   view.querySelectorAll(".pick").forEach(li=>{
     const place=()=>{ const pop=li.querySelector(".bio-pop"); if(!pop) return;
       pop.classList.remove("flip"); const r=pop.getBoundingClientRect();

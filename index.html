@@ -1731,9 +1731,11 @@ function route(){
   }
 }
 /* Cards near the bottom of a list open upward when there isn't room below the name. */
-function flipUp(anchor, pop){
+function flipUp(anchor, pop, row){
   if(!anchor || !pop) return;
   pop.classList.remove("up");
+  // The last three names in a list always open upward.
+  if(row && row.parentElement){ const sib=[...row.parentElement.children]; if(sib.length-sib.indexOf(row)<=3){ pop.classList.add("up"); return; } }
   const a = anchor.getBoundingClientRect(), h = pop.offsetHeight, vh = window.innerHeight;
   const below = vh - a.bottom, above = a.top;
   if(h + 16 > below && h + 16 <= above) pop.classList.add("up");   // only flip when it fits above; otherwise keep opening down
@@ -1756,13 +1758,13 @@ function wire(){
     pop.querySelectorAll(".sb-arrow").forEach(btn=>btn.addEventListener("click",ev=>{ev.stopPropagation(); go(idx()+(+btn.dataset.dir));}));
   });
   view.querySelectorAll(".sb-anchor").forEach(a=>{
-    const place=()=>{ const pop=a.querySelector(".sb-pop"); pop.style.left="0px"; flipUp(a, pop);
+    const place=()=>{ const pop=a.querySelector(".sb-pop"); pop.style.left="0px"; flipUp(a, pop, a.closest("tr"));
       const r=pop.getBoundingClientRect(), maxR=document.documentElement.clientWidth-12;
       if(r.right>maxR) pop.style.left=Math.max(12-a.getBoundingClientRect().left, maxR-r.right)+"px"; };
     a.addEventListener("mouseenter",place); a.addEventListener("focusin",place);
   });
   view.querySelectorAll(".cp-item").forEach(li=>{
-    const place=()=>flipUp(li.querySelector(".cp-name"), li.querySelector(".cp-pop"));
+    const place=()=>flipUp(li.querySelector(".cp-name"), li.querySelector(".cp-pop"), li);
     li.addEventListener("mouseenter",place); li.addEventListener("focusin",place);
   });
   view.querySelectorAll(".pick").forEach(li=>{

@@ -288,6 +288,13 @@ button.pick-link{font:inherit;color:inherit;background:none;border:0;text-align:
 .cp-pop.up{top:auto;bottom:calc(100% + 4px)}
 .cp-pop.up::before{top:auto;bottom:-6px}
 
+.conf-meter{margin:2px 0 10px}
+.conf-bar{height:10px;border-radius:5px;background:rgba(243,238,228,.14);overflow:hidden}
+.conf-bar span{display:block;height:100%;border-radius:5px;background:linear-gradient(90deg,#B4442A,var(--ember),var(--flame-hi))}
+.conf-row{display:flex;justify-content:space-between;gap:10px;margin-top:6px;font:500 11px/1.2 var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--flame-hi)}
+.conf-row .mono{color:var(--night-ink)}
+.conf-text{margin:0;line-height:1.5;font-size:13.5px}
+
 /* Spoiler gate */
 .gate{background:var(--gate);color:var(--gate-ink);border-radius:12px;padding:48px 24px;text-align:center;display:grid;justify-items:center;gap:14px}
 .gate .flame{width:48px;height:64px}
@@ -710,6 +717,89 @@ function powerData(){
   rows.forEach(x=>x.vsStand = standRank[x.e.key] - x.rank);
   return {rows, epsLeft, nAlive, latest};
 }
+/* ---------- Power rankings: tap a team for a (mostly) honest confidence report ---------- */
+const CONF_BANDS = [
+  {min:80, label:"Torch blazing"},
+  {min:60, label:"Burning steady"},
+  {min:40, label:"Flickering"},
+  {min:20, label:"Running on fumes"},
+  {min:0,  label:"Torch snuffed (spiritually)"}
+];
+const CONF = {
+  open: [
+    ["{n} sits {r} in the power rankings with {proj} projected points, and honestly the confidence is earned.",
+     "{n} is {r} in the power rankings and should be walking around camp like they own the place.",
+     "Projected for {proj} more points, {n} has every right to start practicing a winner's speech, quietly."],
+    ["{n} is {r} in the power rankings with {proj} projected points, which is good, but not 'stop checking the scoreboard' good.",
+     "{n} lands {r} here, solid enough to sleep at night, just not in the good shelter.",
+     "At {r} with {proj} projected, {n} is in decent shape, the fantasy equivalent of a fire that keeps going if nobody breathes on it."],
+    ["{n} is {r} in the power rankings, which is the definition of 'it could go either way.'",
+     "Projected for {proj}, {n} is sitting {r} with the nervous energy of someone holding a fake idol.",
+     "{n} lands {r} here, comfortably uncomfortable, like sleeping on bamboo."],
+    ["{n} is {r} in the power rankings with {proj} projected, which is not great, Bob.",
+     "At {r}, {n} should be confident in exactly one thing: that there's still time for a miracle.",
+     "{n} sits {r} here, and the numbers are looking at this team the way Jeff looks at a castaway who wants to quit."],
+    ["{n} is {r} in the power rankings, and the confidence meter just asked to be voted out.",
+     "Projected for {proj}, {n} sits {r} with the long-term outlook of a coconut in a hurricane.",
+     "At {r}, {n} should lower expectations, then lower them again, then maybe dig a hole for them."]
+  ],
+  mvpAlive: ["MVP {mvp} is still in the game{tierTxt}, so there's at least one reason to keep refreshing.",
+             "The good news: MVP {mvp} is still alive{tierTxt}.",
+             "MVP {mvp} is hanging in there{tierTxt}, which is more than can be said for some of these picks."],
+  mvpOut:   ["The bad news: MVP {mvp} is already gone, taking that 30-point bonus dream with them.",
+             "With MVP {mvp} already voted out, this team is playing without a quarterback and possibly without a plan."],
+  up:       ["The experts like this team more than the scoreboard does, so the comeback narrative writes itself.",
+             "It's {vs} spots higher here than in the standings, which means the best might be ahead, allegedly."],
+  down:     ["It sits {vs} spots lower here than in the standings, so enjoy those points now, because the projections are not impressed.",
+             "The projections have this team {vs} spots below its current standing, which is a polite way of saying 'regression incoming.'"],
+  depth:    ["{live} of {total} castaways are still in, with {best} doing most of the heavy lifting.",
+             "{best} is the best asset on a roster with {live} of {total} still standing."],
+  close: [
+    ["Stay humble. Or don't, it's your torch.", "Just don't get cocky, that's how blindsides happen."],
+    ["Keep calm and keep the fire going.", "Cautious optimism is the move here."],
+    ["Pack a Plan B and maybe a Plan C.", "Light a candle, find an idol, hope for the best."],
+    ["Start writing the excuses now.", "It's not over, but it's definitely clearing its throat."],
+    ["At this point it's less of a fantasy team and more of a cautionary tale.", "Maybe just enjoy the show this season."]
+  ]
+};
+const CONF_NATHAN = {
+  open: ["{n} is {r} in the power rankings, which sounds nice until you remember it's {n} and something is bound to go wrong.",
+         "Projected for {proj}, {n} should feel confident, but history suggests this is the part where it all falls apart.",
+         "{n} lands {r} here, and the confidence meter is already bracing for impact."],
+  close: ["Pre-ordering the 'what went wrong' group-chat post now.",
+          "The tribe has spoken, and it said 'don't get your hopes up, Nathan.'",
+          "Confidence level: a wet match in a rainstorm."]
+};
+function confidenceFor(x, N){
+  const rankScore = N>1 ? 1 - (x.rank-1)/(N-1) : 1;
+  const tier = x.e.mvp ? tierOf(x.e.mvp) : null;
+  const mvpScore = !x.e.mvp || !x.mvpAlive ? 0 : ({S:1,A:.85,B:.7,C:.55,D:.4,F:.25}[tier] ?? .5);
+  let score = Math.round(rankScore*70 + mvpScore*15 + (x.live/x.total)*15);
+  if(isTarget(x.e)) score = Math.max(3, score - 22);
+  return Math.min(99, score);
+}
+function confidenceHTML(x, N){
+  const score = confidenceFor(x, N), band = CONF_BANDS.findIndex(b=>score>=b.min);
+  const rnd = seeded(`${x.e.key}|conf|${LATEST_EP()}`);
+  const v = { n:x.e.name, r:ordinal(x.rank), proj:x.proj, mvp:x.e.mvp?short(byId[x.e.mvp]):"",
+    tierTxt: x.e.mvp && tierOf(x.e.mvp) ? ` and the experts rate them ${tierOf(x.e.mvp)}-tier` : "",
+    vs: Math.abs(x.vsStand), live:x.live, total:x.total, best: x.best?short(byId[x.best.id]):"nobody" };
+  const nathan = isTarget(x.e);
+  const s = [];
+  s.push(fillT(pick(rnd, nathan ? CONF_NATHAN.open : CONF.open[band]), v));
+  if(x.e.mvp) s.push(fillT(pick(rnd, x.mvpAlive ? CONF.mvpAlive : CONF.mvpOut), v));
+  if(x.vsStand>=2) s.push(fillT(pick(rnd, CONF.up), v));
+  else if(x.vsStand<=-2) s.push(fillT(pick(rnd, CONF.down), v));
+  else if(x.best) s.push(fillT(pick(rnd, CONF.depth), v));
+  s.push(fillT(pick(rnd, nathan ? CONF_NATHAN.close : CONF.close[band]), v));
+  return `<div class="bd-title">${esc(x.e.name)} <span class="mono">#${x.rank} power</span></div>
+    <div class="conf-meter" role="img" aria-label="Confidence ${score} out of 100">
+      <div class="conf-bar"><span style="width:${score}%"></span></div>
+      <div class="conf-row"><span class="conf-label">${CONF_BANDS[band].label}</span><span class="mono">${score}/100</span></div>
+    </div>
+    <p class="conf-text">${esc(s.join(" "))}</p>`;
+}
+
 function powerHTML(){
   const d = powerData();
   if(!d.latest) return `<p class="lede">Power rankings appear once the first episode is scored.</p>`;
@@ -717,7 +807,7 @@ function powerHTML(){
   const rows = d.rows.map(x=>`
     <tr class="${x.rank===1?"lead":""}">
       <td class="rank">${x.rank}</td>
-      <td><strong>${esc(x.e.name)}</strong>
+      <td><span class="sb-anchor"><button type="button" class="cp-name sb-name">${esc(x.e.name)}</button><div class="sb-pop" role="tooltip">${confidenceHTML(x, d.rows.length)}</div></span>
         <div class="pbar" aria-hidden="true"><span style="width:${Math.round(x.proj/max*100)}%"></span></div>
         <div class="tiers">${["S","A","B","C","D","F"].filter(t=>x.tierCounts[t]).map(t=>`<span class="tier t${t}" title="${x.tierCounts[t]} castaway${x.tierCounts[t]>1?"s":""} in ${t} tier">${t}${x.tierCounts[t]>1?`×${x.tierCounts[t]}`:""}</span>`).join("")}</div>
         <div class="pmeta">${x.live}/${x.total} still in · MVP ${x.e.mvp?esc(short(byId[x.e.mvp]))+(tierOf(x.e.mvp)?` (${tierOf(x.e.mvp)})`:""):"none"} ${x.e.mvp?(x.mvpAlive?'<span class="ok-dot">alive</span>':'<span class="out-dot">out</span>'):""}${x.best?` · Best asset: ${esc(short(byId[x.best.id]))}`:""}</div></td>
@@ -727,7 +817,7 @@ function powerHTML(){
     </tr>`).join("");
   return `
     <p class="lede">Teams ranked by the points they're expected to score from here to the finale, not by what they've banked so far. Projections combine each castaway's scoring so far with expert rankings from ${EXPERTS.map(x=>`<a class="inline-link" href="${x.url}" target="_blank" rel="noopener">${esc(x.source)}</a>`).reduce((a,l,i,arr)=>a+(i===0?"":i===arr.length-1?", and ":", ")+l,"")}.</p>
-    <div class="tablewrap"><table class="board power">
+    <div class="tablewrap stand-wrap"><table class="board power">
       <thead><tr><th>#</th><th>Team</th><th class="r" title="Compared with the current standings">vs. standings</th><th class="r">Now</th><th class="r">Projected</th></tr></thead>
       <tbody>${rows}</tbody></table></div>
     <details class="how"><summary>How the projection works</summary>

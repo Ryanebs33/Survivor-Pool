@@ -335,29 +335,29 @@ html.intro-lock, html.intro-lock body{overflow:hidden}
 .intro-palms.right{right:-2%}
 .intro-ground{position:absolute;left:0;right:0;bottom:0;height:16%;background:linear-gradient(180deg,rgba(2,8,6,0),#020806 70%);pointer-events:none}
 .intro-stage{position:relative;z-index:2;text-align:center;display:grid;justify-items:center;gap:14px;max-width:900px;width:100%}
-.intro-kicker{font:500 12px/1 var(--mono);letter-spacing:.32em;text-transform:uppercase;color:var(--flame-hi);opacity:0;animation:iFade .8s ease .2s forwards}
+.intro-kicker{font:500 12px/1 var(--mono);letter-spacing:.32em;text-transform:uppercase;color:var(--flame-hi);opacity:0;animation:iFade .4s ease 0s forwards}
 .intro-lines{list-style:none;margin:6px 0 4px;padding:0;display:grid;gap:4px}
-.intro-lines li{font:800 clamp(26px,6vw,46px)/1.05 var(--display);text-transform:uppercase;letter-spacing:.06em;opacity:0;transform:translateY(14px);filter:blur(6px);animation:iLine .9s cubic-bezier(.2,.7,.2,1) forwards}
-.intro-lines li:nth-child(1){animation-delay:.8s}
-.intro-lines li:nth-child(2){animation-delay:1.55s}
-.intro-lines li:nth-child(3){animation-delay:2.3s;color:var(--ember)}
+.intro-lines li{font:800 clamp(26px,6vw,46px)/1.05 var(--display);text-transform:uppercase;letter-spacing:.06em;opacity:0;transform:translateY(14px);filter:blur(6px);animation:iLine .45s cubic-bezier(.2,.7,.2,1) forwards}
+.intro-lines li:nth-child(1){animation-delay:.1s}
+.intro-lines li:nth-child(2){animation-delay:.3s}
+.intro-lines li:nth-child(3){animation-delay:.5s;color:var(--ember)}
 .intro-title-row{display:flex;align-items:flex-end;justify-content:center;gap:clamp(10px,3vw,34px);margin-top:10px}
-.intro-torch{width:clamp(26px,5vw,44px);height:auto;flex:0 0 auto;opacity:0;overflow:visible;animation:iFade .6s ease 2.9s forwards;filter:drop-shadow(0 0 16px rgba(255,138,61,.75))}
+.intro-torch{width:clamp(26px,5vw,44px);height:auto;flex:0 0 auto;opacity:0;overflow:visible;animation:iFade .3s ease .75s forwards;filter:drop-shadow(0 0 16px rgba(255,138,61,.75))}
 .intro-title{min-width:0}
-.intro-torch .if{transform-origin:20px 46px;transform:scale(0);animation:iIgnite .7s cubic-bezier(.2,1.6,.4,1) forwards, flick 1.5s ease-in-out 4s infinite alternate}
-.intro-torch.t1 .if{animation-delay:3.05s,4s}
-.intro-torch.t2 .if{animation-delay:3.25s,4.2s}
+.intro-torch .if{transform-origin:20px 46px;transform:scale(0);animation:iIgnite .4s cubic-bezier(.2,1.6,.4,1) forwards, flick 1.5s ease-in-out 1.4s infinite alternate}
+.intro-torch.t1 .if{animation-delay:.8s,1.4s}
+.intro-torch.t2 .if{animation-delay:.9s,1.5s}
 .intro-title{margin:0;line-height:.82;display:grid;justify-items:center}
-.it-a{font:900 clamp(56px,15vw,150px)/.82 var(--stencil);text-transform:uppercase;letter-spacing:.01em;color:var(--night-ink);opacity:0;transform:scale(1.25);filter:blur(10px);animation:iTitle 1.1s cubic-bezier(.2,.7,.2,1) 3.2s forwards;text-shadow:0 0 40px rgba(255,138,61,.35)}
-.it-b{font:800 clamp(22px,5.2vw,48px)/1 var(--display);letter-spacing:.24em;text-transform:uppercase;color:var(--ember);margin-top:10px;opacity:0;animation:iFade .9s ease 3.8s forwards}
-.intro-band{width:min(520px,80vw);height:12px;margin-top:6px;transform:scaleX(0);animation:iWipe .8s cubic-bezier(.7,0,.3,1) 3.9s forwards;background:
+.it-a{font:900 clamp(56px,15vw,150px)/.82 var(--stencil);text-transform:uppercase;letter-spacing:.01em;color:var(--night-ink);opacity:0;transform:scale(1.25);filter:blur(10px);animation:iTitle .6s cubic-bezier(.2,.7,.2,1) .7s forwards;text-shadow:0 0 40px rgba(255,138,61,.35)}
+.it-b{font:800 clamp(22px,5.2vw,48px)/1 var(--display);letter-spacing:.24em;text-transform:uppercase;color:var(--ember);margin-top:10px;opacity:0;animation:iFade .4s ease 1.05s forwards}
+.intro-band{width:min(520px,80vw);height:12px;margin-top:6px;transform:scaleX(0);animation:iWipe .45s cubic-bezier(.7,0,.3,1) 1.15s forwards;background:
   linear-gradient(135deg,var(--toka) 25%,transparent 25%) -6px 0/12px 12px,linear-gradient(225deg,var(--toka) 25%,transparent 25%) -6px 0/12px 12px,
   linear-gradient(315deg,var(--savu) 25%,transparent 25%) 0 0/12px 12px,linear-gradient(45deg,var(--savu) 25%,transparent 25%) 0 0/12px 12px}
-.intro-motto{margin:4px 0 6px;font:500 12px/1 var(--mono);letter-spacing:.3em;text-transform:uppercase;color:var(--night-muted);opacity:0;animation:iFade .8s ease 4.1s forwards}
-.intro-btn{position:relative;display:grid;gap:4px;justify-items:center;border:0;cursor:pointer;color:#1A0D07;padding:16px 34px 13px;border-radius:12px;
+.intro-motto{margin:4px 0 6px;font:500 12px/1 var(--mono);letter-spacing:.3em;text-transform:uppercase;color:var(--night-muted);opacity:0;animation:iFade .35s ease 1.3s forwards}
+.intro-btn{position:relative;display:grid;gap:4px;justify-items:center;border:0;cursor:pointer;color:#1A0D07;padding:16px 56px 14px;border-radius:12px;
   background:linear-gradient(180deg,#FFB067,var(--ember) 55%,#E0632A);box-shadow:0 0 0 1px rgba(255,210,122,.5) inset,0 10px 40px -6px rgba(255,138,61,.8);
-  opacity:0;transform:translateY(10px);animation:iRise .7s ease 4.4s forwards, iPulse 2.2s ease-in-out 5.2s infinite}
-.intro-btn span{font:900 clamp(22px,4.6vw,30px)/1 var(--display);text-transform:uppercase;letter-spacing:.08em}
+  opacity:0;transform:translateY(10px);animation:iRise .4s ease 1.5s forwards, iPulse 2.2s ease-in-out 2s infinite}
+.intro-btn span{font:900 clamp(24px,5vw,32px)/1 var(--display);text-transform:uppercase;letter-spacing:.16em}
 .intro-btn small{font:600 10.5px/1 var(--mono);letter-spacing:.22em;text-transform:uppercase;opacity:.75}
 .intro-btn:hover{filter:brightness(1.08)}
 .intro-btn:focus-visible{outline:3px solid var(--flame-hi);outline-offset:4px}
@@ -585,7 +585,7 @@ nav.tabs::after{content:"";position:absolute;top:0;right:0;bottom:0;width:36px;p
     </div>
     <div class="intro-band" aria-hidden="true"></div>
     <p class="intro-motto">Outwit · Outplay · Outlast</p>
-    <button type="button" class="intro-btn" id="introEnter"><span>Light your torch</span><small>Enter the game</small></button>
+    <button type="button" class="intro-btn" id="introEnter"><span>Enter</span></button>
     <button type="button" class="intro-skip" id="introSkip">Skip intro</button>
   </div>
   <div class="intro-flash" aria-hidden="true"></div>
@@ -611,7 +611,7 @@ nav.tabs::after{content:"";position:absolute;top:0;right:0;bottom:0;width:36px;p
     raf=requestAnimationFrame(tick); }
   if(!reduce){ size(); addEventListener("resize",size); for(var i=0;i<70;i++) parts.push(spawn(Math.random()*innerHeight)); tick();
     // let the sequence play; tapping the background fast-forwards it
-    setTimeout(function(){ intro.classList.add("ready"); document.getElementById("introEnter").focus({preventScroll:true}); }, 4600);
+    setTimeout(function(){ intro.classList.add("ready"); document.getElementById("introEnter").focus({preventScroll:true}); }, 2000);
     intro.addEventListener("click", function(ev){ if(!intro.classList.contains("ready") && !ev.target.closest("button")){ intro.classList.add("ready","still"); } });
   } else { document.getElementById("introEnter").focus({preventScroll:true}); }
   function enter(){

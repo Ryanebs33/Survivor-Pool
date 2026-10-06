@@ -300,6 +300,19 @@ button.pick-link{font:inherit;color:inherit;background:none;border:0;text-align:
 .cp-name.ov-btn:hover{color:var(--ink);border-color:var(--muted)}
 .sb-anchor:focus-within .ov-btn{color:var(--torch);border-color:var(--torch)}
 
+/* six-up highlights on the Scoreboard: 2 rows of 3, compact */
+.highlights.hl6{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.hl6 .hl{padding:12px 14px;gap:3px}
+.hl6 .hl-v{font-size:21px}
+.hl6 .hl-n{font-size:12px}
+@media (max-width:640px){
+  .highlights.hl6{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+  .hl6 .hl{padding:9px 8px;gap:3px;border-radius:8px}
+  .hl6 .hl-k{font-size:8.5px;letter-spacing:.06em;line-height:1.2}
+  .hl6 .hl-v{font-size:14.5px;line-height:1.05}
+  .hl6 .hl-n{font-size:10px;line-height:1.25}
+}
+
 /* Spoiler gate */
 .gate{background:var(--gate);color:var(--gate-ink);border-radius:12px;padding:48px 24px;text-align:center;display:grid;justify-items:center;gap:14px}
 .gate .flame{width:48px;height:64px}
@@ -1025,7 +1038,7 @@ function boardPage(){
       <a class="ep-tab" href="#scoreboard" ${boardTab!=="power"?'aria-current="page"':""}>Standings</a>
       <a class="ep-tab" href="#power" ${boardTab==="power"?'aria-current="page"':""}>Power rankings</a></nav>
     ${boardTab==="power" ? powerHTML()+"</section>" : `
-    ${LATEST_EP()?`<h3 class="wk-title">Episode ${LATEST_EP()} highlights</h3>${highlightsHTML(recapData(LATEST_EP()))}<h3 class="wk-title wk-standings">Standings</h3>`:""}
+    ${LATEST_EP()?`<h3 class="wk-title">Episode ${LATEST_EP()} highlights</h3>${highlightsHTML(recapData(LATEST_EP()), true)}<h3 class="wk-title wk-standings">Standings</h3>`:""}
     <div class="split">
       <div class="tablewrap stand-wrap"><table class="board">
         <thead><tr><th>#</th><th>Entrant &amp; picks</th><th>Left</th><th class="r">Pts</th></tr></thead>
@@ -1560,12 +1573,25 @@ function recapText(d){
 }
 const moveHTML = m => m==null ? `<span class="mv new">–</span>` : m>0 ? `<span class="mv up" aria-label="up ${m}">▲${m}</span>` : m<0 ? `<span class="mv down" aria-label="down ${-m}">▼${-m}</span>` : `<span class="mv same" aria-label="no change">=</span>`;
 
-function highlightsHTML(d){
-  return `<div class="highlights">
+function highlightsHTML(d, extra){
+  return `<div class="highlights${extra?" hl6":""}">
       <div class="hl"><span class="hl-k">Top score this week</span><span class="hl-v">${d.topWeekTies.map(r=>esc(r.e.name)).join(" & ")}</span><span class="hl-n mono">${d.topWeekTies[0].week} pts</span></div>
-      <div class="hl"><span class="hl-k">Biggest climber</span>${d.climber?`<span class="hl-v">${esc(d.climber.e.name)}</span><span class="hl-n mono">Up ${d.climber.move} ${d.climber.move===1?"spot":"spots"}</span>`:`<span class="hl-v">${d.prevEp==null?"First scored week":"No movement"}</span><span class="hl-n mono">${d.prevEp==null?"Standings start here":"Same order as last week"}</span>`}</div>
+      <div class="hl"><span class="hl-k">Biggest climber</span>${d.climber?`<span class="hl-v">${esc(d.climber.e.name)}</span><span class="hl-n mono">Up ${d.climber.move} ${d.climber.move===1?"spot":"spots"}</span>`:(extra?`<span class="hl-v">${d.prevEp==null?"Nobody yet":"Nobody"}</span><span class="hl-n mono">${d.prevEp==null?"First scored week":"No one moved up"}</span>`:`<span class="hl-v">${d.prevEp==null?"First scored week":"No movement"}</span><span class="hl-n mono">${d.prevEp==null?"Standings start here":"Same order as last week"}</span>`)}</div>
       <div class="hl"><span class="hl-k">Castaway of the week</span><span class="hl-v">${esc(d.castTop.c.name)}</span><span class="hl-n mono">${d.castTop.pts} pts · on ${d.owners} ${d.owners===1?"team":"teams"}</span></div>
+      ${extra?extraHighlights(d):""}
     </div>`;
+}
+/* Three more for the Scoreboard: rough week, biggest fall, torch snuffed. */
+function extraHighlights(d){
+  const minW = Math.min(...d.rows.map(r=>r.week));
+  const low = d.rows.filter(r=>r.week===minW);
+  const fall = d.prevEp!=null ? [...d.rows].filter(r=>r.move<0).sort((a,b)=>a.move-b.move)[0] : null;
+  const out = (EPISODES.find(e=>e.ep===d.ep)?.out)||[];
+  const hit = out.length ? ENTRANTS.filter(e=>e.picks.some(id=>out.includes(id))).length : 0;
+  return `
+      <div class="hl"><span class="hl-k">Rough week</span><span class="hl-v">${low.length>2?`${low.length}-way tie`:low.map(r=>esc(r.e.name)).join(" & ")}</span><span class="hl-n mono">${minW} pts</span></div>
+      <div class="hl"><span class="hl-k">Biggest fall</span>${fall?`<span class="hl-v">${esc(fall.e.name)}</span><span class="hl-n mono">Down ${-fall.move} ${fall.move===-1?"spot":"spots"}</span>`:`<span class="hl-v">${d.prevEp==null?"Nobody yet":"Nobody"}</span><span class="hl-n mono">${d.prevEp==null?"First scored week":"No one dropped"}</span>`}</div>
+      <div class="hl"><span class="hl-k">Torch snuffed</span><span class="hl-v">${out.length?out.map(id=>esc(short(byId[id]))).join(" & "):"Nobody"}</span><span class="hl-n mono">${out.length?`Hit ${hit} ${hit===1?"team":"teams"}`:"Everyone survived"}</span></div>`;
 }
 function recapPage(){
   const eps = SCORED_EPS();

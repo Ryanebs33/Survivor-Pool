@@ -247,11 +247,27 @@ button.pick-link{font:inherit;color:inherit;background:none;border:0;text-align:
 .sb-row{display:flex;justify-content:space-between;gap:10px;font-weight:600}
 .sb-row .mvp-tag{margin-left:6px}
 .sb-cats{color:var(--night-muted);font-size:11.5px;line-height:1.4;margin-top:2px}
-.sb-eps{display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:1px solid rgba(243,238,228,.15);font:500 11px/1.3 var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--flame-hi)}
+.sb-eps-unused{display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:1px solid rgba(243,238,228,.15);font:500 11px/1.3 var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--flame-hi)}
 .sb-eps b{color:var(--night-ink);font-weight:600}
 .board tr:has(.sb-anchor:hover),.board tr:has(.sb-anchor:focus-within){position:relative;z-index:30}
 
 .pop-closed .sb-pop,.pop-closed .cp-pop,.pop-closed .bio-pop,.pop-closed .own-pop{display:none!important}
+
+.sb-pop::before{content:"";position:absolute;left:0;right:0;top:-10px;height:10px}
+.sb-pages{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;margin:0 -2px}
+.sb-pages::-webkit-scrollbar{display:none}
+.sb-page{flex:0 0 100%;scroll-snap-align:start;padding:0 2px;min-width:0}
+.sb-page .bd-head{margin-top:2px}
+.sb-gone{margin-top:6px;font-size:11.5px;color:var(--night-muted)}
+.sb-nav{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;padding-top:8px;border-top:1px solid rgba(243,238,228,.15)}
+.sb-arrow{font:700 20px/1 var(--body);width:32px;height:28px;border-radius:8px;border:1px solid rgba(243,238,228,.2);background:transparent;color:var(--night-ink);cursor:pointer}
+.sb-arrow:hover{background:rgba(243,238,228,.08)}
+.sb-dots{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.sb-dot{width:8px;height:8px;border-radius:50%;border:0;padding:0;background:rgba(243,238,228,.3);cursor:pointer}
+.sb-dot[aria-current]{background:var(--ember);width:18px;border-radius:4px}
+.sb-arrow:focus-visible,.sb-dot:focus-visible{outline:2px solid var(--ember);outline-offset:2px}
+.sb-hint{text-align:center;font:500 10px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--night-muted);margin-top:6px}
+@media (hover:hover){.sb-hint{display:none}}
 
 /* Spoiler gate */
 .gate{background:var(--gate);color:var(--gate-ink);border-radius:12px;padding:48px 24px;text-align:center;display:grid;justify-items:center;gap:14px}
@@ -706,10 +722,11 @@ const SHORT_CAT = {"Wins a group Reward Challenge":"Group reward","Wins a group 
   "Says a curse word that is bleeped":"Curse word","Survived the week":"Survived","Found a hidden immunity idol":"Found idol",
   "Treated for a medical emergency":"Medical emergency","Torch snuffed as a result of a blindside":"Blindsided","Other point categories":"Other"};
 /* A castaway's points by category across scored episodes (optionally only after a given episode). */
-function castCats(id, afterEp){
+function castCats(id, afterEp, onlyEp){
   const r=RESULTS[id], cats=new Map(); let total=0;
   EPISODES.forEach(e=>{
     if(!Object.keys(e.pts).length) return;
+    if(onlyEp!=null && e.ep!==onlyEp) return;
     if(afterEp!=null && e.ep<=afterEp) return;
     if(r.out!=null && e.ep>r.out) return;
     const t=r.byEp[e.ep]||0; total+=t; let used=0;
@@ -722,17 +739,32 @@ function castCats(id, afterEp){
 }
 /* How an entrant's team earned its points, castaway by castaway. */
 function entrantBreakdownHTML(e){
-  const rows = e.picks.map(id=>({id, tag:id===e.mvp?"MVP":"", ...castCats(id)}));
-  if(e.merge) rows.push({id:e.merge, tag:"Merge", ...castCats(e.merge, MERGE_EP ?? Infinity)});
-  rows.sort((a,b)=>b.total-a.total);
+  const eps = SCORED_EPS().slice().reverse();            // newest week first
   const mvpBonus = POOL.winner && POOL.winner===e.mvp ? 30 : 0;
-  const epTotals = SCORED_EPS().map(ep=>[ep, weekFor(e,ep).total]);
-  return `<div class="bd-title">${esc(e.name)} <span class="mono">${score(e)} pts</span></div>
-    <ul class="sb-list">${rows.map(x=>{const c=byId[x.id], out=RESULTS[x.id].out;
-      return `<li><div class="sb-row"><span>${esc(c.name)}${x.tag?`<span class="mvp-tag">${x.tag}</span>`:""}${out!=null?` <span class="bd-out">Out Ep ${out}</span>`:""}</span><span class="mono">+${x.total}</span></div>
-        ${x.cats.length?`<div class="sb-cats">${x.cats.map(([l,p])=>`${esc(SHORT_CAT[l]||l)} +${p}`).join(" · ")}</div>`:`<div class="sb-cats">No points yet</div>`}</li>`}).join("")}
-      ${mvpBonus?`<li><div class="sb-row"><span>MVP won the game</span><span class="mono">+30</span></div></li>`:""}</ul>
-    ${epTotals.length?`<div class="sb-eps">${epTotals.map(([ep,t])=>`<span>Ep ${ep} <b class="mono">+${t}</b></span>`).join("")}</div>`:""}`;
+  const head = `<div class="bd-title">${esc(e.name)} <span class="mono">${score(e)} pts</span></div>`;
+  if(!eps.length) return head + `<p class="bd-none">No episodes scored yet.</p>`;
+  const page = (ep, i) => {
+    const ids = [...e.picks.map(id=>({id, tag:id===e.mvp?"MVP":""}))];
+    if(e.merge && MERGE_EP!=null && ep>MERGE_EP) ids.push({id:e.merge, tag:"Merge"});
+    const live = [], gone = [];
+    ids.forEach(x=>{ const out=RESULTS[x.id].out; if(out!=null && out<ep) gone.push(x); else live.push({...x, out, ...castCats(x.id, null, ep)}); });
+    live.sort((a,b)=>b.total-a.total);
+    const week = weekFor(e, ep).total;
+    return `<section class="sb-page" aria-label="Episode ${ep}">
+      <div class="bd-head"><span>Episode ${ep}${i===0?" · latest":""}</span><span class="mono">+${week} pts</span></div>
+      <ul class="sb-list">${live.map(x=>{const c=byId[x.id];
+        return `<li><div class="sb-row"><span>${esc(c.name)}${x.tag?`<span class="mvp-tag">${x.tag}</span>`:""}${x.out===ep?` <span class="bd-out">Voted out</span>`:""}</span><span class="mono">+${x.total}</span></div>
+          <div class="sb-cats">${x.cats.length?x.cats.map(([l,p])=>`${esc(SHORT_CAT[l]||l)} +${p}`).join(" · "):"No points this week"}</div></li>`}).join("")}
+        ${mvpBonus && ep===eps[0]?`<li><div class="sb-row"><span>MVP won the game</span><span class="mono">+30</span></div></li>`:""}</ul>
+      ${gone.length?`<div class="sb-gone">Already out: ${gone.map(x=>esc(short(byId[x.id]))).join(", ")}</div>`:""}
+    </section>`;
+  };
+  const many = eps.length > 1;
+  return head + `<div class="sb-pages" tabindex="-1">${eps.map(page).join("")}</div>
+    ${many?`<div class="sb-nav"><button type="button" class="sb-arrow" data-dir="-1" aria-label="Newer week">‹</button>
+      <div class="sb-dots">${eps.map((ep,i)=>`<button type="button" class="sb-dot" data-i="${i}" aria-label="Episode ${ep}" ${i===0?'aria-current="true"':""}></button>`).join("")}</div>
+      <button type="button" class="sb-arrow" data-dir="1" aria-label="Older week">›</button></div>
+      <div class="sb-hint">Swipe for earlier weeks</div>`:""}`;
 }
 /* How one castaway earned their points, episode by episode. */
 function breakdownHTML(c){
@@ -1404,6 +1436,15 @@ function wire(){
   view.querySelectorAll("[data-tribe]").forEach(b=>b.addEventListener("click",()=>{tribeFilter=b.dataset.tribe;view.innerHTML=castPage();wire();}));
   const sel=document.getElementById("entrantSel");
   if(sel) sel.addEventListener("change",()=>{picksSel=sel.value;view.innerHTML=picksPage();wire();document.getElementById("entrantSel").focus();});
+  view.querySelectorAll(".sb-pop").forEach(pop=>{
+    const pages=pop.querySelector(".sb-pages"); if(!pages) return;
+    const dots=[...pop.querySelectorAll(".sb-dot")];
+    const idx=()=>Math.round(pages.scrollLeft/pages.clientWidth);
+    const go=i=>{ i=Math.max(0,Math.min(dots.length-1,i)); pages.scrollTo({left:i*pages.clientWidth, behavior:"smooth"}); };
+    pages.addEventListener("scroll",()=>{ const i=idx(); dots.forEach((d,k)=>d.toggleAttribute("aria-current",k===i)); },{passive:true});
+    dots.forEach(d=>d.addEventListener("click",ev=>{ev.stopPropagation(); go(+d.dataset.i);}));
+    pop.querySelectorAll(".sb-arrow").forEach(btn=>btn.addEventListener("click",ev=>{ev.stopPropagation(); go(idx()+(+btn.dataset.dir));}));
+  });
   view.querySelectorAll(".sb-anchor").forEach(a=>{
     const place=()=>{ const pop=a.querySelector(".sb-pop"); pop.style.left="0px";
       const r=pop.getBoundingClientRect(), maxR=document.documentElement.clientWidth-12;

@@ -190,7 +190,8 @@ input[type="datetime-local"]:focus-visible{outline:3px solid var(--torch);outlin
 .cp-name:focus-visible{outline:3px solid var(--torch);outline-offset:2px;border-radius:3px}
 .cp-pop{display:none;position:absolute;z-index:20;left:0;top:calc(100% - 2px);width:min(300px,calc(100vw - 48px));background:var(--night);color:var(--night-ink);border-radius:10px;padding:12px 14px;box-shadow:0 14px 34px -12px rgba(0,0,0,.55);font-size:13px}
 .cp-pop::before{content:"";position:absolute;top:-6px;left:18px;width:12px;height:12px;background:var(--night);transform:rotate(45deg)}
-.cp-item:hover .cp-pop,.cp-item:focus-within .cp-pop{display:block}
+.cp-item:focus-within .cp-pop{display:block}
+@media (hover:hover){.cp-item:hover .cp-pop{display:block}}
 .bd-title{font:800 18px/1.1 var(--display);text-transform:uppercase;letter-spacing:.03em;display:flex;justify-content:space-between;gap:10px;margin-bottom:8px}
 .bd-title .mono{font-size:13px;color:var(--flame-hi);font-weight:500}
 .bd-ep+.bd-ep{margin-top:10px;padding-top:10px;border-top:1px solid rgba(243,238,228,.12)}
@@ -208,7 +209,8 @@ button.pick-link{font:inherit;color:inherit;background:none;border:0;text-align:
 .bio-pop::before{content:"";position:absolute;top:-6px;left:22px;width:12px;height:12px;background:var(--night);transform:rotate(45deg)}
 .bio-pop.flip{left:auto;right:0}
 .bio-pop.flip::before{left:auto;right:22px}
-.pick:hover .bio-pop,.pick:focus-within .bio-pop{display:block}
+.pick:focus-within .bio-pop{display:block}
+@media (hover:hover){.pick:hover .bio-pop{display:block}}
 .bp-top{display:flex;gap:10px;align-items:center;margin-bottom:8px}
 .bp-top .badge{width:40px;height:40px;font-size:16px;flex:0 0 auto}
 .bp-top .bd-title{margin:0}
@@ -229,7 +231,8 @@ button.pick-link{font:inherit;color:inherit;background:none;border:0;text-align:
 .own-count .mono{color:var(--torch);font-weight:600}
 .own-pop{display:none;position:absolute;z-index:25;left:0;right:0;top:calc(100% + 8px);background:var(--night);color:var(--night-ink);border-radius:10px;padding:12px 14px;box-shadow:0 14px 34px -12px rgba(0,0,0,.55);font-size:13.5px}
 .own-pop::before{content:"";position:absolute;top:-6px;left:26px;width:12px;height:12px;background:var(--night);transform:rotate(45deg)}
-.card:hover .own-pop,.card:focus-within .own-pop,.card:focus .own-pop{display:block}
+.card:focus-within .own-pop,.card:focus .own-pop{display:block}
+@media (hover:hover){.card:hover .own-pop{display:block}}
 .card:hover,.card:focus-within{z-index:5}
 .own-pop ul{list-style:none;margin:6px 0 0;padding:0;columns:2;column-gap:14px}
 .own-pop li{padding:3px 0;break-inside:avoid}
@@ -241,7 +244,8 @@ button.pick-link{font:inherit;color:inherit;background:none;border:0;text-align:
 .sb-anchor{position:relative;display:inline-block}
 .sb-name{font-weight:600}
 .sb-pop{display:none;position:absolute;z-index:30;left:0;top:calc(100% + 8px);width:min(360px,calc(100vw - 24px));background:var(--night);color:var(--night-ink);border-radius:10px;padding:12px 14px;box-shadow:0 14px 34px -12px rgba(0,0,0,.55);font-size:13px;font-weight:400;text-align:left}
-.sb-anchor:hover .sb-pop,.sb-anchor:focus-within .sb-pop{display:block}
+.sb-anchor:focus-within .sb-pop{display:block}
+@media (hover:hover){.sb-anchor:hover .sb-pop{display:block}}
 .sb-list{list-style:none;margin:0;padding:0}
 .sb-list li{padding:6px 0;border-top:1px solid rgba(243,238,228,.1)}
 .sb-row{display:flex;justify-content:space-between;gap:10px;font-weight:600}
@@ -1798,7 +1802,10 @@ function placePop(host){
   openPop = host;
 }
 const popHostOf = el => el && el.closest && POP_MAP.map(([h])=>el.closest(h)).find(Boolean);
-document.addEventListener("mouseover", ev=>{ const h=popHostOf(ev.target); if(h && h!==openPop){ placePop(h); requestAnimationFrame(()=>placePop(h)); } });
+document.addEventListener("mouseover", ev=>{ const h=popHostOf(ev.target); if(h && h!==openPop){
+  // only one card at a time: hovering a new name closes a card that was opened by click
+  const f=popHostOf(document.activeElement); if(f && f!==h && lastPointer==="mouse") document.activeElement.blur();
+  placePop(h); requestAnimationFrame(()=>placePop(h)); } });
 document.addEventListener("mouseout", ev=>{ const h=popHostOf(ev.target); if(h && h===openPop && !h.contains(ev.relatedTarget)) openPop=null; });
 document.addEventListener("focusin", ev=>{ const h=popHostOf(ev.target); if(h){ placePop(h); requestAnimationFrame(()=>placePop(h)); } });
 addEventListener("scroll", ()=>{ if(openPop) requestAnimationFrame(()=>openPop && placePop(openPop)); }, {passive:true});

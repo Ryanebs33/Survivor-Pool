@@ -360,10 +360,7 @@ html.intro-lock, html.intro-lock body{overflow:hidden}
 .intro-btn span{font:700 clamp(15px,3.6vw,18px)/1 var(--display);text-transform:uppercase;letter-spacing:.32em;margin-right:-.32em}
 .intro-btn:hover{color:var(--ember);border-color:var(--ember);background:rgba(255,138,61,.08)}
 .intro-btn:focus-visible{outline:2px solid rgba(255,138,61,.7);outline-offset:3px}
-.intro-skip{position:absolute;top:calc(env(safe-area-inset-top,0px) + 14px);right:16px;font:500 11px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--night-muted);background:transparent;border:1px solid rgba(243,238,228,.2);border-radius:999px;padding:7px 11px;cursor:pointer}
-.intro .intro-stage > .intro-skip{position:fixed}
-.intro-skip:hover{color:var(--night-ink)}
-.intro-flash{position:absolute;inset:0;pointer-events:none;opacity:0;background:radial-gradient(circle at 50% 70%,rgba(255,210,122,.95),rgba(255,138,61,.6) 30%,rgba(255,138,61,0) 70%)}
+.intro .intro-stage > .intro-flash{position:absolute;inset:0;pointer-events:none;opacity:0;background:radial-gradient(circle at 50% 70%,rgba(255,210,122,.95),rgba(255,138,61,.6) 30%,rgba(255,138,61,0) 70%)}
 /* fast-forward / reduced motion: everything shown at once */
 .intro.still *{animation-delay:0s !important;animation-duration:.01s !important}
 .intro.still .intro-torch .if{animation:iIgnite .01s forwards, flick 1.5s ease-in-out infinite alternate !important}
@@ -585,7 +582,6 @@ nav.tabs::after{content:"";position:absolute;top:0;right:0;bottom:0;width:36px;p
     <div class="intro-band" aria-hidden="true"></div>
     <p class="intro-motto">Outwit · Outplay · Outlast</p>
     <button type="button" class="intro-btn" id="introEnter"><span>Enter</span></button>
-    <button type="button" class="intro-skip" id="introSkip">Skip intro</button>
   </div>
   <div class="intro-flash" aria-hidden="true"></div>
 </div>
@@ -621,7 +617,6 @@ nav.tabs::after{content:"";position:absolute;top:0;right:0;bottom:0;width:36px;p
     setTimeout(function(){ if(raf) cancelAnimationFrame(raf); intro.remove(); }, reduce?300:1900);
   }
   document.getElementById("introEnter").addEventListener("click", enter);
-  document.getElementById("introSkip").addEventListener("click", enter);
   addEventListener("keydown", function(ev){ if(document.body.contains(intro) && (ev.key==="Escape" || ev.key==="Enter")) enter(); });
 })();
 </script>

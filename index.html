@@ -354,13 +354,12 @@ html.intro-lock, html.intro-lock body{overflow:hidden}
   linear-gradient(135deg,var(--toka) 25%,transparent 25%) -6px 0/12px 12px,linear-gradient(225deg,var(--toka) 25%,transparent 25%) -6px 0/12px 12px,
   linear-gradient(315deg,var(--savu) 25%,transparent 25%) 0 0/12px 12px,linear-gradient(45deg,var(--savu) 25%,transparent 25%) 0 0/12px 12px}
 .intro-motto{margin:4px 0 6px;font:500 12px/1 var(--mono);letter-spacing:.3em;text-transform:uppercase;color:var(--night-muted);opacity:0;animation:iFade .35s ease 1.3s forwards}
-.intro-btn{position:relative;display:grid;gap:4px;justify-items:center;border:0;cursor:pointer;color:#1A0D07;padding:16px 56px 14px;border-radius:12px;
-  background:linear-gradient(180deg,#FFB067,var(--ember) 55%,#E0632A);box-shadow:0 0 0 1px rgba(255,210,122,.5) inset,0 10px 40px -6px rgba(255,138,61,.8);
-  opacity:0;transform:translateY(10px);animation:iRise .4s ease 1.5s forwards, iPulse 2.2s ease-in-out 2s infinite}
-.intro-btn span{font:900 clamp(24px,5vw,32px)/1 var(--display);text-transform:uppercase;letter-spacing:.16em}
-.intro-btn small{font:600 10.5px/1 var(--mono);letter-spacing:.22em;text-transform:uppercase;opacity:.75}
-.intro-btn:hover{filter:brightness(1.08)}
-.intro-btn:focus-visible{outline:3px solid var(--flame-hi);outline-offset:4px}
+.intro-btn{position:relative;display:grid;justify-items:center;cursor:pointer;color:var(--night-ink);padding:12px 44px;border-radius:999px;
+  background:transparent;border:1px solid rgba(243,238,228,.45);box-shadow:none;backdrop-filter:blur(2px);
+  opacity:0;transform:translateY(10px);animation:iRise .4s ease 1.5s forwards, iPulse 2.6s ease-in-out 2s infinite;transition:color .2s,border-color .2s,background .2s}
+.intro-btn span{font:700 clamp(15px,3.6vw,18px)/1 var(--display);text-transform:uppercase;letter-spacing:.32em;margin-right:-.32em}
+.intro-btn:hover{color:var(--ember);border-color:var(--ember);background:rgba(255,138,61,.08)}
+.intro-btn:focus-visible{outline:2px solid rgba(255,138,61,.7);outline-offset:3px}
 .intro-skip{position:absolute;top:calc(env(safe-area-inset-top,0px) + 14px);right:16px;font:500 11px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--night-muted);background:transparent;border:1px solid rgba(243,238,228,.2);border-radius:999px;padding:7px 11px;cursor:pointer}
 .intro .intro-stage > .intro-skip{position:fixed}
 .intro-skip:hover{color:var(--night-ink)}
@@ -368,7 +367,7 @@ html.intro-lock, html.intro-lock body{overflow:hidden}
 /* fast-forward / reduced motion: everything shown at once */
 .intro.still *{animation-delay:0s !important;animation-duration:.01s !important}
 .intro.still .intro-torch .if{animation:iIgnite .01s forwards, flick 1.5s ease-in-out infinite alternate !important}
-.intro.still .intro-btn{animation:iRise .01s forwards, iPulse 2.2s ease-in-out .5s infinite !important}
+.intro.still .intro-btn{animation:iRise .01s forwards, iPulse 2.6s ease-in-out .5s infinite !important}
 /* entering */
 .intro.leaving .intro-flash{animation:iFlash 1.1s ease forwards}
 .intro.leaving .intro-stage{animation:iOut .9s cubic-bezier(.7,0,.3,1) .15s forwards}
@@ -379,7 +378,7 @@ html.intro-lock, html.intro-lock body{overflow:hidden}
 @keyframes iIgnite{0%{transform:scale(0)}100%{transform:scale(1)}}
 @keyframes iWipe{to{transform:scaleX(1)}}
 @keyframes iRise{to{opacity:1;transform:none}}
-@keyframes iPulse{0%,100%{box-shadow:0 0 0 1px rgba(255,210,122,.5) inset,0 10px 40px -6px rgba(255,138,61,.8)}50%{box-shadow:0 0 0 1px rgba(255,210,122,.7) inset,0 10px 60px 2px rgba(255,138,61,.95)}}
+@keyframes iPulse{0%,100%{border-color:rgba(243,238,228,.45)}50%{border-color:rgba(255,138,61,.75)}}
 @keyframes iFlash{0%{opacity:0}25%{opacity:1}100%{opacity:0}}
 @keyframes iOut{to{opacity:0;transform:translateY(-30px) scale(.96);filter:blur(4px)}}
 @media (prefers-reduced-motion:reduce){.intro *{animation:none !important;opacity:1 !important;transform:none !important;filter:none !important}.intro{transition:opacity .2s}}
@@ -611,9 +610,9 @@ nav.tabs::after{content:"";position:absolute;top:0;right:0;bottom:0;width:36px;p
     raf=requestAnimationFrame(tick); }
   if(!reduce){ size(); addEventListener("resize",size); for(var i=0;i<70;i++) parts.push(spawn(Math.random()*innerHeight)); tick();
     // let the sequence play; tapping the background fast-forwards it
-    setTimeout(function(){ intro.classList.add("ready"); document.getElementById("introEnter").focus({preventScroll:true}); }, 2000);
+    setTimeout(function(){ intro.classList.add("ready"); }, 2000);
     intro.addEventListener("click", function(ev){ if(!intro.classList.contains("ready") && !ev.target.closest("button")){ intro.classList.add("ready","still"); } });
-  } else { document.getElementById("introEnter").focus({preventScroll:true}); }
+  }
   function enter(){
     if(intro.classList.contains("leaving")) return;
     try{ sessionStorage.setItem("s51-intro","1"); }catch(e){}
@@ -623,7 +622,7 @@ nav.tabs::after{content:"";position:absolute;top:0;right:0;bottom:0;width:36px;p
   }
   document.getElementById("introEnter").addEventListener("click", enter);
   document.getElementById("introSkip").addEventListener("click", enter);
-  addEventListener("keydown", function(ev){ if(document.body.contains(intro) && (ev.key==="Escape")) enter(); });
+  addEventListener("keydown", function(ev){ if(document.body.contains(intro) && (ev.key==="Escape" || ev.key==="Enter")) enter(); });
 })();
 </script>
 

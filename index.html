@@ -1218,13 +1218,18 @@ function breakdownHTML(c){
 function boardPage(){
   const ranked = ENTRANTS.map(e=>({...e,total:score(e)})).sort((a,b)=>b.total-a.total||a.name.localeCompare(b.name));
   let rank=0, prev=null;
+  // movement since the previous scored episode
+  const moveOf = {}; if(LATEST_EP()){ recapData(LATEST_EP()).rows.forEach(r=>moveOf[r.e.key]=r.move); }
+  const prevEpNo = SCORED_EPS().length>1 ? SCORED_EPS()[SCORED_EPS().length-2] : null;
   const rows = ranked.map((e,i)=>{
     if(e.total!==prev){rank=i+1;prev=e.total}
     const left = [...e.picks,...(e.merge?[e.merge]:[])].filter(id=>RESULTS[id]?.out==null).length;
     const chip=(id,p,tag)=>{const c=byId[id],r=RESULTS[id]||{};return `<span class="chip ${r.out!=null?'out':''}">${esc(short(c))}${tag?` <b style="color:var(--torch)">${tag}</b>`:""}<span class="mono">${p}</span></span>`};
     const chips = e.picks.map(id=>chip(id,RESULTS[id]?.pts||0,id===e.mvp?"MVP":"")).join("")
       + (e.merge?chip(e.merge,RESULTS[e.merge]?.after||0,"Merge"):"");
+    const mv = moveOf[e.key];
     return `<tr class="${rank===1?'lead':''}"><td class="rank">${rank}</td>
+      <td class="mvcell" title="${prevEpNo!=null?`Change since Episode ${prevEpNo}`:"First scored week"}">${moveHTML(mv==null?null:mv)}</td>
       <td><span class="sb-anchor"><button type="button" class="cp-name sb-name">${esc(e.name)}</button><div class="sb-pop" role="tooltip">${entrantBreakdownHTML(e)}</div></span><div class="chips">${chips}</div></td>
       <td class="mono">${left}/${e.picks.length+(e.merge?1:0)}</td><td class="total">${e.total}</td></tr>`;
   }).join("");
@@ -1241,7 +1246,7 @@ function boardPage(){
     ${LATEST_EP()?`<h3 class="wk-title">Episode ${LATEST_EP()} highlights</h3>${highlightsHTML(recapData(LATEST_EP()), true)}<h3 class="wk-title wk-standings">Standings</h3>`:""}
     <div class="split">
       <div class="tablewrap stand-wrap"><table class="board">
-        <thead><tr><th>#</th><th>Entrant &amp; picks</th><th>Left</th><th class="r">Pts</th></tr></thead>
+        <thead><tr><th>#</th><th class="r" title="Change since last week">+/−</th><th>Entrant &amp; picks</th><th>Left</th><th class="r">Pts</th></tr></thead>
         <tbody>${rows}</tbody></table></div>
       <div><h3 style="margin-bottom:10px">Castaway points</h3><div class="cast-pts"><ul>${castList}</ul></div></div>
     </div>

@@ -384,6 +384,7 @@ html.intro-lock, html.intro-lock body{overflow:hidden}
 .swap-note{color:var(--muted);text-transform:none;letter-spacing:0}
 .notice.view-note{display:flex;flex-direction:row;align-items:center;gap:8px;flex-wrap:nowrap;white-space:nowrap;width:fit-content;max-width:100%;padding:5px 12px;margin:0 0 16px;border-radius:999px;font-size:12.5px;border:1px solid color-mix(in srgb,var(--savu) 50%,transparent);background:color-mix(in srgb,var(--savu) 8%,var(--surface))}
 .notice.view-note[hidden]{display:none}
+.notice.view-note{position:sticky;top:calc(env(safe-area-inset-top,0px) + var(--navH,48px) + 8px);z-index:4;box-shadow:0 6px 16px -8px rgba(10,26,20,.35);background:color-mix(in srgb,var(--savu) 10%,var(--surface))}
 .view-note b{color:var(--savu);font:600 10.5px/1 var(--mono);text-transform:uppercase;letter-spacing:.1em}
 .view-note span{color:var(--muted)}
 .view-note .linkish{margin:0;font-size:12.5px;color:var(--savu)}
@@ -2386,6 +2387,8 @@ function updateFade(){ const st=document.querySelector(".tabs-in"); if(!st) retu
   document.querySelector("nav.tabs").style.setProperty("--fade", st.scrollLeft+st.clientWidth < st.scrollWidth-4 ? "1" : "0"); }
 document.querySelector(".tabs-in").addEventListener("scroll",updateFade,{passive:true});
 addEventListener("resize",updateFade);
+const setNavH = () => { const n=document.querySelector("nav.tabs"); if(n) document.documentElement.style.setProperty("--navH", n.offsetHeight+"px"); };
+setNavH(); addEventListener("resize", setNavH);
 addEventListener("hashchange",()=>{ route(); const h=document.querySelector(".hero"); const top=h?h.offsetHeight:0; if(scrollY>top) scrollTo(0,top); });
 route();
 </script>

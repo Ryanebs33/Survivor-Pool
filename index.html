@@ -382,6 +382,11 @@ html.intro-lock, html.intro-lock body{overflow:hidden}
 @media (max-width:640px){.intro-torch{display:none}.intro-palms{height:60%;max-width:55%;opacity:.8}.intro-stage{gap:10px}.intro-kicker,.intro-motto{letter-spacing:.2em}}
 
 .swap-note{color:var(--muted);text-transform:none;letter-spacing:0}
+.view-note{align-items:center;flex-wrap:wrap;border-style:solid;border-color:var(--savu);background:color-mix(in srgb,var(--savu) 8%,var(--surface))}
+.view-note b{color:var(--savu)}
+.view-note span{flex:1 1 260px}
+.gate .gate-prev{color:var(--flame-hi);margin-top:6px;font-size:13.5px}
+
 /* Spoiler gate */
 .gate{background:var(--gate);color:var(--gate-ink);border-radius:12px;padding:48px 24px;text-align:center;display:grid;justify-items:center;gap:14px}
 .gate .flame{width:48px;height:64px}
@@ -655,6 +660,7 @@ nav.tabs::after{content:"";position:absolute;top:0;right:0;bottom:0;width:36px;p
 </div></nav>
 
 <div class="wrap">
+  <div id="viewNote" class="notice view-note" hidden></div>
   <div id="sampleNote" class="notice" hidden><b>Sample data</b><span>The entrants and their picks are placeholders until the first real picks are submitted. Castaway points are the real weekly results.</span></div>
 
   <main id="view"></main>
@@ -677,7 +683,7 @@ const CAST = [
   {id:"ana", name:"Ana Sani", age:34, home:"Toronto, ON", job:"Voice actress", tribe:"Savu", bio:"A longtime superfan from Toronto playing in memory of her late mother."},
   {id:"jelly", name:"Angelica Loblack", nick:"Jelly", age:29, home:"Bloomington, IN", job:"Sociology professor", tribe:"Toka", bio:"Teaches Survivor in her classroom and came out to test herself in the field."},
   {id:"brady", name:"Brady Booker", age:27, home:"Knoxville, TN", job:"Professional wrestler", tribe:"Toka", bio:"Wrestles as Bodhi Hayward. An outdoorsman who says there is more strategy to him than the persona suggests."},
-  {id:"carter", name:"Carter Krull", age:24, home:"Sioux Falls, SD", job:"Livestock farmer", tribe:"Toka", orig:"Savu", bio:"A young farmer and entrepreneur who prides himself on sizing people up quickly. Swapped from Savu to Toka in Episode 3."},
+  {id:"carter", name:"Carter Krull", age:24, home:"Sioux Falls, SD", job:"Livestock farmer", tribe:"Toka", orig:"Savu", swapEp:3, bio:"A young farmer and entrepreneur who prides himself on sizing people up quickly."},
   {id:"cristian", name:"Cristian Chavez", age:26, home:"Salt Lake City, UT", job:"Head of HR", tribe:"Savu", bio:"Bubbly and offbeat, playing with his late father's lessons in mind."},
   {id:"kilby", name:"Danny Kilby", nick:"Kilby", age:30, home:"London, ON", job:"Game designer", tribe:"Toka", bio:"A proud Survivor nerd who loves puzzles and long-game strategy."},
   {id:"devin", name:"Devin Way", age:33, home:"Los Angeles, CA", job:"Actor", tribe:"Toka", bio:"TV actor with credits on Sistas and Grey's Anatomy who says integrity matters to him."},
@@ -697,7 +703,7 @@ const CAST = [
 /* Weekly results, copied from Global TV's Survivor 51 Fantasy Tribe page (globaltv.com/survivor-51-fantasy-tribe).
    pts: points each castaway earned that episode. out: castaways eliminated that episode.
    Points start with Episode 2, per Global's rules. Add one entry per episode. */
-const EPISODES = [
+const ALL_EPISODES = [
   {ep:1, pts:{}, out:["aaliyah"]},
   {ep:2, pts:{alexis:1, an:11, ana:15, brady:36, carter:1, cristian:11, devin:11, eric:1, jelly:21, jenna:11,
               kilby:11, kristin:1, lewis:11, linnea:1, maggie:16, mike:16, ori:1, patt:11, rob:11, sharonda:1}, out:["ana"],
@@ -728,12 +734,30 @@ const MERGE_EP = null;   // episode number of the merge; merge picks score from 
    Add to an episode as  detail: { brady: [["Wins an individual Reward Challenge",10], ["Hugs Jeff",5]] }
    Anything not listed shows as "Other point categories". */
 
+/* Spoiler-safe viewing: everything on the site is built from EPISODES, which can be wound back
+   to an earlier episode (viewEp) for people who haven't watched the latest one yet. */
+const EPISODES = [];
 const RESULTS = {};
-CAST.forEach(c=>RESULTS[c.id]={pts:0,out:null,after:0,byEp:{}});
-EPISODES.forEach(e=>{
-  Object.entries(e.pts).forEach(([id,p])=>{const r=RESULTS[id]; r.pts+=p; r.byEp[e.ep]=p; if(MERGE_EP!=null&&e.ep>MERGE_EP) r.after+=p;});
-  e.out.forEach(id=>RESULTS[id].out=e.ep);
-});
+const FULL_LATEST = Math.max(...ALL_EPISODES.filter(e=>Object.keys(e.pts).length).map(e=>e.ep), 0);
+const FULL_THROUGH = POOL.updatedThrough;
+let viewEp = null;   // null = everything; a number = show the site as it was after that episode
+function applyView(n){
+  viewEp = (n!=null && n<FULL_LATEST) ? n : null;
+  EPISODES.length = 0;
+  ALL_EPISODES.filter(e=>viewEp==null || e.ep<=viewEp).forEach(e=>EPISODES.push(e));
+  CAST.forEach(c=>{ RESULTS[c.id]={pts:0,out:null,after:0,byEp:{}};
+    if(c.orig) c.tribe = (viewEp==null || viewEp>=c.swapEp) ? c.now : c.orig; });
+  EPISODES.forEach(e=>{
+    Object.entries(e.pts).forEach(([id,p])=>{const r=RESULTS[id]; r.pts+=p; r.byEp[e.ep]=p; if(MERGE_EP!=null&&e.ep>MERGE_EP) r.after+=p;});
+    e.out.forEach(id=>RESULTS[id].out=e.ep);
+  });
+  POOL.updatedThrough = viewEp==null ? FULL_THROUGH : `Episode ${viewEp}`;
+  try{ if(viewEp==null) sessionStorage.removeItem("s51-view"); else sessionStorage.setItem("s51-view", String(viewEp)); }catch(e){}
+}
+CAST.forEach(c=>{ if(c.orig){ c.now=c.tribe; } });
+let savedView=null; try{ savedView=parseInt(sessionStorage.getItem("s51-view")); }catch(e){}
+applyView(Number.isFinite(savedView) ? savedView : null);
+const swapText = c => c.orig && c.tribe!==c.orig ? ` Swapped from ${c.orig} to ${c.tribe} in Episode ${c.swapEp}.` : "";
 
 /* toka: 4 Toka picks · savu: 4 Savu picks · mvp: one of the 8 · merge: extra post-merge pick (null until the merge) */
 const SAMPLE_ENTRANTS = [
@@ -758,7 +782,13 @@ const score = e => e.picks.reduce((s,id)=>s+(RESULTS[id]?.pts||0),0)
   + (POOL.winner && POOL.winner===e.mvp ? 30 : 0);
 
 
-document.getElementById("poolSub").textContent = `21 new castaways. Two tribes. One Sole Survivor. Scores through ${POOL.updatedThrough}.`;
+function updateViewChrome(){
+  document.getElementById("poolSub").textContent = `21 new castaways. Two tribes. One Sole Survivor. Scores through ${POOL.updatedThrough}.`;
+  const vn=document.getElementById("viewNote");
+  vn.hidden = viewEp==null;
+  if(viewEp!=null) vn.innerHTML = `<b>Spoiler-safe mode</b><span>You're seeing the pool as it stood after Episode ${viewEp}. Nothing from Episode ${FULL_LATEST} is shown.</span><button type="button" class="btn ghost small-btn" id="viewLatest">I've watched Episode ${FULL_LATEST}</button>`;
+}
+updateViewChrome();
 document.getElementById("sampleNote").hidden = !usingSample;
 
 const view = document.getElementById("view");
@@ -801,6 +831,7 @@ function rulesPage(){
 
 const flame = `<svg class="flame" viewBox="0 0 48 64" aria-hidden="true"><path d="M24 2C30 14 40 20 40 36a16 16 0 0 1-32 0c0-9 5-14 8-20 1 6 4 9 7 10-2-8 0-17 1-24z" fill="var(--torch)"/><path d="M24 30c3 5 7 8 7 14a7 7 0 0 1-14 0c0-5 4-8 7-14z" fill="var(--gate-ink)" opacity=".9"/></svg>`;
 
+function prevScoredEp(){ const eps=SCORED_EPS(); return eps.length>1 ? eps[eps.length-2] : null; }
 function gatePage(ep, back){
   return `<section class="page gate" role="alertdialog" aria-labelledby="gateTitle" aria-describedby="gateText">
     ${flame}
@@ -811,6 +842,7 @@ function gatePage(ep, back){
       <button class="btn" id="reveal" data-ep="${ep||LATEST_EP()}">I'm caught up. Show scores</button>
       <a class="btn ghost" href="#rules">Take me back</a>
     </div>
+    ${!ep && prevScoredEp()!=null ? `<button type="button" class="linkish gate-prev" id="revealPrev">Haven't watched Episode ${LATEST_EP()} yet? Show me everything as of Episode ${prevScoredEp()}</button>` : ""}
   </section>`;
 }
 
@@ -1223,7 +1255,7 @@ function castPage(){
           <div class="tribe ${c.tribe}">${c.tribe}</div>
           <h3>${esc(c.name)}${c.nick?` <span style="color:var(--muted);font-weight:600">“${esc(c.nick)}”</span>`:""}</h3>
           <div class="facts">${c.age} · ${esc(c.job)} · ${esc(c.home)}</div>
-          <p>${esc(c.bio)}</p>
+          <p>${esc(c.bio+swapText(c))}</p>
           ${ownersBadge(c)}
         </div>
         ${ownersPop(c)}
@@ -1255,13 +1287,13 @@ function pickLi(id, mvp){
   const pid = `bio-${c.id}-${++bioSeq}`;
   return `<li class="pick ${id===mvp?'mvp':''}"><button type="button" class="pick-link" aria-describedby="${pid}">
     <div class="badge t-${c.tribe}" aria-hidden="true">${initials(c)}</div>
-    <div style="min-width:0"><div class="nm">${esc(c.name)}${id===mvp?'<span class="mvp-tag">MVP</span>':''}</div><div class="tribe ${c.tribe}">${c.tribe}${c.orig?` <span class="swap-note">· from ${c.orig}</span>`:""}</div></div></button>
+    <div style="min-width:0"><div class="nm">${esc(c.name)}${id===mvp?'<span class="mvp-tag">MVP</span>':''}</div><div class="tribe ${c.tribe}">${c.tribe}${c.orig && c.tribe!==c.orig?` <span class="swap-note">· from ${c.orig}</span>`:""}</div></div></button>
     <div class="bio-pop" role="tooltip" id="${pid}">
       <div class="bp-top"><span class="badge t-${c.tribe}" aria-hidden="true">${initials(c)}</span>
         <div><div class="bd-title">${esc(c.name)}</div>${c.nick?`<div class="bp-nick">“${esc(c.nick)}”</div>`:""}</div></div>
       <div class="bd-head"><span>${c.tribe} tribe</span></div>
       <div class="bp-facts">${c.age} · ${esc(c.job)} · ${esc(c.home)}</div>
-      <p class="bp-bio">${esc(c.bio)}</p>
+      <p class="bp-bio">${esc(c.bio+swapText(c))}</p>
     </div></li>`;
 }
 function entryCard(e){
@@ -2283,6 +2315,8 @@ function flipUp(anchor, pop, row){
 }
 function wire(){
   const rv=document.getElementById("reveal");
+  const rp=document.getElementById("revealPrev");
+  if(rp) rp.addEventListener("click",()=>{ applyView(prevScoredEp()); updateViewChrome(); revealed=true; revealedThrough=LATEST_EP(); view.innerHTML=ROUTES[currentPage()](); wire(); scrollTo(0,0); });
   if(rv) rv.addEventListener("click",()=>{revealed=true; revealedThrough=Math.max(revealedThrough,+rv.dataset.ep||0); view.innerHTML=ROUTES[currentPage()](); wire(); scrollTo(0,0);});
   wireRecap();
   wirePersonRecap();
@@ -2344,6 +2378,8 @@ document.addEventListener("mouseout", ev=>{
   const host = ev.target.closest && ev.target.closest(POP_HOSTS);
   if(host && host.classList.contains("pop-closed") && !host.contains(ev.relatedTarget)) host.classList.remove("pop-closed");
 });
+document.addEventListener("click", ev=>{ if(ev.target.id!=="viewLatest") return;
+  applyView(null); updateViewChrome(); revealed=false; revealedThrough=0; route(); });
 function updateFade(){ const st=document.querySelector(".tabs-in"); if(!st) return;
   document.querySelector("nav.tabs").style.setProperty("--fade", st.scrollLeft+st.clientWidth < st.scrollWidth-4 ? "1" : "0"); }
 document.querySelector(".tabs-in").addEventListener("scroll",updateFade,{passive:true});

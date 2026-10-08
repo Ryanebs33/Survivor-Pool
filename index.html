@@ -864,23 +864,34 @@ const EXPERTS = [
     url: "https://dknetwork.draftkings.com/2026/09/25/survivor-51-power-rankings-fallout-after-episode-1/",
     ranks: ["kristin","mike","carter","sharonda","rob","ori","kilby","patt","linnea","brady",
             "maggie","ana","an","alexis","jenna","cristian","lewis","jelly","devin","eric"] },
-  { source: "RotoWire", title: "Survivor 51 winner odds (edit-based rankings through Episode 2)",
+  { source: "RotoWire", title: "Survivor 51 winner odds (edit-based rankings)",
     url: "https://www.rotowire.com/article/survivor-51-winner-odds-135105",
-    ranks: ["devin","jelly","rob","patt","brady","alexis",                    // Early Watch
-            "jenna","carter","maggie","mike","kilby","ori","eric",           // In the Mix
-            "linnea","sharonda","kristin","cristian","an","lewis"] }         // Deep Field
+    // Each version applies from its episode on, so spoiler-safe mode uses the ranking people would have seen then.
+    versions: [
+      { asOf: 2, ranks: ["devin","jelly","rob","patt","brady","alexis",              // Early Watch
+                         "jenna","carter","maggie","mike","kilby","ori","eric",     // In the Mix
+                         "linnea","sharonda","kristin","cristian","an","lewis"] },  // Deep Field
+      { asOf: 3, ranks: ["devin","jelly","carter","brady","kilby","ori",              // Early Watch
+                         "jenna","alexis","sharonda","maggie","an","lewis",         // In the Mix
+                         "mike","eric","cristian","kristin","linnea"] }             // Deep Field
+    ] }
 ];
 /* Tier strengths (C = average). A numbered ranking maps evenly from 1.6 (1st) down to 0.6 (last). */
 const TIER_MULT = {S:1.6, A:1.35, B:1.15, C:1, D:0.8, F:0.6};
+function sourceRanks(src){
+  if(!src.versions) return src.ranks;
+  const ep = LATEST_EP(), ok = src.versions.filter(v=>v.asOf<=ep);
+  return (ok.length ? ok[ok.length-1] : src.versions[0]).ranks;
+}
 function sourceMult(src, id){
   if(src.tiers) return src.tiers[id] ? TIER_MULT[src.tiers[id]] : null;
-  const i = src.ranks.indexOf(id); if(i<0) return null;
-  return 1.6 - (i/(src.ranks.length-1))*1.0;
+  const ranks = sourceRanks(src), i = ranks.indexOf(id); if(i<0) return null;
+  return 1.6 - (i/(ranks.length-1))*1.0;
 }
 const MULT_CACHE = {};
-const multOf = id => { if(id in MULT_CACHE) return MULT_CACHE[id];
+const multOf = id => { const k = id+"|"+LATEST_EP(); if(k in MULT_CACHE) return MULT_CACHE[k];
   const v = EXPERTS.map(src=>sourceMult(src,id)).filter(x=>x!=null);
-  return MULT_CACHE[id] = v.length ? v.reduce((a,b)=>a+b,0)/v.length : 1; };
+  return MULT_CACHE[k] = v.length ? v.reduce((a,b)=>a+b,0)/v.length : 1; };
 /* Consensus tier from the averaged strength, for the badges. */
 const tierOf = id => { if(!EXPERTS.some(src=>sourceMult(src,id)!=null)) return null;
   const m = multOf(id); return m>=1.45?"S": m>=1.25?"A": m>=1.08?"B": m>=0.92?"C": m>=0.72?"D":"F"; };
@@ -1130,7 +1141,7 @@ function powerHTML(){
       <tbody>${rows}</tbody></table></div>
     <details class="how"><summary>How the projection works</summary>
       <p>For each castaway still in the game, the projection takes their average points per episode so far (pulled toward the cast average so one big week doesn't dominate) and multiplies it by how many of the ${d.epsLeft} remaining episodes they're expected to last in a ${SEASON_EPISODES}-episode season.</p>
-      <p>The expert rankings set that staying power. Each source becomes a strength score: In-Between Media's tiers count S 1.6, A 1.35, B 1.15, C 1 (average), D 0.8 and F 0.6. DK Network's and RotoWire's numbered lists run evenly from 1.6 for 1st down to 0.6 for last. RotoWire ranks by each castaway's edit (screen time and story), since betting markets haven't opened yet. The three scores are averaged. An average castaway is expected to last about half of the remaining episodes, and stronger ones longer. The same scores split the finale bonuses (10, 20 and 30 points) and the 30-point MVP bonus. Castaways who are out add nothing.</p>
+      <p>The expert rankings set that staying power. Each source becomes a strength score: In-Between Media's tiers count S 1.6, A 1.35, B 1.15, C 1 (average), D 0.8 and F 0.6. DK Network's and RotoWire's numbered lists run evenly from 1.6 for 1st down to 0.6 for last. RotoWire ranks by each castaway's edit (screen time and story) and updates after every episode, since betting markets haven't opened yet. The three scores are averaged. An average castaway is expected to last about half of the remaining episodes, and stronger ones longer. The same scores split the finale bonuses (10, 20 and 30 points) and the 30-point MVP bonus. Castaways who are out add nothing.</p>
       <p>The badges show each team's remaining castaways by consensus tier, from all three sources combined. "vs. standings" shows how many spots higher (▲) or lower (▼) a team sits here than in the current standings. It's a guide for bragging rights, not a prediction of who goes home next.</p>
     </details>`;
 }

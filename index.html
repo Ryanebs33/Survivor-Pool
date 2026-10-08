@@ -141,6 +141,7 @@ input[type="datetime-local"]:focus-visible{outline:3px solid var(--torch);outlin
 .hl-n{font-size:13px;color:var(--night-muted)}
 .recap-board .wk{color:var(--torch);font-weight:600}
 .mvcell{width:46px;padding-left:0!important}
+.tmove{margin-top:5px;line-height:1}
 .mv{font:600 12px/1 var(--mono);white-space:nowrap}
 .mv.up{color:var(--savu)} .mv.down{color:var(--torch)} .mv.same,.mv.new{color:var(--muted)}
 .chip.zero{opacity:.5}
@@ -1229,9 +1230,8 @@ function boardPage(){
       + (e.merge?chip(e.merge,RESULTS[e.merge]?.after||0,"Merge"):"");
     const mv = moveOf[e.key];
     return `<tr class="${rank===1?'lead':''}"><td class="rank">${rank}</td>
-      <td class="mvcell" title="${prevEpNo!=null?`Change since Episode ${prevEpNo}`:"First scored week"}">${moveHTML(mv==null?null:mv)}</td>
       <td><span class="sb-anchor"><button type="button" class="cp-name sb-name">${esc(e.name)}</button><div class="sb-pop" role="tooltip">${entrantBreakdownHTML(e)}</div></span><div class="chips">${chips}</div></td>
-      <td class="mono">${left}/${e.picks.length+(e.merge?1:0)}</td><td class="total">${e.total}</td></tr>`;
+      <td class="mono">${left}/${e.picks.length+(e.merge?1:0)}</td><td class="total">${e.total}<div class="tmove" title="${prevEpNo!=null?`Change since Episode ${prevEpNo}`:"First scored week"}">${moveHTML(mv==null?null:mv)}</div></td></tr>`;
   }).join("");
   const castRank = CAST.map(c=>({c,r:RESULTS[c.id]||{pts:0,out:null}})).sort((a,b)=>b.r.pts-a.r.pts||a.c.name.localeCompare(b.c.name));
   const castList = castRank.map(({c,r})=>`<li class="cp-item"><span class="cp-left"><button type="button" class="cp-name" aria-describedby="cp-${c.id}">${esc(c.name)}</button> <span class="tribe ${c.tribe}">${c.tribe}</span>${r.out!=null?` <span class="chip">Out Ep ${r.out}</span>`:""}</span><span class="mono">${r.pts}</span>
@@ -1246,7 +1246,7 @@ function boardPage(){
     ${LATEST_EP()?`<h3 class="wk-title">Episode ${LATEST_EP()} highlights</h3>${highlightsHTML(recapData(LATEST_EP()), true)}<h3 class="wk-title wk-standings">Standings</h3>`:""}
     <div class="split">
       <div class="tablewrap stand-wrap"><table class="board">
-        <thead><tr><th>#</th><th class="r" title="Change since last week">+/−</th><th>Entrant &amp; picks</th><th>Left</th><th class="r">Pts</th></tr></thead>
+        <thead><tr><th>#</th><th>Entrant &amp; picks</th><th>Left</th><th class="r">Pts</th></tr></thead>
         <tbody>${rows}</tbody></table></div>
       <div><h3 style="margin-bottom:10px">Castaway points</h3><div class="cast-pts"><ul>${castList}</ul></div></div>
     </div>

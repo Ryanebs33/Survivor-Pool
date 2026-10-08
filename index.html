@@ -381,6 +381,7 @@ html.intro-lock, html.intro-lock body{overflow:hidden}
 @media (prefers-reduced-motion:reduce){.intro *{animation:none !important;opacity:1 !important;transform:none !important;filter:none !important}.intro{transition:opacity .2s}}
 @media (max-width:640px){.intro-torch{display:none}.intro-palms{height:60%;max-width:55%;opacity:.8}.intro-stage{gap:10px}.intro-kicker,.intro-motto{letter-spacing:.2em}}
 
+.swap-note{color:var(--muted);text-transform:none;letter-spacing:0}
 /* Spoiler gate */
 .gate{background:var(--gate);color:var(--gate-ink);border-radius:12px;padding:48px 24px;text-align:center;display:grid;justify-items:center;gap:14px}
 .gate .flame{width:48px;height:64px}
@@ -663,7 +664,7 @@ nav.tabs::after{content:"";position:absolute;top:0;right:0;bottom:0;width:36px;p
 /* ============ POOL DATA — edit this block each week ============ */
 const POOL = {
   name: "Survivor 51 Fantasy Pool",
-  updatedThrough: "Episode 2",
+  updatedThrough: "Episode 3",
   picksOpen: true,         // set to false to lock the original 8 picks + MVP
   merged: false,           // true once the tribes merge (unlocks merge picks)
   winner: null             // castaway id of the Sole Survivor, at the finale (+30 to every entrant whose MVP it is)
@@ -676,7 +677,7 @@ const CAST = [
   {id:"ana", name:"Ana Sani", age:34, home:"Toronto, ON", job:"Voice actress", tribe:"Savu", bio:"A longtime superfan from Toronto playing in memory of her late mother."},
   {id:"jelly", name:"Angelica Loblack", nick:"Jelly", age:29, home:"Bloomington, IN", job:"Sociology professor", tribe:"Toka", bio:"Teaches Survivor in her classroom and came out to test herself in the field."},
   {id:"brady", name:"Brady Booker", age:27, home:"Knoxville, TN", job:"Professional wrestler", tribe:"Toka", bio:"Wrestles as Bodhi Hayward. An outdoorsman who says there is more strategy to him than the persona suggests."},
-  {id:"carter", name:"Carter Krull", age:24, home:"Sioux Falls, SD", job:"Livestock farmer", tribe:"Savu", bio:"A young farmer and entrepreneur who prides himself on sizing people up quickly."},
+  {id:"carter", name:"Carter Krull", age:24, home:"Sioux Falls, SD", job:"Livestock farmer", tribe:"Toka", orig:"Savu", bio:"A young farmer and entrepreneur who prides himself on sizing people up quickly. Swapped from Savu to Toka in Episode 3."},
   {id:"cristian", name:"Cristian Chavez", age:26, home:"Salt Lake City, UT", job:"Head of HR", tribe:"Savu", bio:"Bubbly and offbeat, playing with his late father's lessons in mind."},
   {id:"kilby", name:"Danny Kilby", nick:"Kilby", age:30, home:"London, ON", job:"Game designer", tribe:"Toka", bio:"A proud Survivor nerd who loves puzzles and long-game strategy."},
   {id:"devin", name:"Devin Way", age:33, home:"Los Angeles, CA", job:"Actor", tribe:"Toka", bio:"TV actor with credits on Sistas and Grey's Anatomy who says integrity matters to him."},
@@ -708,6 +709,18 @@ const EPISODES = [
      jelly:[["Wins a group Reward Challenge",5],["Wins a group Immunity Challenge",5],["Found a hidden immunity idol",10]],
      maggie:[["Wins a group Reward Challenge",5],["Wins a group Immunity Challenge",5],["Says a curse word that is bleeped",5]], mike:[["Wins a group Reward Challenge",5],["Wins a group Immunity Challenge",5],["Says a curse word that is bleeped",5]],
      rob:[["Says a curse word that is bleeped",5],["Said \u201cI miss\u2026\u201d",5]]
+   }},
+  {ep:3, pts:{alexis:11, an:1, brady:11, carter:21, cristian:11, devin:16, eric:11, jelly:1, jenna:1, kilby:1,
+              kristin:11, lewis:16, linnea:11, maggie:11, mike:1, ori:11, patt:10, rob:45, sharonda:11}, out:["patt","rob"],
+   detail:{
+     alexis:[["Wins a group Reward Challenge",5],["Wins a group Immunity Challenge",5]], cristian:[["Wins a group Reward Challenge",5],["Wins a group Immunity Challenge",5]], eric:[["Wins a group Reward Challenge",5],["Wins a group Immunity Challenge",5]], kristin:[["Wins a group Reward Challenge",5],["Wins a group Immunity Challenge",5]], linnea:[["Wins a group Reward Challenge",5],["Wins a group Immunity Challenge",5]], ori:[["Wins a group Reward Challenge",5],["Wins a group Immunity Challenge",5]], sharonda:[["Wins a group Reward Challenge",5],["Wins a group Immunity Challenge",5]],
+     brady:[["Says a curse word that is bleeped",5],["Finds or gets a game advantage (before giving it away)",5]],
+     carter:[["Found a hidden immunity idol",10],["Chosen to go on a journey",10]],
+     devin:[["Chosen to go on a journey",10],["Finds or gets a game advantage",5]],
+     lewis:[["Searches through someone else's bag",10],["Says a curse word that is bleeped",5]],
+     maggie:[["Says a curse word that is bleeped",5],["Finds or gets a game advantage",5]],
+     patt:[["Torch snuffed as a result of a blindside",10]],
+     rob:[["Says a curse word that is bleeped",5],["Treated for a medical emergency",10],["Chooses to forfeit the game",10],["Cried on camera",5],["Gives an immunity idol away",15]]
    }}
 ];
 const MERGE_EP = null;   // episode number of the merge; merge picks score from the episode after it
@@ -1089,7 +1102,9 @@ function powerHTML(){
 
 const SHORT_CAT = {"Wins a group Reward Challenge":"Group reward","Wins a group Immunity Challenge":"Group immunity",
   "Says a curse word that is bleeped":"Curse word","Survived the week":"Survived","Found a hidden immunity idol":"Found idol",
-  "Treated for a medical emergency":"Medical emergency","Torch snuffed as a result of a blindside":"Blindsided","Other point categories":"Other"};
+  "Treated for a medical emergency":"Medical emergency","Torch snuffed as a result of a blindside":"Blindsided","Other point categories":"Other",
+  "Finds or gets a game advantage":"Got advantage","Finds or gets a game advantage (before giving it away)":"Got advantage","Chosen to go on a journey":"Journey",
+  "Found a hidden immunity idol":"Found idol","Searches through someone else's bag":"Bag search","Chooses to forfeit the game":"Quit","Gives an immunity idol away":"Gave idol away","Cried on camera":"Cried"};
 /* A castaway's points by category across scored episodes (optionally only after a given episode). */
 function castCats(id, afterEp, onlyEp){
   const r=RESULTS[id], cats=new Map(); let total=0;
@@ -1240,7 +1255,7 @@ function pickLi(id, mvp){
   const pid = `bio-${c.id}-${++bioSeq}`;
   return `<li class="pick ${id===mvp?'mvp':''}"><button type="button" class="pick-link" aria-describedby="${pid}">
     <div class="badge t-${c.tribe}" aria-hidden="true">${initials(c)}</div>
-    <div style="min-width:0"><div class="nm">${esc(c.name)}${id===mvp?'<span class="mvp-tag">MVP</span>':''}</div><div class="tribe ${c.tribe}">${c.tribe}</div></div></button>
+    <div style="min-width:0"><div class="nm">${esc(c.name)}${id===mvp?'<span class="mvp-tag">MVP</span>':''}</div><div class="tribe ${c.tribe}">${c.tribe}${c.orig?` <span class="swap-note">· from ${c.orig}</span>`:""}</div></div></button>
     <div class="bio-pop" role="tooltip" id="${pid}">
       <div class="bp-top"><span class="badge t-${c.tribe}" aria-hidden="true">${initials(c)}</span>
         <div><div class="bd-title">${esc(c.name)}</div>${c.nick?`<div class="bp-nick">“${esc(c.nick)}”</div>`:""}</div></div>
@@ -1329,7 +1344,7 @@ function formHTML(mode, locked, isExisting, nameLabel){
   const f=FORMS[mode], msg=MSG[mode];
   const group = (tribe,key)=>{const sel=f[key];
     return `<section class="pgroup"><div class="pg-head"><h3 class="tribe-h ${tribe}">${tribe}</h3><span class="count mono ${sel.length===4?'full':''}">${sel.length} of 4</span></div>
-      <div class="ptiles">${CAST.filter(c=>c.tribe===tribe).map(c=>tile(c, sel.includes(c.id), locked||(!sel.includes(c.id)&&sel.length>=4))).join("")}</div></section>`;};
+      <div class="ptiles">${CAST.filter(c=>(c.orig||c.tribe)===tribe).map(c=>tile(c, sel.includes(c.id), locked||(!sel.includes(c.id)&&sel.length>=4))).join("")}</div></section>`;};
   const eight=[...f.toka,...f.savu];
   if(f.mvp && !eight.includes(f.mvp)) f.mvp="";
   if(f.merge && eight.includes(f.merge)) f.merge="";
@@ -1468,7 +1483,7 @@ function wireSubmit(){
     const m=missingList(st), s=document.getElementById("formStatus"), btn=f.querySelector('button[type="submit"]');
     btn.disabled=!!m.length||saving; s.textContent=m.length?`Still need: ${m.join(", ")}.`:"Ready to submit.";});
   f.querySelectorAll("[data-pick]").forEach(b=>b.addEventListener("click",()=>{
-    const c=byId[b.dataset.pick], arr=st[c.tribe==="Toka"?"toka":"savu"], i=arr.indexOf(c.id);
+    const c=byId[b.dataset.pick], arr=st[(c.orig||c.tribe)==="Toka"?"toka":"savu"], i=arr.indexOf(c.id);
     if(i>=0) arr.splice(i,1); else if(arr.length<4) arr.push(c.id);
     MSG[mode]=null; rerender(); const again=view.querySelector(`[data-pick="${c.id}"]`); again&&again.focus();
   }));
@@ -1859,7 +1874,21 @@ const ROAST = {
   ],
   // optional second sentence, first that applies
   mvpOut: ["Picking {mvp} as MVP has aged like an unrefrigerated fish.", "MVP {mvp} is already eating real food at Ponderosa, so that's going great."],
-  lostNow: ["Also, {lost} just got their torch snuffed, so pour one out.", "And {lost} is gone, which is the kind of loss you can't fix by crying on camera."],
+  lostNow: ["Also, {lost} {lostAre} gone this week, so pour one out.",
+    "And losing {lost} this week is the kind of blow you can't fix by crying on camera.",
+    "Meanwhile {lost} {lostAre} already at Ponderosa, eating pancakes without you.",
+    "Saying goodbye to {lost} this week has this team looking very thin around the campfire.",
+    "{lost} leaving this week is a hole no hidden idol can fill.",
+    "The exit of {lost} this week left this team one torch dimmer.",
+    "With {lost} out the door, the shelter just got a lot roomier.",
+    "Losing {lost} this week hurts more than sleeping on bamboo.",
+    "{lost} walking out this week was the plot twist nobody on this team asked for.",
+    "RIP to {lost}, who {lostAre2} officially somebody else's problem now.",
+    "This team had to watch {lost} leave this week, and it showed.",
+    "Pour one out for {lost}, gone before the coconuts even ripened.",
+    "{lost} got the boot this week, and this team's group chat has been very quiet since.",
+    "Somewhere {lost} {lostAre} enjoying a hot shower while this team keeps suffering.",
+    "Waving goodbye to {lost} this week was not part of the master plan."],
   climb: ["Up {mv} spots this week, so somebody's been praying to the idol gods.", "A {mv}-spot jump this week, the biggest glow-up since someone found soap on reward."],
   fall: ["Down {mv} spots, sliding faster than a castaway on a wet log.", "Dropped {mv} spots this week, which is very 'blindsided at Tribal' of you."],
   topWeek: ["Best week in the pool at {w}, so the smugness is earned, barely.", "Top score this week with {w}, so expect to hear about it constantly."],
@@ -1888,7 +1917,9 @@ function roastData(ep){
     const v = { n:e.name, t:r.total, w:r.week, r:ordinal(r.rank), gap:lead-r.total, others:N-1,
       best: best?short(byId[best.id]):"", bestp: best?.pts||0, mvp: e.mvp?short(byId[e.mvp]):"", mvpp: mvpPart?.pts??0, mvps: (mvpPart?.pts??0)===1?"":"s",
       mv: Math.abs(r.move||0), ctop: short(d.castTop.c),
-      lost: e.picks.filter(id=>outNow.includes(id)).map(id=>short(byId[id])).join(" and ") };
+      lost: e.picks.filter(id=>outNow.includes(id)).map(id=>short(byId[id])).join(" and "),
+      lostAre: e.picks.filter(id=>outNow.includes(id)).length>1 ? "are" : "is",
+      lostAre2: e.picks.filter(id=>outNow.includes(id)).length>1 ? "are" : "is" };
     const pct = N>1 ? (r.rank-1)/(N-1) : 0;
     const band = r.rank===1 ? "first" : i===N-1 && r.total<lead ? "last" : r.rank<=3 ? "top" : pct<=.4 ? "upper" : pct<=.65 ? "middle" : "lower";
     const target = isTarget(e);

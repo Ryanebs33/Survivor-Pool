@@ -382,9 +382,11 @@ html.intro-lock, html.intro-lock body{overflow:hidden}
 @media (max-width:640px){.intro-torch{display:none}.intro-palms{height:60%;max-width:55%;opacity:.8}.intro-stage{gap:10px}.intro-kicker,.intro-motto{letter-spacing:.2em}}
 
 .swap-note{color:var(--muted);text-transform:none;letter-spacing:0}
-.view-note{align-items:center;flex-wrap:wrap;border-style:solid;border-color:var(--savu);background:color-mix(in srgb,var(--savu) 8%,var(--surface))}
-.view-note b{color:var(--savu)}
-.view-note span{flex:1 1 260px}
+.notice.view-note{display:flex;flex-direction:row;align-items:center;gap:8px;flex-wrap:nowrap;white-space:nowrap;width:fit-content;max-width:100%;padding:5px 12px;margin:0 0 16px;border-radius:999px;font-size:12.5px;border:1px solid color-mix(in srgb,var(--savu) 50%,transparent);background:color-mix(in srgb,var(--savu) 8%,var(--surface))}
+.notice.view-note[hidden]{display:none}
+.view-note b{color:var(--savu);font:600 10.5px/1 var(--mono);text-transform:uppercase;letter-spacing:.1em}
+.view-note span{color:var(--muted)}
+.view-note .linkish{margin:0;font-size:12.5px;color:var(--savu)}
 .gate .gate-prev{color:var(--flame-hi);margin-top:6px;font-size:13.5px}
 
 /* Spoiler gate */
@@ -786,7 +788,7 @@ function updateViewChrome(){
   document.getElementById("poolSub").textContent = `21 new castaways. Two tribes. One Sole Survivor. Scores through ${POOL.updatedThrough}.`;
   const vn=document.getElementById("viewNote");
   vn.hidden = viewEp==null;
-  if(viewEp!=null) vn.innerHTML = `<b>Spoiler-safe mode</b><span>You're seeing the pool as it stood after Episode ${viewEp}. Nothing from Episode ${FULL_LATEST} is shown.</span><button type="button" class="btn ghost small-btn" id="viewLatest">I've watched Episode ${FULL_LATEST}</button>`;
+  if(viewEp!=null) vn.innerHTML = `<b>Spoiler-safe</b><span>Through Ep ${viewEp}</span><button type="button" class="linkish" id="viewLatest">Show Ep ${FULL_LATEST}</button>`;
 }
 updateViewChrome();
 document.getElementById("sampleNote").hidden = !usingSample;

@@ -141,7 +141,9 @@ input[type="datetime-local"]:focus-visible{outline:3px solid var(--torch);outlin
 .hl-n{font-size:13px;color:var(--night-muted)}
 .recap-board .wk{color:var(--torch);font-weight:600}
 .mvcell{width:46px;padding-left:0!important}
-.tmove{margin-top:5px;line-height:1}
+.tmove{margin-top:6px;line-height:1}
+.tmove .mv{font-size:15px}
+.board .chip .mono{font-size:14px;font-weight:600;color:var(--ink)}
 .mv{font:600 12px/1 var(--mono);white-space:nowrap}
 .mv.up{color:var(--savu)} .mv.down{color:var(--torch)} .mv.same,.mv.new{color:var(--muted)}
 .chip.zero{opacity:.5}
@@ -530,7 +532,9 @@ nav.tabs::after{content:"";position:absolute;top:0;right:0;bottom:0;width:36px;p
   .hl-v{font-size:22px}
   .board th,.board td{padding:10px 8px}
   .board .rank{font-size:24px;width:34px}
-  .board .total{font-size:18px}
+  .board .total{font-size:20px}
+  .tmove .mv{font-size:14px}
+  .board .chip .mono{font-size:13.5px}
   .chip{font-size:12px;padding:2px 7px}
   .recap-head .share{width:100%}
   .recap-head .share .btn{flex:1 1 auto}

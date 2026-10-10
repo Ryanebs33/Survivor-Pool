@@ -20,6 +20,11 @@ export default async function handler(req, res){
     }
     switch(b.action){
       case "verify": return send(res, 200, {ok:true});
+      case "flying": {
+        const { getFlying } = await import("./_flying.js");   // loaded only here: it carries the airport list
+        const data = await getFlying(s, { force: !!b.refresh });
+        return send(res, 200, data);
+      }
       case "save": {
         const {entry, error} = cleanEntry(b.entry||{});
         if(error) return send(res, 400, {error});

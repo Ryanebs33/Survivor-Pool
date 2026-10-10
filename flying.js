@@ -150,6 +150,9 @@ body.flying nav.tabs a:hover{color:var(--fp-ink)!important}
 
 /* ---------------- constants ---------------- */
 const TORONTO = new Set(["CYYZ","CYTZ"]);           // home base: never a "destination"
+const CALGARY_UNTIL = "2020-01-01";                  // also based in Calgary before 2020
+const isHome = (code, d) => TORONTO.has(code) || (code === "CYYC" && d < CALGARY_UNTIL);
+const homeNote = code => TORONTO.has(code) ? "Home base" : code === "CYYC" ? "Home base before 2020" : "";
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const MONTHS_LONG = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const TYPES = {
@@ -355,14 +358,18 @@ function routePairs(list){
 }
 function airportVisits(list){
   const m = new Map();
-  const get = c => { if(!m.has(c)) m.set(c, {code:c, arr:0, dep:0}); return m.get(c); };
-  list.forEach(f => f.legs.forEach(([a,b]) => { get(a).dep++; get(b).arr++; }));
+  const get = c => { if(!m.has(c)) m.set(c, {code:c, arr:0, dep:0, dest:0}); return m.get(c); };
+  list.forEach(f => f.legs.forEach(([a,b]) => { get(a).dep++; const v = get(b); v.arr++; if(!isHome(b, f.d)) v.dest++; }));
   return m;
 }
 
 /* ---------------- Map tab ---------------- */
 function mapTab(){
   return shell(filterBar(true) + `<div class="fly-map-wrap"><div id="flyMap" role="application" aria-label="Map of routes flown. Select a line for its distance and how often it was flown."></div></div><div class="fly-mapstats" id="flyMapStats"></div><p class="fly-note" id="flyMapNote"></p>`);
+}
+function loadBase(){
+  if(!loadBase.p) loadBase.p = fetch("map-base.json?v=1").then(r => r.ok ? r.json() : null).catch(() => { loadBase.p = null; return null; });
+  return loadBase.p;
 }
 function loadLeaflet(){
   if(window.L) return Promise.resolve();
@@ -405,7 +412,7 @@ function routePopup(p){
 function airportPopup(v){
   const A = airport(v.code);
   return `<div class="fly-pop"><div class="rt">${esc(v.code)}</div><div class="nm">${esc(A.name)}${A.city && !A.name.includes(A.city) ? ", "+esc(A.city) : ""}${A.region ? " · "+esc(A.region) : ""}</div>
-    <dl><dt>Arrivals</dt><dd>${fmtN(v.arr)}</dd><dt>Departures</dt><dd>${fmtN(v.dep)}</dd>${TORONTO.has(v.code)?`<dt>Note</dt><dd style="font-family:var(--fp-sans)">Home base</dd>`:""}</dl></div>`;
+    <dl><dt>Arrivals</dt><dd>${fmtN(v.arr)}</dd><dt>Departures</dt><dd>${fmtN(v.dep)}</dd>${homeNote(v.code)?`<dt>Note</dt><dd style="font-family:var(--fp-sans)">${homeNote(v.code)}</dd>${v.dest&&v.dest!==v.arr?`<dt>As a destination</dt><dd>${fmtN(v.dest)}</dd>`:""}`:""}</dl></div>`;
 }
 async function mountMap(){
   const el = document.getElementById("flyMap"); if(!el) return;
@@ -413,12 +420,24 @@ async function mountMap(){
   if(!document.body.contains(el)) return;
   if(S.map){ try{ S.map.remove(); }catch(e){} S.map = null; }
   const L = window.L;
-  const map = L.map(el, {worldCopyJump:true, zoomSnap:0.25, minZoom:1.5, preferCanvas:true, attributionControl:true});
+  const map = L.map(el, {zoomSnap:0.25, minZoom:1.5, maxZoom:9, preferCanvas:true, attributionControl:true, maxBounds:[[-85,-200],[85,200]]});
+  map.attributionControl.setPrefix(false);
   S.map = map;
   const dark = isDark();
-  L.tileLayer(`https://{s}.basemaps.cartocdn.com/${dark?"dark_all":"light_all"}/{z}/{x}/{y}{r}.png`, {
-    subdomains:"abcd", maxZoom:12, attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'}).addTo(map);
   const renderer = L.canvas({tolerance:8, padding:0.5});
+  // Built-in outline map (Natural Earth, public domain): no map tiles to download.
+  const base = await loadBase();
+  if(!document.body.contains(el) || S.map !== map) return;
+  const B = dark ? {water:"#14181d", land:"#202328", border:"#3b4048", prov:"#2c3036"} : {water:"#e8eef4", land:"#ffffff", border:"#c9d0d9", prov:"#e0e4ea"};
+  el.style.background = B.water;
+  if(base){
+    const flip = r => r.map(([lo,la]) => [la,lo]);
+    const baseR = L.canvas({padding:0.5});
+    L.polygon(base.land.map(flip), {renderer:baseR, stroke:true, color:B.border, weight:0.8, fillColor:B.land, fillOpacity:1, interactive:false}).addTo(map);
+    L.polygon(base.lakes.map(flip), {renderer:baseR, stroke:true, color:B.border, weight:0.6, fillColor:B.water, fillOpacity:1, interactive:false}).addTo(map);
+    L.polyline(base.prov.map(flip), {renderer:baseR, color:B.prov, weight:0.8, interactive:false}).addTo(map);
+    map.attributionControl.addAttribution("Map outlines: Natural Earth");
+  }
   const list = filtered(), pairs = routePairs(list), visits = airportVisits(list);
   const routeColor = getComputedStyle(document.body).getPropertyValue("--fp-route").trim() || "#2a78d6";
   const maxN = Math.max(1, ...pairs.map(p => p.n));
@@ -450,7 +469,7 @@ async function mountMap(){
   const stats = document.getElementById("flyMapStats");
   if(stats) stats.innerHTML = [
     ["Routes", fmtN(pairs.length)], ["Legs flown", fmtN(t.legs)], ["Distance", `${fmtN(t.nm)} nm`],
-    ["Airports", fmtN(visits.size)], ["Top destination", dest ? `${dest.code} ×${dest.arr}` : "–"]
+    ["Airports", fmtN(visits.size)], ["Top destination", dest ? `${dest.code} ×${dest.dest}` : "–"]
   ].map(([k,v]) => `<div><span class="fly-k">${k}</span><span class="v">${v}</span></div>`).join("");
   const note = document.getElementById("flyMapNote");
   const local = list.filter(f => f.local && f.h.tot>0).length;
@@ -459,7 +478,7 @@ async function mountMap(){
 
 /* ---------------- career ---------------- */
 function topDestinations(list){
-  return [...airportVisits(list).values()].filter(v => !TORONTO.has(v.code) && v.arr > 0).sort((a,b) => b.arr - a.arr || a.code.localeCompare(b.code));
+  return [...airportVisits(list).values()].filter(v => v.dest > 0).sort((a,b) => b.dest - a.dest || a.code.localeCompare(b.code));
 }
 function careerStats(){
   const fl = S.data.flights, flown = fl.filter(f => f.h.tot > 0);
@@ -488,8 +507,8 @@ function careerTab(){
     fact("Distance flown", `${fmtN(c.t.nm)} nm · ${fmtN(c.t.nm*1.852)} km`),
     fact("Around the Earth", `${(c.t.nm/EARTH_NM).toFixed(1)}×`),
     fact("Legs with a route", fmtN(c.t.legs)),
-    fact("Most visited destination", d1 ? `${esc(d1.code)} · ${esc(shortName(A1))} · ${fmtN(d1.arr)}×` : "–"),
-    fact("Next most visited", c.dests.slice(1,4).map(d => `${esc(d.code)} ${fmtN(d.arr)}×`).join(" · ") || "–"),
+    fact("Most visited destination", d1 ? `${esc(d1.code)} · ${esc(shortName(A1))} · ${fmtN(d1.dest)}×` : "–"),
+    fact("Next most visited", c.dests.slice(1,4).map(d => `${esc(d.code)} ${fmtN(d.dest)}×`).join(" · ") || "–"),
     fact("Most flown route", c.topRoute ? `${esc(c.topRoute.a)} ⇄ ${esc(c.topRoute.b)} · ${fmtN(c.topRoute.n)}×` : "–"),
     fact("Longest leg", c.longest ? `${esc(c.longest.a)} ⇄ ${esc(c.longest.b)} · ${fmtN(c.longest.nm)} nm` : "–"),
     fact("Airports visited", `${fmtN(c.visits.size)} in ${plural(c.countries.size,"country","countries")}`),
@@ -502,7 +521,7 @@ function careerTab(){
   return shell(`<div class="fly-career">
     <div><img id="flyCareerImg" alt="Flying career infographic: ${fmtH(c.t.tot)} hours, ${fmtN(c.t.nm)} nautical miles, ${c.visits.size} airports${d1?`, most visited destination ${d1.code}`:""}." src="${S.careerImg||""}" ${S.careerImg?"":'style="aspect-ratio:4/5"'}>
       <div class="acts"><button type="button" class="fly-btn primary" id="flySave">Save image</button><button type="button" class="fly-btn" id="flyShare" hidden>Share</button></div>
-      <p class="fly-note">All-time totals. Toronto is your home base, so it's left out of destinations. Distance counts legs with a route in the remarks.</p></div>
+      <p class="fly-note">All-time totals. Toronto (and Calgary before 2020) were home bases, so they're left out of destinations. Distance counts legs with a route in the remarks.</p></div>
     <div class="fly-facts">${facts}</div></div>`);
 }
 async function drawCareer(){
@@ -548,6 +567,12 @@ async function drawCareer(){
     const P2 = (lat, lon) => { const [u,v] = proj(lat, lon); return [cx + (u-mx)*s, cy - (v-my)*180/Math.PI*s]; };
     const maxN = Math.max(1, ...c.pairs.map(p => p.n));
     x.save(); roundRect(x, box.x, box.y, box.w, box.h, 14); x.clip();
+    const base = await loadBase();
+    if(base){
+      const trace = rings => rings.forEach(r => { r.forEach(([lo,la],i) => { const [u,v] = P2(la, lo); i ? x.lineTo(u,v) : x.moveTo(u,v); }); x.closePath(); });
+      x.beginPath(); trace(base.land); x.fillStyle = "#ffffff"; x.fill("evenodd"); x.strokeStyle = "#d5dbe3"; x.lineWidth = 1; x.stroke();
+      x.beginPath(); trace(base.lakes); x.fillStyle = "#f7f9fb"; x.fill(); x.stroke();
+    }
     x.lineCap = "round";
     [...c.pairs].sort((a,b) => a.n-b.n).forEach(p => {
       const A = airport(p.a), B = airport(p.b); if(!A||!B) return;
@@ -565,7 +590,7 @@ async function drawCareer(){
   const d1 = c.dests[0], A1 = d1 && airport(d1.code);
   const cells = [
     ["DISTANCE FLOWN", `${fmtN(c.t.nm)} nm`, `${(c.t.nm/EARTH_NM).toFixed(1)}× around the Earth`],
-    ["MOST VISITED", d1 ? d1.code : "–", d1 ? `${shortName(A1)} · ${d1.arr} arrivals` : ""],
+    ["MOST VISITED", d1 ? d1.code : "–", d1 ? `${shortName(A1)} · ${d1.dest} arrivals` : ""],
     ["MOST FLOWN ROUTE", c.topRoute ? `${c.topRoute.a}–${c.topRoute.b}` : "–", c.topRoute ? `${c.topRoute.n} times · ${fmtN(c.topRoute.nm)} nm` : ""],
     ["LONGEST LEG", c.longest ? `${c.longest.a}–${c.longest.b}` : "–", c.longest ? `${fmtN(c.longest.nm)} nm` : ""],
     ["BUSIEST YEAR", c.bestYear ? String(c.bestYear[0]) : "–", c.bestYear ? `${fmtH(c.bestYear[1])} hours` : ""],

@@ -120,7 +120,7 @@ body.flying nav.tabs a:hover{color:var(--fp-ink)!important}
 .fly-factgrid div{background:var(--fp-surface);padding:12px 14px;display:grid;gap:5px;align-content:start;min-width:0;border-right:1px solid var(--fp-line);border-bottom:1px solid var(--fp-line)}
 .fly-factgrid .v{font:500 18px/1.15 var(--fp-mono);overflow-wrap:anywhere}
 .fly-factgrid .n{font-size:12px;color:var(--fp-muted);line-height:1.35}
-#flyShareOut{margin-top:16px}
+#flyShareOut{margin-top:16px;scroll-margin-top:calc(var(--navH,48px) + 12px)}
 .fly-shareout img{display:block;width:100%;max-width:480px;height:auto;border:1px solid var(--fp-line);border-radius:10px;background:#fff}
 .fly-shareout .acts{display:flex;gap:8px;margin-top:12px}
 .fly-career{display:grid;grid-template-columns:minmax(0,560px) 1fr;gap:20px;align-items:start}
@@ -476,15 +476,14 @@ async function shareMap(btn){
     const blob = await new Promise(r => cv.toBlob(r, "image/png"));
     const name = "flying-map-" + filterLabel().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + ".png";
     const file = new File([blob], name, {type:"image/png"});
-    const url = URL.createObjectURL(blob);
+    const url = cv.toDataURL("image/png");          // a real image: press-and-hold saves it on a phone
     out.hidden = false;
     out.innerHTML = `<div class="fly-card fly-shareout"><div class="fly-maphead" style="margin:0 0 12px"><h3>Shareable map</h3><button type="button" class="fly-btn" id="flyShareClose">Close</button></div>
       <img src="${url}" alt="Route map image for ${esc(filterLabel())}">
-      <div class="acts"><button type="button" class="fly-btn primary" id="flyShareSave">Save image</button><button type="button" class="fly-btn" id="flyShareSend" hidden>Share</button></div></div>`;
-    out.querySelector("#flyShareSave").addEventListener("click", () => { const a = document.createElement("a"); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); });
-    out.querySelector("#flyShareClose").addEventListener("click", () => { out.hidden = true; out.innerHTML = ""; URL.revokeObjectURL(url); });
-    const sh = out.querySelector("#flyShareSend");
-    if(navigator.canShare && navigator.canShare({files:[file]})){ sh.hidden = false; sh.addEventListener("click", () => navigator.share({files:[file], title:"Where I've flown"}).catch(() => {})); }
+      <div class="acts"><button type="button" class="fly-btn primary" id="flyShareSave">Save image</button><button type="button" class="fly-btn" id="flyShareSend" hidden>Share</button></div>
+      ${HOLD_HINT}</div>`;
+    out.querySelector("#flyShareClose").addEventListener("click", () => { out.hidden = true; out.innerHTML = ""; });
+    wireImageActions(out.querySelector("#flyShareSave"), out.querySelector("#flyShareSend"), blob, file, "Where I've flown");
     out.scrollIntoView({block:"start", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"});
   }catch(e){
     out.hidden = false; out.innerHTML = `<div class="fly-card fly-err"><h3>The image didn't render</h3><p class="sub" style="margin:6px 0 0">Try again in a moment.</p></div>`;
@@ -645,7 +644,7 @@ function careerTab(){
   return shell(`<div class="fly-career">
     <div><img id="flyCareerImg" alt="Flying career infographic: ${fmtH(c.t.tot)} hours, ${fmtN(c.t.nm)} nautical miles, ${c.visits.size} airports${d1?`, most visited destination ${d1.code}`:""}." src="${S.careerImg||""}" ${S.careerImg?"":'style="aspect-ratio:4/5"'}>
       <div class="acts"><button type="button" class="fly-btn primary" id="flySave">Save image</button><button type="button" class="fly-btn" id="flyShare" hidden>Share</button></div>
-      <p class="fly-note">All-time totals. Toronto (and Calgary before 2020) were home bases, so they're left out of destinations. Distance counts legs with a route in the remarks.</p></div>
+      ${HOLD_HINT}<p class="fly-note">All-time totals. Toronto (and Calgary before 2020) were home bases, so they're left out of destinations. Distance counts legs with a route in the remarks.</p></div>
     <div class="fly-facts">${facts}</div></div>`);
 }
 async function drawCareer(){
@@ -758,15 +757,18 @@ async function mountCareer(){
   img.src = S.careerImg; img.removeAttribute("style");
   const blob = await new Promise(r => cv.toBlob(r, "image/png"));
   const file = new File([blob], "flying-career.png", {type:"image/png"});
-  document.getElementById("flySave")?.addEventListener("click", () => {
-    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "flying-career.png";
-    document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
-  });
-  const sh = document.getElementById("flyShare");
-  if(sh && navigator.canShare && navigator.canShare({files:[file]})){
-    sh.hidden = false;
-    sh.addEventListener("click", () => navigator.share({files:[file], title:"Flying career"}).catch(() => {}));
-  }
+  wireImageActions(document.getElementById("flySave"), document.getElementById("flyShare"), blob, file, "Flying career");
+}
+/* Save / Share for a generated PNG. On phones "Save image" opens the share sheet (which has Save Image / Save to Photos);
+   elsewhere it downloads the .png. */
+const TOUCH = matchMedia("(hover: none) and (pointer: coarse)").matches;
+const HOLD_HINT = TOUCH ? `<p class="fly-note">Tip: press and hold the image to save it to your photos.</p>` : "";
+function wireImageActions(saveBtn, shareBtn, blob, file, title){
+  const canShare = !!(navigator.canShare && navigator.canShare({files:[file]}));
+  const download = () => { const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = file.name;
+    document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500); };
+  if(saveBtn) saveBtn.addEventListener("click", () => { if(TOUCH && canShare) navigator.share({files:[file]}).catch(() => {}); else download(); });
+  if(shareBtn && canShare && !TOUCH){ shareBtn.hidden = false; shareBtn.addEventListener("click", () => navigator.share({files:[file], title}).catch(() => {})); }
 }
 
 /* ---------------- data loading + mount ---------------- */

@@ -156,15 +156,14 @@ const homeNote = code => TORONTO.has(code) ? "Home base" : code === "CYYC" ? "Ho
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const MONTHS_LONG = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const TYPES = {
-  CL65:{name:"CRJ900", sub:"CL65"}, BE02:{name:"BE02", sub:""}, C172:{name:"Cessna 172", sub:"C172"},
-  C152:{name:"Cessna 152", sub:"C152"}, "PA-34":{name:"Piper Seneca", sub:"PA-34"}, "7GCBC":{name:"Citabria Explorer", sub:"7GCBC"},
-  "7ECA":{name:"Citabria", sub:"7ECA"}, C180:{name:"Cessna 180", sub:"C180"}, FMX:{name:"Simulator", sub:"FMX"}
+  CL65:{name:"CRJ900", sub:"CL65"}, BE02:{name:"Beechcraft 1900", sub:"BE02"}, C172:{name:"Cessna 172", sub:"C172"},
+  C152:{name:"Cessna 152", sub:"C152"}, "PA-34":{name:"Piper Seneca", sub:"PA-34"}, CITABRIA:{name:"Citabria", sub:"7ECA · 7GCBC"}, C180:{name:"Cessna 180", sub:"C180"}, FMX:{name:"Simulator", sub:"FMX"}
 };
 const ROLES = [["pic","PIC","--fp-s1"],["sic","SIC (co-pilot)","--fp-s2"],["dual","Dual received","--fp-s3"]];
 const EARTH_NM = 21600;          // once around the equator
 const MOON_NM = 207559;          // average Earth–Moon distance
 
-const groupOf = t => /^C172/.test(t) ? "C172" : /^C180/.test(t) ? "C180" : t;
+const groupOf = t => /^C172/.test(t) ? "C172" : /^C180/.test(t) ? "C180" : /^7(ECA|GCBC)/.test(t) ? "CITABRIA" : t;
 const typeName = g => (TYPES[g]?.name) || g;
 const typeSub = g => TYPES[g] ? TYPES[g].sub : "";
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));

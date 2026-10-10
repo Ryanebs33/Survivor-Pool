@@ -1752,7 +1752,7 @@ let recapEp = null, recapMsg = null, commishTab = "picks", flyTab = "logbook";
 function loadFlyingJS(){
   if(window.Flying) return Promise.resolve();
   if(loadFlyingJS.p) return loadFlyingJS.p;
-  return loadFlyingJS.p = new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.src="flying.js?v=4"; sc.onload=res; sc.onerror=()=>{loadFlyingJS.p=null; rej(new Error("load"));}; document.head.appendChild(sc); });
+  return loadFlyingJS.p = new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.src="flying.js?v=5"; sc.onload=res; sc.onerror=()=>{loadFlyingJS.p=null; rej(new Error("load"));}; document.head.appendChild(sc); });
 }
 function mountFlying(){
   const root=document.getElementById("flyRoot");

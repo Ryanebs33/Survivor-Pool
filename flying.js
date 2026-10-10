@@ -97,7 +97,7 @@ body.flying nav.tabs a:hover{color:var(--fp-ink)!important}
 .fly-err{border-color:#e3494833;background:var(--fp-surface)}
 .fly-map-wrap{position:relative;background:var(--fp-surface);border:1px solid var(--fp-line);border-radius:10px;overflow:hidden;margin-bottom:12px}
 #flyMap{height:clamp(420px,68vh,760px);background:var(--fp-bg)}
-.fly-mapstats{display:flex;flex-wrap:wrap;gap:1px;background:var(--fp-line);border:1px solid var(--fp-line);border-radius:10px;overflow:hidden}
+.fly-mapstats{margin-bottom:0;display:flex;flex-wrap:wrap;gap:1px;background:var(--fp-line);border:1px solid var(--fp-line);border-radius:10px;overflow:hidden}
 .fly-mapstats div{flex:1 1 140px;background:var(--fp-surface);padding:10px 14px;display:grid;gap:4px}
 .fly-mapstats .v{font:500 17px/1.1 var(--fp-mono)}
 .fly .leaflet-container{font:400 13px/1.4 var(--fp-sans)}
@@ -113,6 +113,16 @@ body.flying nav.tabs a:hover{color:var(--fp-ink)!important}
 .fly .leaflet-control-zoom a{background:var(--fp-surface);color:var(--fp-ink);border-color:var(--fp-line)}
 .fly .leaflet-control-attribution{background:color-mix(in srgb,var(--fp-surface) 80%,transparent);color:var(--fp-muted);font-size:10.5px}
 .fly .leaflet-control-attribution a{color:var(--fp-muted)}
+.fly-maphead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 10px}
+.fly-maphead h3{font:600 15px/1.2 var(--fp-sans);margin:0;text-transform:none;letter-spacing:0;color:var(--fp-ink);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fly-btn:disabled{opacity:.6;cursor:default}
+.fly-factgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-top:1px solid var(--fp-line);border-left:1px solid var(--fp-line)}
+.fly-factgrid div{background:var(--fp-surface);padding:12px 14px;display:grid;gap:5px;align-content:start;min-width:0;border-right:1px solid var(--fp-line);border-bottom:1px solid var(--fp-line)}
+.fly-factgrid .v{font:500 18px/1.15 var(--fp-mono);overflow-wrap:anywhere}
+.fly-factgrid .n{font-size:12px;color:var(--fp-muted);line-height:1.35}
+#flyShareOut{margin-top:16px}
+.fly-shareout img{display:block;width:100%;max-width:480px;height:auto;border:1px solid var(--fp-line);border-radius:10px;background:#fff}
+.fly-shareout .acts{display:flex;gap:8px;margin-top:12px}
 .fly-career{display:grid;grid-template-columns:minmax(0,560px) 1fr;gap:20px;align-items:start}
 .fly-career img{width:100%;height:auto;border-radius:10px;border:1px solid var(--fp-line);display:block;background:#fff}
 .fly-career .acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
@@ -126,6 +136,7 @@ body.flying nav.tabs a:hover{color:var(--fp-ink)!important}
   .fly-tiles{grid-template-columns:repeat(2,1fr)}
   .fly-two{grid-template-columns:1fr}
   .fly-career{grid-template-columns:1fr}
+  .fly-factgrid{grid-template-columns:repeat(2,1fr)}
 }
 @media (max-width:560px){
   .fly-top{gap:10px}
@@ -364,7 +375,110 @@ function airportVisits(list){
 
 /* ---------------- Map tab ---------------- */
 function mapTab(){
-  return shell(filterBar(true) + `<div class="fly-map-wrap"><div id="flyMap" role="application" aria-label="Map of routes flown. Select a line for its distance and how often it was flown."></div></div><div class="fly-mapstats" id="flyMapStats"></div><p class="fly-note" id="flyMapNote"></p>`);
+  const list = filtered(), facts = flightFacts(list);
+  return shell(filterBar(true) + `<div class="fly-maphead"><h3>Routes · ${esc(filterLabel())}</h3><button type="button" class="fly-btn primary" id="flyMapShare" ${facts.length?"":"disabled"}>Share map</button></div>
+    <div class="fly-map-wrap"><div id="flyMap" role="application" aria-label="Map of routes flown. Select a line for its distance and how often it was flown."></div></div>
+    <div class="fly-mapstats" id="flyMapStats"></div><p class="fly-note" id="flyMapNote"></p>
+    <div id="flyShareOut" hidden></div>
+    ${facts.length ? `<div class="fly-card"><h3>Flight facts</h3><p class="sub">${esc(filterLabel())}. Toronto (and Calgary before 2020) don't count as destinations.</p>
+      <div class="fly-factgrid">${facts.map(f => `<div><span class="fly-k">${esc(f.k)}</span><span class="v">${esc(f.v)}</span>${f.n?`<span class="n">${esc(f.n)}</span>`:""}</div>`).join("")}</div></div>` : ""}`);
+}
+/* Facts for whatever is selected in the filters. Order matters: the first six go on the shareable map. */
+function flightFacts(list){
+  const t = sums(list); if(!t.legs && !t.tot) return [];
+  const out = [], add = (k, v, n, short) => out.push({k, v, n, short});
+  const pairs = routePairs(list), visits = airportVisits(list), dests = topDestinations(list);
+  const aps = [...visits.keys()].map(airport).filter(Boolean);
+  const byNm = [...pairs].sort((a,b) => b.nm - a.nm);
+  const top = [...pairs].sort((a,b) => b.n - a.n || b.nm - a.nm)[0];
+  const earth = t.nm / EARTH_NM;
+  if(t.legs) add("Distance flown", `${fmtN(t.nm)} nm`, earth >= 1 ? `${earth.toFixed(1)}× around the Earth` : `${Math.max(1, Math.round(earth*100))}% of the way around the Earth`);
+  if(dests[0]){ const A = airport(dests[0].code); add("Most visited", dests[0].code, `${shortName(A)} · ${plural(dests[0].dest, "arrival")}`); }
+  if(top) add("Most flown route", `${top.a}–${top.b}`, `${plural(top.n, "time")} · ${fmtN(top.nm)} nm`);
+  if(byNm[0]) add("Longest leg", `${byNm[0].a}–${byNm[0].b}`, `${fmtN(byNm[0].nm)} nm · ${shortName(airport(byNm[0].a))} to ${shortName(airport(byNm[0].b))}`);
+  if(aps.length){
+    const countries = new Set(aps.map(a => a.country)), regions = new Set(aps.map(a => a.country+"-"+a.region));
+    add("Airports", fmtN(aps.length), `${plural(regions.size, "province or state", "provinces & states")} · ${plural(countries.size, "country", "countries")}`, `in ${plural(countries.size, "country", "countries")}`);
+  }
+  add("Flight time", `${fmtH(t.tot)} h`, `${plural(t.flights, "logbook entry", "logbook entries")}${t.night ? ` · ${fmtH(t.night)} h night` : ""}`, plural(t.flights, "logbook entry", "logbook entries"));
+  if(t.legs) add("Average leg", `${fmtN(t.nm / t.legs)} nm`, `${plural(t.legs, "leg")} with a route`);
+  if(byNm.length > 1){ const sh = byNm[byNm.length-1]; add("Shortest leg", `${sh.a}–${sh.b}`, `${fmtN(sh.nm)} nm`); }
+  if(aps.length > 1){
+    const ext = (cmp, label, fmt) => { const a = aps.reduce((m, b) => cmp(b, m) ? b : m); add(label, a.code, `${shortName(a)} · ${fmt(a)}`); };
+    ext((a,b) => a.lat > b.lat, "Furthest north", a => `${a.lat.toFixed(1)}°N`);
+    ext((a,b) => a.lat < b.lat, "Furthest south", a => `${Math.abs(a.lat).toFixed(1)}°${a.lat<0?"S":"N"}`);
+    ext((a,b) => a.lon < b.lon, "Furthest west", a => `${Math.abs(a.lon).toFixed(1)}°${a.lon<0?"W":"E"}`);
+    ext((a,b) => a.lon > b.lon, "Furthest east", a => `${Math.abs(a.lon).toFixed(1)}°${a.lon<0?"W":"E"}`);
+  }
+  const days = new Map(); list.forEach(f => { if(f.legs.length) days.set(f.d, (days.get(f.d)||0) + f.legs.length); });
+  const bd = [...days.entries()].sort((a,b) => b[1]-a[1] || (a[0] < b[0] ? 1 : -1))[0];
+  if(bd && bd[1] > 1) add("Busiest day", `${bd[1]} legs`, fmtDay(bd[0]));
+  if(S.filt.month === "all" || S.filt.year === "all"){
+    const months = new Map(); list.forEach(f => { const k = f.d.slice(0,7); months.set(k, (months.get(k)||0) + f.h.tot); });
+    const bm = [...months.entries()].sort((a,b) => b[1]-a[1])[0];
+    if(bm && bm[1] > 0) add("Busiest month", fmtMonth(bm[0]+"-01"), `${fmtH(bm[1])} hours`);
+  }
+  if(dests.length > 1) add("Next most visited", dests.slice(1,4).map(d => d.code).join(" · "), dests.slice(1,4).map(d => `${d.dest}×`).join(" · "));
+  return out;
+}
+async function drawMapShare(){
+  const list = filtered(), facts = flightFacts(list);
+  try{ await Promise.all([document.fonts.load('500 40px "IBM Plex Mono"'), document.fonts.ready]); }catch(e){}
+  const W = 1080, H = 1350, P = 64;
+  const cv = document.createElement("canvas"); cv.width = W; cv.height = H;
+  const x = cv.getContext("2d");
+  const C = {bg:"#ffffff", ink:"#0f1318", ink2:"#3d4552", muted:"#6b7380", line:"#e2e5ea", accent:"#2a78d6"};
+  const SANS = '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif', MONO = '"IBM Plex Mono",ui-monospace,Menlo,monospace';
+  const fit = (str, w, font) => { x.font = font; if(x.measureText(str).width <= w) return str; while(str.length > 1 && x.measureText(str+"…").width > w) str = str.slice(0,-1); return str+"…"; };
+  x.fillStyle = C.bg; x.fillRect(0,0,W,H);
+  x.textBaseline = "alphabetic";
+  x.fillStyle = C.accent; x.font = `600 22px ${SANS}`; x.fillText("PILOT LOGBOOK · ROUTE MAP", P, 92);
+  x.fillStyle = C.muted; x.font = `500 22px ${MONO}`; x.textAlign = "right"; x.fillText(fit(filterLabel().toUpperCase(), 420, `500 22px ${MONO}`), W-P, 92); x.textAlign = "left";
+  const pairs = routePairs(list), visits = airportVisits(list), t = sums(list);
+  x.fillStyle = C.ink; x.font = `600 50px ${SANS}`; x.fillText("Where I've flown", P, 152);
+  x.fillStyle = C.ink2; x.font = `400 24px ${SANS}`;
+  x.fillText(`${plural(pairs.length, "route")}  ·  ${plural(visits.size, "airport")}  ·  ${plural(t.legs, "leg")}  ·  ${fmtH(t.tot)} hours`, P, 194);
+  const box = {x:P, y:226, w:W-2*P, h:620};
+  x.fillStyle = "#eef2f6"; roundRect(x, box.x, box.y, box.w, box.h, 16); x.fill();
+  await drawRouteWeb(x, box, pairs, [...visits.keys()], 16, 40);
+  x.strokeStyle = C.line; x.lineWidth = 1.5; roundRect(x, box.x, box.y, box.w, box.h, 16); x.stroke();
+  // six facts, 3 x 2
+  const cells = facts.slice(0, 6), gy = 886, cw = (W-2*P)/3, ch = 168;
+  x.strokeStyle = C.line; x.lineWidth = 1.5; x.beginPath();
+  for(let r = 0; r <= Math.ceil(cells.length/3); r++){ x.moveTo(P, gy + r*ch); x.lineTo(W-P, gy + r*ch); }
+  for(let c = 1; c < 3; c++){ x.moveTo(P + c*cw, gy); x.lineTo(P + c*cw, gy + Math.ceil(cells.length/3)*ch); }
+  x.stroke();
+  cells.forEach((f, i) => {
+    const cx = P + (i%3)*cw + (i%3 ? 24 : 0), cy = gy + Math.floor(i/3)*ch, w = cw - (i%3 ? 36 : 12);
+    x.fillStyle = C.muted; x.font = `600 17px ${SANS}`; x.fillText(f.k.toUpperCase(), cx, cy + 44);
+    x.fillStyle = C.ink; x.font = `500 40px ${MONO}`; x.fillText(fit(f.v, w, `500 40px ${MONO}`), cx, cy + 98);
+    x.fillStyle = C.ink2; x.font = `400 19px ${SANS}`; x.fillText(fit(f.short || f.n || "", w, `400 19px ${SANS}`), cx, cy + 132);
+  });
+  x.fillStyle = C.muted; x.font = `400 16px ${SANS}`; x.fillText("Map outlines: Natural Earth", P, H - 36);
+  return cv;
+}
+async function shareMap(btn){
+  const out = document.getElementById("flyShareOut"); if(!out) return;
+  btn.disabled = true; const label = btn.textContent; btn.textContent = "Making image…";
+  try{
+    const cv = await drawMapShare();
+    const blob = await new Promise(r => cv.toBlob(r, "image/png"));
+    const name = "flying-map-" + filterLabel().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + ".png";
+    const file = new File([blob], name, {type:"image/png"});
+    const url = URL.createObjectURL(blob);
+    out.hidden = false;
+    out.innerHTML = `<div class="fly-card fly-shareout"><div class="fly-maphead" style="margin:0 0 12px"><h3>Shareable map</h3><button type="button" class="fly-btn" id="flyShareClose">Close</button></div>
+      <img src="${url}" alt="Route map image for ${esc(filterLabel())}">
+      <div class="acts"><button type="button" class="fly-btn primary" id="flyShareSave">Save image</button><button type="button" class="fly-btn" id="flyShareSend" hidden>Share</button></div></div>`;
+    out.querySelector("#flyShareSave").addEventListener("click", () => { const a = document.createElement("a"); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); });
+    out.querySelector("#flyShareClose").addEventListener("click", () => { out.hidden = true; out.innerHTML = ""; URL.revokeObjectURL(url); });
+    const sh = out.querySelector("#flyShareSend");
+    if(navigator.canShare && navigator.canShare({files:[file]})){ sh.hidden = false; sh.addEventListener("click", () => navigator.share({files:[file], title:"Where I've flown"}).catch(() => {})); }
+    out.scrollIntoView({block:"start", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"});
+  }catch(e){
+    out.hidden = false; out.innerHTML = `<div class="fly-card fly-err"><h3>The image didn't render</h3><p class="sub" style="margin:6px 0 0">Try again in a moment.</p></div>`;
+  }
+  btn.disabled = false; btn.textContent = label;
 }
 function loadBase(){
   if(!loadBase.p) loadBase.p = fetch("map-base.json?v=1").then(r => r.ok ? r.json() : null).catch(() => { loadBase.p = null; return null; });
@@ -554,35 +668,9 @@ async function drawCareer(){
 
   // route web
   const box = {x:P, y:392, w:W-2*P, h:330};
-  x.fillStyle = "#f7f9fb"; x.strokeStyle = C.line; x.lineWidth = 1.5;
+  x.fillStyle = "#eef2f6"; x.strokeStyle = C.line; x.lineWidth = 1.5;
   roundRect(x, box.x, box.y, box.w, box.h, 14); x.fill(); x.stroke();
-  const aps = [...c.visits.keys()].map(airport).filter(Boolean);
-  if(aps.length){
-    const proj = (lat, lon) => [lon, Math.log(Math.tan(Math.PI/4 + lat*Math.PI/360))];
-    const pp = aps.map(a => proj(a.lat, a.lon));
-    let x0 = Math.min(...pp.map(p=>p[0])), x1 = Math.max(...pp.map(p=>p[0])), y0 = Math.min(...pp.map(p=>p[1])), y1 = Math.max(...pp.map(p=>p[1]));
-    const pad = 34, sx = (box.w-2*pad)/((x1-x0)||1), sy = (box.h-2*pad)/(((y1-y0)||1)*180/Math.PI), s = Math.min(sx, sy);
-    const cx = box.x + box.w/2, cy = box.y + box.h/2, mx = (x0+x1)/2, my = (y0+y1)/2;
-    const P2 = (lat, lon) => { const [u,v] = proj(lat, lon); return [cx + (u-mx)*s, cy - (v-my)*180/Math.PI*s]; };
-    const maxN = Math.max(1, ...c.pairs.map(p => p.n));
-    x.save(); roundRect(x, box.x, box.y, box.w, box.h, 14); x.clip();
-    const base = await loadBase();
-    if(base){
-      const trace = rings => rings.forEach(r => { r.forEach(([lo,la],i) => { const [u,v] = P2(la, lo); i ? x.lineTo(u,v) : x.moveTo(u,v); }); x.closePath(); });
-      x.beginPath(); trace(base.land); x.fillStyle = "#ffffff"; x.fill("evenodd"); x.strokeStyle = "#d5dbe3"; x.lineWidth = 1; x.stroke();
-      x.beginPath(); trace(base.lakes); x.fillStyle = "#f7f9fb"; x.fill(); x.stroke();
-    }
-    x.lineCap = "round";
-    [...c.pairs].sort((a,b) => a.n-b.n).forEach(p => {
-      const A = airport(p.a), B = airport(p.b); if(!A||!B) return;
-      const g = gcPoints(A, B, 24).map(([la,lo]) => P2(la, lo));
-      x.strokeStyle = `rgba(42,120,214,${0.28 + 0.6*Math.sqrt(p.n/maxN)})`; x.lineWidth = 1.2 + 3.4*Math.sqrt(p.n/maxN);
-      x.beginPath(); g.forEach(([u,v],i) => i ? x.lineTo(u,v) : x.moveTo(u,v)); x.stroke();
-    });
-    aps.forEach(a => { const [u,v] = P2(a.lat, a.lon), home = TORONTO.has(a.code);
-      x.beginPath(); x.arc(u, v, home ? 7 : 3.5, 0, Math.PI*2); x.fillStyle = home ? C.accent : "#fff"; x.fill(); x.lineWidth = 2; x.strokeStyle = C.accent; x.stroke(); });
-    x.restore();
-  }
+  await drawRouteWeb(x, box, c.pairs, [...c.visits.keys()], 14, 34);
   x.fillStyle = C.muted; x.font = `500 18px ${SANS}`; x.fillText(`${fmtN(c.pairs.length)} routes · ${fmtN(c.visits.size)} airports · ${plural(c.countries.size,"country","countries")}`, box.x + 18, box.y + box.h - 18);
 
   // stat grid 3 x 2
@@ -619,6 +707,37 @@ async function drawCareer(){
     x.fillStyle = C.ink; x.font = `500 21px ${MONO}`; x.textAlign = "right"; x.fillText(fmtH(g.t.tot), W - P, y + 19); x.textAlign = "left";
   });
   return cv;
+}
+async function drawRouteWeb(x, box, pairs, codes, radius, pad){
+  const aps = codes.map(airport).filter(Boolean);
+  if(!aps.length) return;
+  const proj = (lat, lon) => [lon, Math.log(Math.tan(Math.PI/4 + lat*Math.PI/360))*180/Math.PI];
+  const pp = aps.map(a => proj(a.lat, a.lon));
+  const x0 = Math.min(...pp.map(p=>p[0])), x1 = Math.max(...pp.map(p=>p[0])), y0 = Math.min(...pp.map(p=>p[1])), y1 = Math.max(...pp.map(p=>p[1]));
+  const span = Math.max(x1-x0, y1-y0, 4);                       // don't zoom in absurdly on one short route
+  const s = Math.min((box.w-2*pad)/Math.max(x1-x0, span*0.5), (box.h-2*pad)/Math.max(y1-y0, span*0.5));
+  const cx = box.x + box.w/2, cy = box.y + box.h/2, mx = (x0+x1)/2, my = (y0+y1)/2;
+  const P2 = (lat, lon) => { const [u,v] = proj(Math.max(-84, Math.min(84, lat)), lon); return [cx + (u-mx)*s, cy - (v-my)*s]; };
+  const maxN = Math.max(1, ...pairs.map(p => p.n));
+  x.save(); roundRect(x, box.x, box.y, box.w, box.h, radius); x.clip();
+  const base = await loadBase();
+  if(base){
+    const trace = rings => rings.forEach(r => { r.forEach(([lo,la],i) => { const [u,v] = P2(la, lo); i ? x.lineTo(u,v) : x.moveTo(u,v); }); x.closePath(); });
+    x.beginPath(); trace(base.land); x.fillStyle = "#ffffff"; x.fill("evenodd"); x.strokeStyle = "#d5dbe3"; x.lineWidth = 1; x.stroke();
+    x.beginPath(); trace(base.lakes); x.fillStyle = "#eef2f6"; x.fill(); x.stroke();
+    x.beginPath(); base.prov.forEach(r => r.forEach(([lo,la],i) => { const [u,v] = P2(la, lo); i ? x.lineTo(u,v) : x.moveTo(u,v); }));
+    x.strokeStyle = "#e6e9ee"; x.lineWidth = 0.8; x.stroke();
+  }
+  x.lineCap = "round";
+  [...pairs].sort((a,b) => a.n-b.n).forEach(p => {
+    const A = airport(p.a), B = airport(p.b); if(!A||!B) return;
+    const g = gcPoints(A, B, 24).map(([la,lo]) => P2(la, lo));
+    x.strokeStyle = `rgba(42,120,214,${0.32 + 0.6*Math.sqrt(p.n/maxN)})`; x.lineWidth = 1.4 + 3.6*Math.sqrt(p.n/maxN);
+    x.beginPath(); g.forEach(([u,v],i) => i ? x.lineTo(u,v) : x.moveTo(u,v)); x.stroke();
+  });
+  aps.forEach(a => { const [u,v] = P2(a.lat, a.lon), home = TORONTO.has(a.code);
+    x.beginPath(); x.arc(u, v, home ? 7 : 4, 0, Math.PI*2); x.fillStyle = home ? "#2a78d6" : "#fff"; x.fill(); x.lineWidth = 2; x.strokeStyle = "#2a78d6"; x.stroke(); });
+  x.restore();
 }
 function roundRect(x, X, Y, w, h, r){ x.beginPath(); x.moveTo(X+r,Y); x.arcTo(X+w,Y,X+w,Y+h,r); x.arcTo(X+w,Y+h,X,Y+h,r); x.arcTo(X,Y+h,X,Y,r); x.arcTo(X,Y,X+w,Y,r); x.closePath(); }
 async function mountCareer(){
@@ -664,6 +783,7 @@ function wire(root){
   on("fMonth", "change", e => setF("month", e.target.value));
   on("fClear", "click", () => { S.filt = {type:"all", year:"all", month:"all"}; render(root); });
   on("fRefresh", "click", async e => { e.target.textContent = "Refreshing…"; await load(true); render(root); });
+  on("flyMapShare", "click", e => shareMap(e.currentTarget));
   on("fRetry", "click", async () => { root.innerHTML = shell(`<div class="fly-card fly-empty">Loading your logbook…</div>`); await load(false); render(root); });
   wireTips(root);
 }

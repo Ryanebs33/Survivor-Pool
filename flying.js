@@ -167,7 +167,7 @@ const homeNote = code => TORONTO.has(code) ? "Home base" : code === "CYYC" ? "Ho
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const MONTHS_LONG = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const TYPES = {
-  CL65:{name:"CRJ900", sub:"CL65"}, BE02:{name:"Beechcraft 1900", sub:"BE02"}, C172:{name:"Cessna 172", sub:"C172"},
+  CL65:{name:"CRJ", sub:"CL65"}, BE02:{name:"Beechcraft 1900", sub:"BE02"}, C172:{name:"Cessna 172", sub:"C172"},
   C152:{name:"Cessna 152", sub:"C152"}, "PA-34":{name:"Piper Seneca", sub:"PA-34"}, CITABRIA:{name:"Citabria", sub:"7ECA · 7GCBC"}, C180:{name:"Cessna 180", sub:"C180"}, FMX:{name:"Simulator", sub:"FMX"}
 };
 const ROLES = [["pic","PIC","--fp-s1"],["sic","SIC (co-pilot)","--fp-s2"],["dual","Dual received","--fp-s3"]];

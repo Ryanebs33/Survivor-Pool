@@ -143,7 +143,7 @@ body.flying nav.tabs a:hover{color:var(--fp-ink)!important}
   .fly-tabs{order:3;width:100%}
   .fly-tabs a{flex:1;text-align:center;padding:9px 6px}
   .fly-bar{padding:12px}
-  .fly-field{flex:1 1 calc(33% - 10px);min-width:0}
+  .fly-field{flex:1 1 calc(50% - 10px);min-width:0}
   .fly-field select{min-width:0;width:100%;padding-right:24px;font-size:14px}
   .fly-bar .fly-meta{margin-left:0;text-align:left;flex-basis:100%}
   .fly-hrow{grid-template-columns:92px 1fr 58px;gap:8px}
@@ -185,7 +185,7 @@ const fmtDay = d => { const [y,m,dd] = d.split("-"); return `${+dd} ${MONTHS[+m-
 const plural = (n, w, p) => `${fmtN(n)} ${n===1 ? w : (p || w+"s")}`;
 
 /* ---------------- state ---------------- */
-const S = { data:null, loading:false, err:null, filt:{type:"all", year:"all", month:"all"}, tab:"logbook", code:null, api:null, map:null, careerImg:null };
+const S = { data:null, loading:false, err:null, filt:{type:"all", y0:"all", y1:"all", month:"all"}, tab:"logbook", code:null, api:null, map:null, careerImg:null };
 
 function airport(code){ const a = S.data.airports[code]; return a ? {code, lat:a[0], lon:a[1], name:a[2], city:a[3], country:a[4], region:a[5]} : null; }
 function nm(a, b){
@@ -197,6 +197,14 @@ function nm(a, b){
 }
 const NM_CACHE = new Map();
 function legNm(a, b){ const k = a < b ? a+"|"+b : b+"|"+a; if(!NM_CACHE.has(k)) NM_CACHE.set(k, nm(a, b)); return NM_CACHE.get(k); }
+/* Year range: y0/y1 are "all" (open-ended) or a year. */
+function yearBounds(){
+  const ys = S.data.flights.map(f => f.y), min = Math.min(...ys), max = Math.max(...ys);
+  return [S.filt.y0==="all" ? min : +S.filt.y0, S.filt.y1==="all" ? max : +S.filt.y1, min, max];
+}
+const allYears = () => S.filt.y0==="all" && S.filt.y1==="all";
+const oneYear = () => { const [lo, hi] = yearBounds(); return !allYears() && lo === hi ? lo : null; };
+function yearLabel(){ if(allYears()) return ""; const [lo, hi] = yearBounds(); return lo === hi ? String(lo) : `${lo}–${hi}`; }
 const shortName = a => a ? (a.city || a.name).replace(/\s*\(.*\)$/, "") : "";
 
 function prep(data){
@@ -206,8 +214,8 @@ function prep(data){
   return data;
 }
 function filtered(){
-  const {type, year, month} = S.filt;
-  return S.data.flights.filter(f => (type==="all" || f.g===type) && (year==="all" || f.y===+year) && (month==="all" || f.m===+month));
+  const {type, month} = S.filt, [lo, hi] = yearBounds();
+  return S.data.flights.filter(f => (type==="all" || f.g===type) && f.y >= lo && f.y <= hi && (month==="all" || f.m===+month));
 }
 function sums(list){
   const t = {tot:0,pic:0,sic:0,dual:0,night:0,xc:0,act:0,hood:0,simT:0,ldD:0,ldN:0,app:0,flights:0,legs:0,nm:0};
@@ -265,16 +273,18 @@ function filterBar(showMeta){
   const when = ago==null ? "" : ago < 1 ? "just now" : ago < 60 ? `${ago} min ago` : `${Math.round(ago/60)} h ago`;
   return `<div class="fly-bar" role="group" aria-label="Filter flights">
     <div class="fly-field"><label for="fType">Aircraft</label><select id="fType">${opt("all","All aircraft",S.filt.type)}${groups.map(g => opt(g.g, typeName(g.g), S.filt.type)).join("")}</select></div>
-    <div class="fly-field"><label for="fYear">Year</label><select id="fYear">${opt("all","All years",S.filt.year)}${years.map(y => opt(y, y, S.filt.year)).join("")}</select></div>
+    <div class="fly-field"><label for="fY0">From year</label><select id="fY0">${opt("all",`Earliest (${years[years.length-1]})`,S.filt.y0)}${[...years].reverse().map(y => opt(y, y, S.filt.y0)).join("")}</select></div>
+    <div class="fly-field"><label for="fY1">To year</label><select id="fY1">${opt("all",`Latest (${years[0]})`,S.filt.y1)}${years.map(y => opt(y, y, S.filt.y1)).join("")}</select></div>
     <div class="fly-field"><label for="fMonth">Month</label><select id="fMonth">${opt("all","All months",S.filt.month)}${MONTHS_LONG.map((m,i) => opt(i+1, m, S.filt.month)).join("")}</select></div>
-    ${showMeta ? `<div class="fly-meta">${S.data.stale ? "Showing the last saved copy. Google Sheets didn't respond." : `From your Google Sheet · updated ${when}`}<br><button type="button" class="fly-linkbtn" id="fRefresh">Refresh now</button>${(S.filt.type!=="all"||S.filt.year!=="all"||S.filt.month!=="all")?` · <button type="button" class="fly-linkbtn" id="fClear">Clear filters</button>`:""}</div>` : ""}
+    ${showMeta ? `<div class="fly-meta">${S.data.stale ? "Showing the last saved copy. Google Sheets didn't respond." : `From your Google Sheet · updated ${when}`}<br><button type="button" class="fly-linkbtn" id="fRefresh">Refresh now</button>${(S.filt.type!=="all"||!allYears()||S.filt.month!=="all")?` · <button type="button" class="fly-linkbtn" id="fClear">Clear filters</button>`:""}</div>` : ""}
   </div>`;
 }
 function filterLabel(){
   const p = [];
   if(S.filt.type!=="all") p.push(typeName(S.filt.type));
-  if(S.filt.month!=="all") p.push(MONTHS_LONG[S.filt.month-1] + (S.filt.year!=="all" ? " " + S.filt.year : "s"));
-  else if(S.filt.year!=="all") p.push(S.filt.year);
+  const yl = yearLabel();
+  if(S.filt.month!=="all") p.push(MONTHS_LONG[S.filt.month-1] + (oneYear() ? " " + yl : yl ? "s, " + yl : "s"));
+  else if(yl) p.push(yl);
   return p.length ? p.join(" · ") : "All flying";
 }
 
@@ -318,14 +328,15 @@ function logbookTab(){
 
   // hours over time: by year, or by month when one year is chosen
   let buckets, xl, title, sub;
-  if(S.filt.year === "all"){
-    const ys = [...new Set(S.data.flights.map(f => f.y))].sort((a,b) => a - b);
-    const all = []; for(let y = ys[0]; y <= ys[ys.length-1]; y++) all.push(y);
+  const single = oneYear();
+  if(single == null){
+    const [lo, hi] = yearBounds();
+    const all = []; for(let y = lo; y <= hi; y++) all.push(y);
     buckets = all.map(y => ({key:y, label:String(y), short:"'"+String(y).slice(2), t:sums(list.filter(f => f.y===y))}));
     title = "Flight time by year"; sub = S.filt.month==="all" ? "Hours flown each calendar year" : `Hours flown in ${MONTHS_LONG[S.filt.month-1]} of each year`;
   } else {
-    buckets = MONTHS.map((m,i) => ({key:i+1, label:`${MONTHS_LONG[i]} ${S.filt.year}`, short:m.slice(0,1)+m.slice(1,3), t:sums(list.filter(f => f.m===i+1))}));
-    title = `Flight time by month · ${S.filt.year}`; sub = "Hours flown each month";
+    buckets = MONTHS.map((m,i) => ({key:i+1, label:`${MONTHS_LONG[i]} ${single}`, short:m.slice(0,1)+m.slice(1,3), t:sums(list.filter(f => f.m===i+1))}));
+    title = `Flight time by month · ${single}`; sub = "Hours flown each month";
   }
   const cmax = Math.max(...buckets.map(b => b.t.tot), 1);
   const step = niceStep(cmax / 3), top = Math.ceil(cmax / step) * step;
@@ -339,7 +350,7 @@ function logbookTab(){
         return `<div class="fly-col" tabindex="0" data-tip="${tipH}">${ROLES.filter(([k]) => b.t[k]>0).map(([k,,v]) => `<span class="fly-seg" style="height:${(b.t[k]/top*100).toFixed(3)}%;background:var(${v})"></span>`).join("")}</div>`;
       }).join("")}
     </div>
-    <div class="fly-xl" aria-hidden="true">${buckets.map(b => `<span>${narrow && innerWidth < 560 ? b.short : (S.filt.year==="all" ? b.label : b.short)}</span>`).join("")}</div></div>`;
+    <div class="fly-xl" aria-hidden="true">${buckets.map(b => `<span>${narrow && innerWidth < 560 ? b.short : (single == null ? b.label : b.short)}</span>`).join("")}</div></div>`;
 
   // table
   const row = (label, sub, x) => `<tr><td>${esc(label)}${sub?` <span style="color:var(--fp-muted);font:400 11.5px var(--fp-mono)">${esc(sub)}</span>`:""}</td><td>${fmtH(x.tot)}</td><td>${fmtH(x.pic)}</td><td>${fmtH(x.sic)}</td><td>${fmtH(x.dual)}</td><td>${fmtH(x.night)}</td><td>${fmtH(x.xc)}</td><td>${fmtH(x.act)}</td><td>${fmtH(x.hood)}</td><td>${fmtN(x.flights)}</td><td>${fmtN(x.nm)}</td></tr>`;
@@ -413,7 +424,7 @@ function flightFacts(list){
   const days = new Map(); list.forEach(f => { if(f.legs.length) days.set(f.d, (days.get(f.d)||0) + f.legs.length); });
   const bd = [...days.entries()].sort((a,b) => b[1]-a[1] || (a[0] < b[0] ? 1 : -1))[0];
   if(bd && bd[1] > 1) add("Busiest day", `${bd[1]} legs`, fmtDay(bd[0]));
-  if(S.filt.month === "all" || S.filt.year === "all"){
+  if(S.filt.month === "all" || oneYear() == null){
     const months = new Map(); list.forEach(f => { const k = f.d.slice(0,7); months.set(k, (months.get(k)||0) + f.h.tot); });
     const bm = [...months.entries()].sort((a,b) => b[1]-a[1])[0];
     if(bm && bm[1] > 0) add("Busiest month", fmtMonth(bm[0]+"-01"), `${fmtH(bm[1])} hours`);
@@ -779,9 +790,12 @@ function wire(root){
   const on = (id, ev, fn) => { const el = root.querySelector("#"+id); if(el) el.addEventListener(ev, fn); };
   const setF = (k, v) => { S.filt[k] = v; render(root); };
   on("fType", "change", e => setF("type", e.target.value));
-  on("fYear", "change", e => setF("year", e.target.value));
+  // year range: picking a "from" after the "to" (or the reverse) swaps them so the range always makes sense
+  const setY = (k, v) => { S.filt[k] = v; const {y0, y1} = S.filt; if(y0!=="all" && y1!=="all" && +y0 > +y1){ S.filt.y0 = y1; S.filt.y1 = y0; } render(root); };
+  on("fY0", "change", e => setY("y0", e.target.value));
+  on("fY1", "change", e => setY("y1", e.target.value));
   on("fMonth", "change", e => setF("month", e.target.value));
-  on("fClear", "click", () => { S.filt = {type:"all", year:"all", month:"all"}; render(root); });
+  on("fClear", "click", () => { S.filt = {type:"all", y0:"all", y1:"all", month:"all"}; render(root); });
   on("fRefresh", "click", async e => { e.target.textContent = "Refreshing…"; await load(true); render(root); });
   on("flyMapShare", "click", e => shareMap(e.currentTarget));
   on("fRetry", "click", async () => { root.innerHTML = shell(`<div class="fly-card fly-empty">Loading your logbook…</div>`); await load(false); render(root); });

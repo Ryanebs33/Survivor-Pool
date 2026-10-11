@@ -377,6 +377,14 @@ function routePairs(list){
   }));
   return [...m.values()];
 }
+/* Most flown route, counted one direction at a time (CYYZ → KDCA and KDCA → CYYZ are separate). */
+function topDirected(pairs){
+  let best = null;
+  pairs.forEach(p => [[p.a, p.b, p.ab], [p.b, p.a, p.ba]].forEach(([from, to, n]) => {
+    if(n && (!best || n > best.n || (n === best.n && p.nm > best.nm))) best = {from, to, n, nm:p.nm};
+  }));
+  return best;
+}
 function airportVisits(list){
   const m = new Map();
   const get = c => { if(!m.has(c)) m.set(c, {code:c, arr:0, dep:0, dest:0}); return m.get(c); };
@@ -401,11 +409,11 @@ function flightFacts(list){
   const pairs = routePairs(list), visits = airportVisits(list), dests = topDestinations(list);
   const aps = [...visits.keys()].map(airport).filter(Boolean);
   const byNm = [...pairs].sort((a,b) => b.nm - a.nm);
-  const top = [...pairs].sort((a,b) => b.n - a.n || b.nm - a.nm)[0];
+  const top = topDirected(pairs);
   const earth = t.nm / EARTH_NM;
   if(t.legs) add("Distance flown", `${fmtN(t.nm)} nm`, earth >= 1 ? `${earth.toFixed(1)}× around the Earth` : `${Math.max(1, Math.round(earth*100))}% of the way around the Earth`);
   if(dests[0]){ const A = airport(dests[0].code); add("Most visited", dests[0].code, `${shortName(A)} · ${plural(dests[0].dest, "arrival")}`); }
-  if(top) add("Most flown route", `${top.a}–${top.b}`, `${plural(top.n, "time")} · ${fmtN(top.nm)} nm`);
+  if(top) add("Most flown route", `${top.from}→${top.to}`, `${plural(top.n, "time")} · ${fmtN(top.nm)} nm`);
   if(byNm[0]) add("Longest leg", `${byNm[0].a}–${byNm[0].b}`, `${fmtN(byNm[0].nm)} nm · ${shortName(airport(byNm[0].a))} to ${shortName(airport(byNm[0].b))}`);
   if(aps.length){
     const countries = new Set(aps.map(a => a.country)), regions = new Set(aps.map(a => a.country+"-"+a.region));
@@ -527,8 +535,7 @@ function routePopup(p){
   const types = [...p.types.entries()].sort((x,y) => y[1]-x[1]).map(([g,n]) => `${typeName(g)} ×${n}`).join(", ");
   return `<div class="fly-pop"><div class="rt">${esc(p.a)} ⇄ ${esc(p.b)}</div><div class="nm">${esc(shortName(A))} – ${esc(shortName(B))}</div>
     <dl><dt>Distance</dt><dd>${fmtN(p.nm)} nm · ${fmtN(p.nm*1.852)} km</dd>
-    <dt>Times flown</dt><dd>${fmtN(p.n)}</dd>
-    ${p.ab && p.ba ? `<dt>${esc(p.a)} → ${esc(p.b)}</dt><dd>${fmtN(p.ab)}</dd><dt>${esc(p.b)} → ${esc(p.a)}</dt><dd>${fmtN(p.ba)}</dd>` : `<dt>Direction</dt><dd>${p.ab ? esc(p.a)+" → "+esc(p.b) : esc(p.b)+" → "+esc(p.a)}</dd>`}
+    ${[[p.a,p.b,p.ab],[p.b,p.a,p.ba]].sort((x,y) => y[2]-x[2]).filter(d => d[2]).map(([f,t,n]) => `<dt>${esc(f)} → ${esc(t)}</dt><dd>${plural(n, "time")}</dd>`).join("")}
     <dt>${p.n>1?"First / last":"Date"}</dt><dd>${p.n>1 ? `${fmtMonth(p.first)} / ${fmtMonth(p.last)}` : fmtDay(p.first)}</dd>
     <dt>Aircraft</dt><dd style="font-family:var(--fp-sans);font-weight:500">${esc(types)}</dd></dl></div>`;
 }
@@ -619,7 +626,7 @@ function careerStats(){
   const topReg = [...regs.entries()].sort((a,b) => b[1]-a[1])[0];
   const groups = byGroup(flown).sort((a,b) => b.t.tot - a.t.tot);
   const dates = flown.map(f => f.d).sort();
-  return {t, pairs, longest, visits, dests, countries, bestYear, bestMonth, topReg, groups, first:dates[0], last:dates[dates.length-1], topRoute:pairs[0], flights:flown.length};
+  return {t, pairs, longest, visits, dests, countries, bestYear, bestMonth, topReg, groups, first:dates[0], last:dates[dates.length-1], topRoute:topDirected(pairs), flights:flown.length};
 }
 function careerTab(){
   const c = careerStats();
@@ -632,7 +639,7 @@ function careerTab(){
     fact("Legs with a route", fmtN(c.t.legs)),
     fact("Most visited destination", d1 ? `${esc(d1.code)} · ${esc(shortName(A1))} · ${fmtN(d1.dest)}×` : "–"),
     fact("Next most visited", c.dests.slice(1,4).map(d => `${esc(d.code)} ${fmtN(d.dest)}×`).join(" · ") || "–"),
-    fact("Most flown route", c.topRoute ? `${esc(c.topRoute.a)} ⇄ ${esc(c.topRoute.b)} · ${fmtN(c.topRoute.n)}×` : "–"),
+    fact("Most flown route", c.topRoute ? `${esc(c.topRoute.from)} → ${esc(c.topRoute.to)} · ${fmtN(c.topRoute.n)}×` : "–"),
     fact("Longest leg", c.longest ? `${esc(c.longest.a)} ⇄ ${esc(c.longest.b)} · ${fmtN(c.longest.nm)} nm` : "–"),
     fact("Airports visited", `${fmtN(c.visits.size)} in ${plural(c.countries.size,"country","countries")}`),
     fact("Aircraft types", fmtN(c.groups.length)),
@@ -688,7 +695,7 @@ async function drawCareer(){
   const cells = [
     ["DISTANCE FLOWN", `${fmtN(c.t.nm)} nm`, `${(c.t.nm/EARTH_NM).toFixed(1)}× around the Earth`],
     ["MOST VISITED", d1 ? d1.code : "–", d1 ? `${shortName(A1)} · ${d1.dest} arrivals` : ""],
-    ["MOST FLOWN ROUTE", c.topRoute ? `${c.topRoute.a}–${c.topRoute.b}` : "–", c.topRoute ? `${c.topRoute.n} times · ${fmtN(c.topRoute.nm)} nm` : ""],
+    ["MOST FLOWN ROUTE", c.topRoute ? `${c.topRoute.from}→${c.topRoute.to}` : "–", c.topRoute ? `${c.topRoute.n} times · ${fmtN(c.topRoute.nm)} nm` : ""],
     ["LONGEST LEG", c.longest ? `${c.longest.a}–${c.longest.b}` : "–", c.longest ? `${fmtN(c.longest.nm)} nm` : ""],
     ["BUSIEST YEAR", c.bestYear ? String(c.bestYear[0]) : "–", c.bestYear ? `${fmtH(c.bestYear[1])} hours` : ""],
     ["LEGS FLOWN", fmtN(c.t.legs), `${fmtN(c.flights)} logbook entries`],

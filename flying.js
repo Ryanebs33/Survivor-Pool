@@ -123,6 +123,16 @@ body.flying nav.tabs a:hover{color:var(--fp-ink)!important}
 #flyShareOut{margin-top:16px;scroll-margin-top:calc(var(--navH,48px) + 12px)}
 .fly-shareout img{display:block;width:100%;max-width:480px;height:auto;border:1px solid var(--fp-line);border-radius:10px;background:#fff}
 .fly-shareout .acts{display:flex;gap:8px;margin-top:12px}
+.fly-phases{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.fly-phase{font:500 13.5px/1 var(--fp-sans);color:var(--fp-ink2);background:var(--fp-surface);border:1px solid var(--fp-line);border-radius:999px;padding:10px 14px;cursor:pointer;display:flex;align-items:center;gap:8px}
+.fly-phase i{width:10px;height:10px;border-radius:50%;display:inline-block}
+.fly-phase small{color:var(--fp-muted);font:400 12px/1 var(--fp-mono)}
+.fly-phase[aria-pressed="true"]{border-color:var(--fp-ink);color:var(--fp-ink);box-shadow:inset 0 0 0 1px var(--fp-ink)}
+.fly-phase:focus-visible{outline:2px solid var(--fp-accent);outline-offset:2px}
+.fly-story{display:grid;grid-template-columns:minmax(0,480px) 1fr;gap:24px;align-items:start}
+.fly-story img{width:100%;height:auto;display:block;border-radius:14px;border:1px solid var(--fp-line);background:#fff}
+.fly-story .acts{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+@media (max-width:860px){.fly-story{grid-template-columns:1fr}}
 .fly-career{display:grid;grid-template-columns:minmax(0,560px) 1fr;gap:20px;align-items:start}
 .fly-career img{width:100%;height:auto;border-radius:10px;border:1px solid var(--fp-line);display:block;background:#fff}
 .fly-career .acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
@@ -185,7 +195,7 @@ const fmtDay = d => { const [y,m,dd] = d.split("-"); return `${+dd} ${MONTHS[+m-
 const plural = (n, w, p) => `${fmtN(n)} ${n===1 ? w : (p || w+"s")}`;
 
 /* ---------------- state ---------------- */
-const S = { data:null, loading:false, err:null, filt:{type:"all", y0:"all", y1:"all", month:"all"}, tab:"logbook", code:null, api:null, map:null, careerImg:null };
+const S = { phase:"all", data:null, loading:false, err:null, filt:{type:"all", y0:"all", y1:"all", month:"all"}, tab:"logbook", code:null, api:null, map:null, careerImg:null };
 
 function airport(code){ const a = S.data.airports[code]; return a ? {code, lat:a[0], lon:a[1], name:a[2], city:a[3], country:a[4], region:a[5]} : null; }
 function nm(a, b){
@@ -260,7 +270,7 @@ function shell(body){
   return `<div class="fly">
     <div class="fly-top">
       <div class="fly-brand">${PLANE}<span>Flying</span></div>
-      <nav class="fly-tabs" aria-label="Flying sections">${tab("logbook","Logbook")}${tab("map","Map")}${tab("career","Career")}</nav>
+      <nav class="fly-tabs" aria-label="Flying sections">${tab("logbook","Logbook")}${tab("map","Map")}${tab("career","Career")}${tab("story","Story")}</nav>
       <a class="fly-back" href="#commissioner">← Commissioner</a>
     </div>${body}</div>`;
 }
@@ -778,6 +788,227 @@ function wireImageActions(saveBtn, shareBtn, blob, file, title){
   if(shareBtn && canShare && !TOUCH){ shareBtn.hidden = false; shareBtn.addEventListener("click", () => navigator.share({files:[file], title}).catch(() => {})); }
 }
 
+/* ---------------- Story: a colourful, shareable picture for people outside aviation ---------------- */
+const PHASES = {
+  all:        {label:"Whole career",      title:"My flying story",     test: () => true,                                                        c1:"#4c6ef5", c2:"#ae3ec9"},
+  training:   {label:"Learning to fly",   title:"Learning to fly",     test: f => f.d < "2016-08-26",                                         c1:"#12b886", c2:"#1c7ed6"},
+  instructor: {label:"Flight instructor", title:"Flight instructor",   test: f => f.d >= "2016-08-26" && f.d <= "2018-07-19",                c1:"#f76707", c2:"#e64980"},
+  airline:    {label:"Airline pilot",     title:"Airline pilot",       test: f => f.d > "2018-07-19" && (f.g === "CL65" || f.g === "BE02"),  c1:"#1c7ed6", c2:"#5f3dc4"},
+};
+const PIE = ["#2a78d6","#eb6834","#1baf7a","#eda100","#e87ba4","#008300","#6250d6","#e34948"];   // validated categorical order
+const EARTH_KM = 40075, MOON_RT_KM = 768800;
+const SEATS = {CL65:60, BE02:15};                                // rough passengers per airline leg (mix of CRJ200/900, ~80% full)
+const ICONS = {
+  plane:"M10.5 3.5c0-.8.7-1.5 1.5-1.5s1.5.7 1.5 1.5V9l7.5 4.5V16l-7.5-2.3V19l2.2 1.6V22L12 21l-3.7 1v-1.4l2.2-1.6v-5.3L3 16v-2.5L10.5 9z",
+  globe:"M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z M3 12h18 M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z",
+  moon:"M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z",
+  cloud:"M7 18h10a4 4 0 0 0 .6-7.95A6 6 0 0 0 6.2 9.6 4.3 4.3 0 0 0 7 18z",
+  pin:"M12 21s-7-6.1-7-11.5a7 7 0 0 1 14 0C19 14.9 12 21 12 21z M12 12a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z",
+  people:"M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z M2.5 20a6.5 6.5 0 0 1 13 0 M16 4.5a3.5 3.5 0 0 1 0 6.5 M18 14a6 6 0 0 1 3.5 6",
+  cap:"M2 9l10-5 10 5-10 5z M6 11v5c0 1.5 2.7 3 6 3s6-1.5 6-3v-5 M22 9v6",
+  calendar:"M4 6h16v14H4z M4 10h16 M8 3v4 M16 3v4",
+  compass:"M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z M15.5 8.5l-2 5-5 2 2-5z",
+  ruler:"M3 12h18 M7 8l-4 4 4 4 M17 8l4 4-4 4",
+  star:"M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z",
+  clock:"M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z M12 7v5l3.5 2",
+  seat:"M7 3v9a3 3 0 0 0 3 3h6 M7 15l-1 6 M17 15v6 M10 11h7a2 2 0 0 1 2 2v2",
+  key:"M8 14a4 4 0 1 1 3.5-6H21v3h-2v2h-3v-2h-4.5A4 4 0 0 1 8 14z",
+};
+function storyStats(key){
+  const ph = PHASES[key], list = S.data.flights.filter(ph.test), flown = list.filter(f => f.h.tot > 0);
+  const t = sums(list), pairs = routePairs(list), visits = airportVisits(list), dests = topDestinations(list);
+  const aps = [...visits.keys()].map(airport).filter(Boolean);
+  const dates = flown.map(f => f.d).sort();
+  const days = new Map(); flown.forEach(f => days.set(f.d, (days.get(f.d)||0) + Math.max(1, f.legs.length)));
+  const busiest = [...days.entries()].sort((a,b) => b[1]-a[1] || (a[0] < b[0] ? 1 : -1))[0];
+  const people = new Set(); flown.forEach(f => (f.c||[]).forEach(c => people.add(c)));
+  const peopleAsPIC = new Set(); flown.filter(f => f.me).forEach(f => (f.c||[]).forEach(c => peopleAsPIC.add(c)));
+  const peopleAsSIC = new Set(); flown.filter(f => !f.me).forEach(f => (f.c||[]).forEach(c => peopleAsSIC.add(c)));
+  const pax = list.reduce((a, f) => a + (SEATS[f.g] || 0) * f.legs.length, 0);
+  const tails = new Set(flown.map(f => f.reg).filter(Boolean));
+  const longest = [...pairs].sort((a,b) => b.nm - a.nm)[0];
+  const north = aps.length ? aps.reduce((m, a) => a.lat > m.lat ? a : m) : null;
+  const regions = new Set(aps.map(a => a.country + "-" + a.region)), countries = new Set(aps.map(a => a.country));
+  const groups = byGroup(flown).sort((a,b) => b.t.tot - a.t.tot);
+  return {key, ph, list, t, pairs, visits, dests, aps, first:dates[0], last:dates[dates.length-1], busiest, people, peopleAsPIC, peopleAsSIC,
+          fam: flown.filter(f => f.fam).length, pax, tails, longest, north, regions, countries, groups, sim: t.simT, top: topDirected(pairs)};
+}
+function storyTab(){
+  S.phase = S.phase || "all";
+  const btn = k => { const p = PHASES[k], n = S.data.flights.filter(p.test).filter(f => f.h.tot > 0);
+    const ds = n.map(f => f.d).sort(), span = ds.length ? `${ds[0].slice(0,4)}–${ds[ds.length-1].slice(0,4)}` : "";
+    return `<button type="button" class="fly-phase" data-phase="${k}" aria-pressed="${S.phase===k}"><i style="background:linear-gradient(135deg,${p.c1},${p.c2})"></i>${p.label}<small>${span}</small></button>`; };
+  return shell(`<div class="fly-phases" role="group" aria-label="Choose a part of your flying">${Object.keys(PHASES).map(btn).join("")}</div>
+    <div class="fly-story"><div><img id="flyStoryImg" alt="" style="aspect-ratio:9/16">
+      <div class="acts"><button type="button" class="fly-btn primary" id="flyStorySave">Save image</button><button type="button" class="fly-btn" id="flyStoryShare" hidden>Share</button></div>${HOLD_HINT}</div>
+      <div class="fly-facts" id="flyStoryNotes"></div></div>`);
+}
+async function mountStory(){
+  const img = document.getElementById("flyStoryImg"); if(!img) return;
+  const st = storyStats(S.phase || "all");
+  const cv = await drawStory(st);
+  if(!document.body.contains(img)) return;
+  img.src = cv.toDataURL("image/png"); img.removeAttribute("style");
+  img.alt = `${st.ph.title}: ${fmtN(st.t.tot)} hours, ${fmtN(st.t.nm*1.852)} km flown, ${st.aps.length} places.`;
+  const blob = await new Promise(r => cv.toBlob(r, "image/png"));
+  const file = new File([blob], `flying-story-${st.key}.png`, {type:"image/png"});
+  wireImageActions(document.getElementById("flyStorySave"), document.getElementById("flyStoryShare"), blob, file, st.ph.title);
+  const notes = document.getElementById("flyStoryNotes");
+  if(notes) notes.innerHTML = [
+    ["Phase", `${st.ph.label}`], ["Dates", st.first ? `${fmtDay(st.first)} – ${fmtDay(st.last)}` : "–"],
+    ["Hours", `${fmtH(st.t.tot)} h`], ["Logbook entries", fmtN(st.list.filter(f => f.h.tot > 0).length)],
+    ["Legs with a route", fmtN(st.t.legs)], ["Distance", `${fmtN(st.t.nm)} nm · ${fmtN(st.t.nm*1.852)} km`],
+    ...(st.key === "airline" ? [["Passengers (estimate)", `≈ ${fmtN(Math.round(st.pax/1000)*1000)}, about ${SEATS.CL65} per CRJ flight and ${SEATS.BE02} per Beech 1900 flight`]] : []),
+    ["Which flights count", st.key==="training" ? "Everything before 26 Aug 2016" : st.key==="instructor" ? "26 Aug 2016 to 19 Jul 2018" : st.key==="airline" ? "CRJ and Beechcraft 1900 flights after 19 Jul 2018 (the few later Cessna flights are left out)" : "Everything in the logbook"],
+  ].map(([k,v]) => `<div><span>${esc(k)}</span><b style="font-family:var(--fp-sans);font-weight:500">${esc(v)}</b></div>`).join("");
+}
+
+async function drawStory(st){
+  try{ await Promise.all([document.fonts.load('500 40px "IBM Plex Mono"'), document.fonts.ready]); }catch(e){}
+  const W = 1080, H = 1920, P = 56;
+  const cv = document.createElement("canvas"); cv.width = W; cv.height = H;
+  const x = cv.getContext("2d");
+  const SANS = '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif', MONO = '"IBM Plex Mono",ui-monospace,Menlo,monospace';
+  const INK = "#14171c", INK2 = "#454c57", MUTED = "#6b7380", { c1, c2 } = st.ph;
+  const fit = (str, w, font) => { x.font = font; str = String(str); if(x.measureText(str).width <= w) return str; while(str.length > 1 && x.measureText(str+"…").width > w) str = str.slice(0,-1); return str+"…"; };
+  const icon = (name, cx, cy, size, color, lw = 2) => { x.save(); x.translate(cx - size/2, cy - size/2); x.scale(size/24, size/24);
+    x.strokeStyle = color; x.lineWidth = lw; x.lineCap = "round"; x.lineJoin = "round"; x.stroke(new Path2D(ICONS[name])); x.restore(); };
+  const tint = (hex, a) => { const n = parseInt(hex.slice(1), 16); return `rgba(${n>>16},${(n>>8)&255},${n&255},${a})`; };
+  const card = (X, Y, w, h, fill) => { x.save(); x.shadowColor = "rgba(20,23,28,.08)"; x.shadowBlur = 24; x.shadowOffsetY = 6;
+    x.fillStyle = fill || "#fff"; roundRect(x, X, Y, w, h, 28); x.fill(); x.restore(); };
+
+  // background
+  const bg = x.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, "#f6f4ff"); bg.addColorStop(1, "#fff7f0");
+  x.fillStyle = bg; x.fillRect(0, 0, W, H);
+
+  // header band
+  const hg = x.createLinearGradient(0, 0, W, 380); hg.addColorStop(0, c1); hg.addColorStop(1, c2);
+  x.fillStyle = hg; x.beginPath(); x.moveTo(0,0); x.lineTo(W,0); x.lineTo(W,330); x.quadraticCurveTo(W/2, 420, 0, 330); x.closePath(); x.fill();
+  // dashed flight path with a little plane
+  x.save(); x.setLineDash([4, 14]); x.lineCap = "round"; x.strokeStyle = "rgba(255,255,255,.55)"; x.lineWidth = 4;
+  x.beginPath(); x.moveTo(560, 300); x.quadraticCurveTo(820, 40, 1010, 150); x.stroke(); x.restore();
+  x.save(); x.translate(1010, 150); x.rotate(Math.PI/2.6); x.scale(3.4, 3.4); x.translate(-12, -12);
+  x.fillStyle = "#fff"; x.fill(new Path2D(ICONS.plane)); x.restore();
+  x.textBaseline = "alphabetic"; x.fillStyle = "rgba(255,255,255,.85)"; x.font = `700 26px ${SANS}`;
+  x.fillText(st.key === "all" ? "MY FLYING STORY" : "MY FLYING STORY · " + st.ph.label.toUpperCase(), P, 100);
+  x.fillStyle = "#fff"; x.font = `800 88px ${SANS}`; x.fillText(fit(st.key === "all" ? "Up in the air" : st.ph.title, W - 2*P - 120, `800 88px ${SANS}`), P, 196);
+  x.font = `500 32px ${SANS}`; x.fillStyle = "rgba(255,255,255,.92)";
+  x.fillText(st.first ? `${fmtMonth(st.first)} – ${fmtMonth(st.last)}` : "", P, 252);
+
+  // hero numbers
+  let y = 390;
+  const hero = [
+    [fmtN(st.t.tot), "hours in the sky", "clock"],
+    [fmtN(st.t.tot / 24), "days, if flown nonstop", "calendar"],
+    [fmtN(st.list.filter(f => f.h.tot > 0).length), "flights logged", "plane"],
+  ];
+  const hw = (W - 2*P - 2*20) / 3;
+  hero.forEach(([v, k, ic], i) => {
+    const X = P + i*(hw + 20); card(X, y, hw, 210);
+    x.fillStyle = tint(i===0?c1:i===1?c2:c1, .12); x.beginPath(); x.arc(X + 56, y + 58, 30, 0, Math.PI*2); x.fill();
+    icon(ic, X + 56, y + 58, 34, i===1?c2:c1, 2.2);
+    x.fillStyle = INK; x.font = `800 58px ${SANS}`; x.fillText(fit(v, hw - 48, `800 58px ${SANS}`), X + 28, y + 150);
+    x.fillStyle = INK2; x.font = `500 24px ${SANS}`; x.fillText(fit(k, hw - 48, `500 24px ${SANS}`), X + 28, y + 186);
+  });
+
+  // distance + map
+  y = 630;
+  card(P, y, W - 2*P, 400);
+  const km = st.t.nm * 1.852;
+  const mapBox = {x: P + 20, y: y + 20, w: 500, h: 360};
+  x.fillStyle = "#eef2f6"; roundRect(x, mapBox.x, mapBox.y, mapBox.w, mapBox.h, 20); x.fill();
+  if(st.pairs.length) await drawRouteWeb(x, mapBox, st.pairs, [...st.visits.keys()], 20, 26);
+  else { x.fillStyle = MUTED; x.font = `500 24px ${SANS}`; x.fillText("Mostly local lessons", mapBox.x + 30, mapBox.y + mapBox.h/2); }
+  const tx = P + 556, tw2 = W - P - tx - 24;
+  icon("globe", tx + 24, y + 62, 44, c1, 2);
+  x.fillStyle = MUTED; x.font = `700 20px ${SANS}`; x.fillText("DISTANCE FLOWN", tx + 60, y + 70);
+  x.fillStyle = INK; const kmTxt = `${fmtN(km)} km`; let fs = 54; x.font = `800 ${fs}px ${SANS}`;
+  while(fs > 34 && x.measureText(kmTxt).width > tw2){ fs -= 2; x.font = `800 ${fs}px ${SANS}`; }
+  x.fillText(kmTxt, tx, y + 140);
+  const laps = km / EARTH_KM, moon = km / MOON_RT_KM;
+  x.font = `500 26px ${SANS}`; x.fillStyle = INK2;
+  const l1 = laps >= 1 ? `${laps.toFixed(1)}× around the Earth` : `${Math.max(1, Math.round(laps*100))}% of a lap of Earth`;
+  x.fillText(fit(l1, tw2, `500 26px ${SANS}`), tx, y + 186);
+  if(moon >= 0.05){ icon("moon", tx + 16, y + 236, 30, c2, 2.2); x.fillText(fit(moon >= 1 ? `${moon.toFixed(1)}× to the Moon & back` : `${Math.round(moon*100)}% of a Moon round trip`, tw2 - 44, `500 26px ${SANS}`), tx + 44, y + 246); }
+  // places
+  const py = moon >= 0.05 ? y + 300 : y + 236;
+  icon("pin", tx + 16, py, 30, c1, 2.2);
+  x.fillStyle = INK2; x.font = `500 26px ${SANS}`;
+  x.fillText(fit(`${plural(st.aps.length, "airport")} visited`, tw2 - 44, `500 26px ${SANS}`), tx + 44, py + 10);
+  x.fillStyle = MUTED; x.font = `400 21px ${SANS}`; x.fillText(fit(`${plural(st.regions.size, "prov./state", "prov./states")} · ${plural(st.countries.size, "country", "countries")}`, tw2 - 44, `400 21px ${SANS}`), tx + 44, py + 44);
+
+  // donuts
+  y = 1060;
+  card(P, y, W - 2*P, 400);
+  x.fillStyle = INK; x.font = `800 30px ${SANS}`; x.fillText("How the hours add up", P + 32, y + 56);
+  const t = st.t, tot = Math.max(t.tot, 0.01);
+  const donuts = [
+    {title:"Who was flying", parts:[["In command", t.pic], ["Co-pilot", t.sic], ["With a teacher", t.dual]]},
+    {title:"Day or night", parts:[["Daytime", Math.max(0, t.tot - t.night)], ["Night", t.night]]},
+    {title:"In the clouds", parts:[["Clear view", Math.max(0, t.tot - t.act)], ["Inside clouds", Math.min(t.act, t.tot)]]},
+    {title:"Which planes", parts: (() => { const g = st.groups.map(g => [typeName(g.g), g.t.tot]); return g.length > 4 ? [...g.slice(0,3), ["Others", g.slice(3).reduce((a,b) => a + b[1], 0)]] : g; })()},
+  ];
+  const dw = (W - 2*P) / 4;
+  donuts.forEach((d, i) => {
+    const cx = P + dw*i + dw/2, cy = y + 160, R = 74, r = 46;
+    const total = d.parts.reduce((a,p) => a + p[1], 0) || 1;
+    const parts = d.parts.filter(p => p[1] / total >= 0.005), sum = parts.reduce((a,p) => a + p[1], 0) || 1;
+    let a0 = -Math.PI/2;
+    const colors = i === 1 ? ["#eda100", "#3b2e8f"] : i === 2 ? ["#9ccaf7", "#5c6b7d"] : PIE;
+    parts.forEach((p, k) => { const a1 = a0 + p[1]/sum*Math.PI*2;
+      x.beginPath(); x.arc(cx, cy, R, a0, a1); x.arc(cx, cy, r, a1, a0, true); x.closePath();
+      x.fillStyle = colors[d.parts.indexOf(p) % colors.length]; x.fill();
+      x.strokeStyle = "#fff"; x.lineWidth = 3; x.stroke(); a0 = a1; });
+    // center: biggest share
+    const big = parts.slice().sort((a,b) => b[1]-a[1])[0];
+    x.textAlign = "center"; x.fillStyle = INK; x.font = `800 26px ${SANS}`;
+    x.fillText(big ? `${Math.round(big[1]/sum*100)}%` : "–", cx, cy + 9);
+    x.fillStyle = INK; x.font = `700 22px ${SANS}`; x.fillText(d.title, cx, y + 272);
+    x.textAlign = "left";
+    parts.slice(0, 4).forEach((p, k) => {
+      const ly = y + 304 + k*26, lx = cx - dw/2 + 26;
+      x.fillStyle = colors[d.parts.indexOf(p) % colors.length]; roundRect(x, lx, ly - 13, 14, 14, 4); x.fill();
+      x.fillStyle = INK2; x.font = `500 18px ${SANS}`;
+      x.fillText(fit(`${p[0]} ${Math.round(p[1]/sum*100)}%`, dw - 52, `500 18px ${SANS}`), lx + 22, ly);
+    });
+  });
+
+  // fun facts
+  y = 1488;
+  const facts = [];
+  const d1 = st.dests[0];
+  if(d1){ const A = airport(d1.code); facts.push(["pin", "Favourite getaway", shortName(A), `${plural(d1.dest, "visit")}`]); }
+  if(st.key === "airline" && st.pax) facts.push(["seat", "Passengers flown", `≈ ${fmtN(Math.round(st.pax/1000)*1000)}`, "rough estimate"]);
+  if(st.key === "instructor" && st.peopleAsPIC.size) facts.push(["cap", "Students taught", fmtN(st.peopleAsPIC.size), "different people"]);
+  if(st.fam) facts.push(["star", "First-ever flights", fmtN(st.fam), "people's first time flying"]);
+  if(st.key === "training" && st.peopleAsSIC.size) facts.push(["cap", "Instructors", fmtN(st.peopleAsSIC.size), "people who taught me"]);
+  if(st.key === "airline" && st.peopleAsSIC.size) facts.push(["people", "Captains", fmtN(st.peopleAsSIC.size), "flown alongside"]);
+  if(st.t.act >= 1) facts.push(["cloud", "In the clouds", `${fmtN(st.t.act)} h`, "seeing nothing but white"]);
+  if(st.t.night >= 1) facts.push(["moon", "Night flying", `${fmtN(st.t.night)} h`, "after dark"]);
+  if(st.busiest && st.busiest[1] > 1) facts.push(["calendar", "Busiest day", `${st.busiest[1]} flights`, fmtDay(st.busiest[0])]);
+  if(st.north) facts.push(["compass", "Furthest north", shortName(st.north), `${st.north.lat.toFixed(1)}° north`]);
+  if(st.longest) facts.push(["ruler", "Longest flight", `${fmtN(st.longest.nm*1.852)} km`, `${shortName(airport(st.longest.a))} – ${shortName(airport(st.longest.b))}`]);
+  if(st.tails.size) facts.push(["key", "Different planes", fmtN(st.tails.size), "individual aircraft flown"]);
+  if(st.key === "training" && st.sim) facts.push(["plane", "Simulator", `${fmtN(st.sim)} h`, "practice on the ground"]);
+  const six = facts.slice(0, 6), fw = (W - 2*P - 2*20) / 3, fh = 160;
+  const tints = [c1, c2, "#12b886", "#f59f00", "#e64980", "#7048e8"];
+  six.forEach(([ic, k, v, n], i) => {
+    const X = P + (i%3)*(fw + 20), Y = y + Math.floor(i/3)*(fh + 20), col = tints[i % tints.length];
+    card(X, Y, fw, fh, tint(col, .10));
+    x.fillStyle = "#fff"; x.beginPath(); x.arc(X + 44, Y + 46, 24, 0, Math.PI*2); x.fill();
+    icon(ic, X + 44, Y + 46, 28, col, 2.2);
+    x.fillStyle = INK2; x.font = `700 19px ${SANS}`; x.fillText(fit(k.toUpperCase(), fw - 100, `700 19px ${SANS}`), X + 80, Y + 53);
+    x.fillStyle = INK; x.font = `800 40px ${SANS}`; x.fillText(fit(v, fw - 44, `800 40px ${SANS}`), X + 22, Y + 110);
+    x.fillStyle = MUTED; x.font = `500 20px ${SANS}`; x.fillText(fit(n, fw - 44, `500 20px ${SANS}`), X + 22, Y + 140);
+  });
+
+  // for the pilots
+  x.fillStyle = MUTED; x.font = `500 18px ${MONO}`;
+  const pilots = [["PIC", t.pic], ["SIC", t.sic], ["DUAL", t.dual], ["NIGHT", t.night], ["IMC", t.act], ["X-C", t.xc]].filter(p => p[1] >= 0.1).map(([k,v]) => `${k} ${fmtN(v)}`);
+  x.fillText(fit("FOR THE PILOTS · " + pilots.join(" · ") + ` · ${fmtN(t.legs)} LEGS`, W - 2*P, `500 18px ${MONO}`), P, H - 40);
+  return cv;
+}
+
 /* ---------------- data loading + mount ---------------- */
 async function load(force){
   S.loading = true; S.err = null;
@@ -790,10 +1021,11 @@ function render(root){
   if(S.map){ try{ S.map.remove(); }catch(e){} S.map = null; }
   if(S.err && !S.data){ root.innerHTML = shell(`<div class="fly-card fly-err"><h3>Couldn't load your logbook</h3><p class="sub" style="margin:6px 0 14px">${esc(S.err)}</p><button type="button" class="fly-btn" id="fRetry">Try again</button></div>`); wire(root); return; }
   if(!S.data){ root.innerHTML = shell(`<div class="fly-card fly-empty">Loading your logbook…</div>`); return; }
-  root.innerHTML = S.tab === "map" ? mapTab() : S.tab === "career" ? careerTab() : logbookTab();
+  root.innerHTML = S.tab === "map" ? mapTab() : S.tab === "career" ? careerTab() : S.tab === "story" ? storyTab() : logbookTab();
   wire(root);
   if(S.tab === "map") mountMap();
   if(S.tab === "career") mountCareer();
+  if(S.tab === "story") mountStory();
 }
 function wire(root){
   const on = (id, ev, fn) => { const el = root.querySelector("#"+id); if(el) el.addEventListener(ev, fn); };
@@ -806,6 +1038,7 @@ function wire(root){
   on("fMonth", "change", e => setF("month", e.target.value));
   on("fClear", "click", () => { S.filt = {type:"all", y0:"all", y1:"all", month:"all"}; render(root); });
   on("fRefresh", "click", async e => { e.target.textContent = "Refreshing…"; await load(true); render(root); });
+  root.querySelectorAll("[data-phase]").forEach(b => b.addEventListener("click", () => { S.phase = b.dataset.phase; render(root); }));
   on("flyMapShare", "click", e => shareMap(e.currentTarget));
   on("fRetry", "click", async () => { root.innerHTML = shell(`<div class="fly-card fly-empty">Loading your logbook…</div>`); await load(false); render(root); });
   wireTips(root);

@@ -7,7 +7,7 @@ import AIRPORTS from "./_airports.js";
 const SHEET_ID = process.env.FLYING_SHEET_ID || "1ZCMmqQijCSVvGJfVPMVT07s7RzBqIfXUuU6d4ITcXS4";
 const SHEET_GID = process.env.FLYING_SHEET_GID || "1915993928";
 const FRESH_MS = 10 * 60 * 1000;     // re-read the sheet at most every 10 minutes
-const CACHE_KEY = "flying:v1";
+const CACHE_KEY = "flying:v2";
 let mem = null;                      // per-instance copy
 
 /* ---------- CSV ---------- */
@@ -65,6 +65,8 @@ function monthDay(s){
 // single engine 9 day dual, 10 day PIC, 11 night dual, 12 night PIC,
 // multi engine 13 day PIC, 14 day co-pilot, 15 day dual, 16 night PIC, 17 night co-pilot, 18 night dual,
 // cross-country 19-22, take-offs & landings 23 day / 24 night, instrument 25 actual / 26 hood / 27 sim, 28 IFR approaches.
+const OWNER = (process.env.FLYING_OWNER || "eberlin").toLowerCase();
+function tag(name){ let h = 2166136261; for(const ch of name){ h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619) >>> 0; } return h.toString(36).slice(0, 6); }
 const num = v => { const n = parseFloat(String(v ?? "").replace(/,/g, "")); return isFinite(n) ? n : 0; };
 const r1 = n => Math.round(n * 10) / 10;
 
@@ -106,6 +108,15 @@ export function parseLogbook(rows){
     const f = { d: `${y}-${String(mo).padStart(2,"0")}-${String(dy).padStart(2,"0")}`, t: type, h };
     const reg = (r[3] || "").toUpperCase(); if(reg) f.reg = reg;
     if(legs.length) f.legs = legs;
+    // Who else was on board, as anonymous tags (names never leave the server): lets the page count
+    // students taught or captains flown with. "Fam" (familiarization) flights are introductory rides.
+    const picName = (r[4] || "").toLowerCase(), other = picName.includes(OWNER) ? r[5] : r[4];
+    if(/\bfam\b|familiari/i.test(other || "") || /\bfam\b|familiari/i.test(r[6] || "")) f.fam = 1;
+    else {
+      const crew = String(other || "").split(/[\/&,+]| and /i).map(n => n.toLowerCase().replace(/[^a-z]/g, "")).filter(n => n.length > 1 && n !== OWNER && !/^(solo|self|none|na|student|pax)$/.test(n));
+      if(crew.length) f.c = crew.map(tag);
+    }
+    if(picName.includes(OWNER)) f.me = 1;                     // logbook shows me as the pilot in command
     flights.push(f);
   }
   const airports = {};

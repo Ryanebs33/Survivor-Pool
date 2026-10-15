@@ -442,6 +442,9 @@ html.intro-lock, html.intro-lock body{overflow:hidden}
 .t-Savu .badge,.badge.t-Savu{background:var(--savu-soft);color:var(--savu);box-shadow:inset 0 0 0 2px var(--savu)}
 .t-Dina .badge,.badge.t-Dina{background:var(--dina-soft);color:var(--dina);box-shadow:inset 0 0 0 2px var(--dina)}
 .swap-toggle{margin:-4px 0 14px}
+.card.gone{background:color-mix(in srgb,var(--surface) 70%,var(--bg))}
+.card.gone > .badge, .card.gone > div:not(.own-pop){filter:grayscale(1);opacity:.5}
+.out-tag{display:inline-block;margin-left:6px;padding:2px 6px;border-radius:4px;background:var(--muted);color:var(--surface);font:600 9.5px/1.2 var(--mono);letter-spacing:.08em;vertical-align:1px}
 .spoil-wrap{position:fixed;inset:0;z-index:900;display:grid;place-items:center;padding:16px;background:rgba(5,12,9,.74);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);overflow:auto}
 .spoil-wrap .gate{width:100%;max-width:540px;margin:0;box-shadow:0 24px 60px -12px rgba(0,0,0,.6)}
 .spoil-wrap .gate .row{flex-direction:column;align-items:stretch;width:100%;max-width:360px}
@@ -1424,14 +1427,14 @@ function castPage(){
   const btn = t=>`<button type="button" data-tribe="${t}" aria-pressed="${tribeFilter===t}">${t}${t==="All"?` (${CAST.length})`:` (${CAST.filter(c=>shownTribe(c)===t).length})`}</button>`;
   return `<section class="page">
     <h2>Castaways</h2>
-    <p class="lede">Meet the 21 first-time players of Survivor 51. Spoiler-free: nothing here says who is still in the game.</p>
+    <p class="lede">Meet the 21 first-time players of Survivor 51. Castaways who are out of the game are greyed out.</p>
     <div class="filter" role="group" aria-label="Filter by tribe">${btn("All")}${tribes.map(btn).join("")}</div>
     ${tribeToggle()}
     <div class="grid">${list.map(c=>`
-      <article class="card t-${shownTribe(c)}" id="c-${c.id}" tabindex="0" aria-label="${esc(c.name)}: show who picked them">
+      <article class="card t-${shownTribe(c)}${RESULTS[c.id].out!=null?" gone":""}" id="c-${c.id}" tabindex="0" aria-label="${esc(c.name)}${RESULTS[c.id].out!=null?`, out in Episode ${RESULTS[c.id].out}`:""}: show who picked them">
         <div class="badge" aria-hidden="true">${initials(c)}</div>
         <div style="min-width:0">
-          <div class="tribe ${shownTribe(c)}">${shownTribe(c)}</div>
+          <div class="tribe ${shownTribe(c)}">${shownTribe(c)}${RESULTS[c.id].out!=null?` <span class="out-tag">Out · Ep ${RESULTS[c.id].out}</span>`:""}</div>
           <h3>${esc(c.name)}${c.nick?` <span style="color:var(--muted);font-weight:600">“${esc(c.nick)}”</span>`:""}</h3>
           <div class="facts">${c.age} · ${esc(c.job)} · ${esc(c.home)}</div>
           <p>${esc(c.bio+(showSwaps?swapText(c):""))}</p>

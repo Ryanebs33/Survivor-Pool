@@ -20,7 +20,7 @@ img{max-width:100%}
 :root{
   --bg:#ECF0EC; --surface:#FFFFFF; --ink:#13201C; --muted:#5A6B65; --line:#D3DCD7;
   --torch:#C9471B; --torch-ink:#FFFFFF; --toka:#B7790A; --savu:#1C7488;
-  --toka-soft:#F6EAD2; --savu-soft:#DCEEF1; --gate:#13201C; --gate-ink:#F4EFE6;
+  --toka-soft:#F6EAD2; --savu-soft:#DCEEF1; --dina:#B42640; --dina-soft:#F8DDE2; --gate:#13201C; --gate-ink:#F4EFE6;
   --night:#0A1A14; --night-2:#123528; --ember:#FF8A3D; --flame-hi:#FFD27A; --night-ink:#F3EEE4; --night-muted:#A9BDB4;
   --stencil:"Big Shoulders Stencil Display","Big Shoulders Display",Impact,sans-serif;
   --display:"Big Shoulders Display","Arial Narrow",Impact,sans-serif;
@@ -30,11 +30,11 @@ img{max-width:100%}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#0E1613; --surface:#16211D; --ink:#E7ECE8; --muted:#94A49E; --line:#2A3833;
   --torch:#F06A35; --torch-ink:#1A0D07; --toka:#E6A93A; --savu:#4FB3C8;
-  --toka-soft:#2E2512; --savu-soft:#132B31; --gate:#070B0A; --gate-ink:#F4EFE6; color-scheme:dark}}
+  --toka-soft:#2E2512; --savu-soft:#132B31; --dina:#EA6A80; --dina-soft:#3A1820; --gate:#070B0A; --gate-ink:#F4EFE6; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0E1613; --surface:#16211D; --ink:#E7ECE8; --muted:#94A49E; --line:#2A3833;
   --torch:#F06A35; --torch-ink:#1A0D07; --toka:#E6A93A; --savu:#4FB3C8;
-  --toka-soft:#2E2512; --savu-soft:#132B31; --gate:#070B0A; --gate-ink:#F4EFE6; color-scheme:dark}
+  --toka-soft:#2E2512; --savu-soft:#132B31; --dina:#EA6A80; --dina-soft:#3A1820; --gate:#070B0A; --gate-ink:#F4EFE6; color-scheme:dark}
 
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font:400 15px/1.55 var(--body)}
@@ -85,7 +85,7 @@ h3{font:800 22px/1.1 var(--display);text-transform:uppercase;letter-spacing:.02e
 input[type="text"]{font:500 16px/1.2 var(--body);padding:11px 12px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);width:100%}
 input[type="text"]:focus-visible{outline:3px solid var(--torch);outline-offset:1px}
 .pg-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:10px;border-bottom:2px solid var(--line);padding-bottom:6px}
-.tribe-h.Toka{color:var(--toka)} .tribe-h.Savu{color:var(--savu)}
+.tribe-h.Toka{color:var(--toka)} .tribe-h.Savu{color:var(--savu)} .tribe-h.Dina{color:var(--dina)}
 .count{font-size:14px;color:var(--muted)} .count.full{color:var(--torch)}
 .ptiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px}
 .ptile{display:flex;align-items:center;gap:10px;text-align:left;padding:8px 10px;border-radius:10px;border:2px solid transparent;background:var(--surface);color:var(--ink);font:500 14.5px/1.25 var(--body);cursor:pointer;min-width:0}
@@ -434,8 +434,10 @@ html.intro-lock, html.intro-lock body{overflow:hidden}
 .badge{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;font:800 20px/1 var(--display);letter-spacing:.02em}
 .t-Toka .badge,.badge.t-Toka{background:var(--toka-soft);color:var(--toka);box-shadow:inset 0 0 0 2px var(--toka)}
 .t-Savu .badge,.badge.t-Savu{background:var(--savu-soft);color:var(--savu);box-shadow:inset 0 0 0 2px var(--savu)}
+.t-Dina .badge,.badge.t-Dina{background:var(--dina-soft);color:var(--dina);box-shadow:inset 0 0 0 2px var(--dina)}
+.swap-toggle{margin:-4px 0 14px}
 .tribe{font:500 11px/1 var(--mono);text-transform:uppercase;letter-spacing:.1em}
-.tribe.Toka{color:var(--toka)} .tribe.Savu{color:var(--savu)}
+.tribe.Toka{color:var(--toka)} .tribe.Savu{color:var(--savu)} .tribe.Dina{color:var(--dina)}
 .card .facts{font-size:13px;color:var(--muted);margin:4px 0 8px}
 .card p{margin:0;font-size:14px}
 
@@ -691,7 +693,7 @@ const CAST = [
   {id:"ana", name:"Ana Sani", age:34, home:"Toronto, ON", job:"Voice actress", tribe:"Savu", bio:"A longtime superfan from Toronto playing in memory of her late mother."},
   {id:"jelly", name:"Angelica Loblack", nick:"Jelly", age:29, home:"Bloomington, IN", job:"Sociology professor", tribe:"Toka", bio:"Teaches Survivor in her classroom and came out to test herself in the field."},
   {id:"brady", name:"Brady Booker", age:27, home:"Knoxville, TN", job:"Professional wrestler", tribe:"Toka", bio:"Wrestles as Bodhi Hayward. An outdoorsman who says there is more strategy to him than the persona suggests."},
-  {id:"carter", name:"Carter Krull", age:24, home:"Sioux Falls, SD", job:"Livestock farmer", tribe:"Toka", orig:"Savu", swapEp:3, bio:"A young farmer and entrepreneur who prides himself on sizing people up quickly."},
+  {id:"carter", name:"Carter Krull", age:24, home:"Sioux Falls, SD", job:"Livestock farmer", tribe:"Savu", bio:"A young farmer and entrepreneur who prides himself on sizing people up quickly."},
   {id:"cristian", name:"Cristian Chavez", age:26, home:"Salt Lake City, UT", job:"Head of HR", tribe:"Savu", bio:"Bubbly and offbeat, playing with his late father's lessons in mind."},
   {id:"kilby", name:"Danny Kilby", nick:"Kilby", age:30, home:"London, ON", job:"Game designer", tribe:"Toka", bio:"A proud Survivor nerd who loves puzzles and long-game strategy."},
   {id:"devin", name:"Devin Way", age:33, home:"Los Angeles, CA", job:"Actor", tribe:"Toka", bio:"TV actor with credits on Sistas and Grey's Anatomy who says integrity matters to him."},
@@ -735,8 +737,19 @@ const ALL_EPISODES = [
      maggie:[["Says a curse word that is bleeped",5],["Finds or gets a game advantage",5]],
      patt:[["Torch snuffed as a result of a blindside",10]],
      rob:[["Says a curse word that is bleeped",5],["Treated for a medical emergency",10],["Chooses to forfeit the game",10],["Cried on camera",5],["Gives an immunity idol away",15]]
-   }}
+   }},
+  // Episode 4 has aired (tribe swap to three tribes; Jenna voted out). Points get added once Global posts them.
+  {ep:4, pts:{}, out:["jenna"]}
 ];
+/* Tribe swaps. CAST above holds each castaway's ORIGINAL tribe (what picks were made from);
+   each swap lists where people went from that episode on. */
+const SWAPS = [
+  {ep:3, moves:{carter:"Toka"}},
+  {ep:4, moves:{devin:"Savu", jelly:"Savu", ori:"Savu", alexis:"Savu", jenna:"Savu",
+                mike:"Toka", carter:"Toka", brady:"Toka", an:"Toka", maggie:"Toka", kristin:"Toka",
+                kilby:"Dina", lewis:"Dina", sharonda:"Dina", eric:"Dina", linnea:"Dina", cristian:"Dina"}},
+];
+const TRIBE_ORDER = ["Toka","Savu","Dina"];
 const MERGE_EP = null;   // episode number of the merge; merge picks score from the episode after it
 /* Optional: how a castaway earned their points in an episode, when the breakdown is known.
    Add to an episode as  detail: { brady: [["Wins an individual Reward Challenge",10], ["Hugs Jeff",5]] }
@@ -747,14 +760,18 @@ const MERGE_EP = null;   // episode number of the merge; merge picks score from 
 const EPISODES = [];
 const RESULTS = {};
 const FULL_LATEST = Math.max(...ALL_EPISODES.filter(e=>Object.keys(e.pts).length).map(e=>e.ep), 0);
+const FULL_AIRED = Math.max(...ALL_EPISODES.map(e=>e.ep), 0);          // can be ahead of FULL_LATEST while points are pending
+const AIRED_EP = () => Math.max(...EPISODES.map(e=>e.ep), 0);
+CAST.forEach(c=>{ c.orig = c.tribe; });
+function tribeAt(c, n){ let t=c.orig; SWAPS.filter(s=>s.ep<=n).forEach(s=>{ if(s.moves[c.id]) t=s.moves[c.id]; }); return t; }
 const FULL_THROUGH = POOL.updatedThrough;
 let viewEp = null;   // null = everything; a number = show the site as it was after that episode
 function applyView(n){
-  viewEp = (n!=null && n<FULL_LATEST) ? n : null;
+  viewEp = (n!=null && n<FULL_AIRED) ? n : null;
   EPISODES.length = 0;
   ALL_EPISODES.filter(e=>viewEp==null || e.ep<=viewEp).forEach(e=>EPISODES.push(e));
   CAST.forEach(c=>{ RESULTS[c.id]={pts:0,out:null,after:0,byEp:{}};
-    if(c.orig) c.tribe = (viewEp==null || viewEp>=c.swapEp) ? c.now : c.orig; });
+    c.tribe = tribeAt(c, viewEp==null ? FULL_AIRED : viewEp); });
   EPISODES.forEach(e=>{
     Object.entries(e.pts).forEach(([id,p])=>{const r=RESULTS[id]; r.pts+=p; r.byEp[e.ep]=p; if(MERGE_EP!=null&&e.ep>MERGE_EP) r.after+=p;});
     e.out.forEach(id=>RESULTS[id].out=e.ep);
@@ -762,10 +779,27 @@ function applyView(n){
   POOL.updatedThrough = viewEp==null ? FULL_THROUGH : `Episode ${viewEp}`;
   try{ if(viewEp==null) sessionStorage.removeItem("s51-view"); else sessionStorage.setItem("s51-view", String(viewEp)); }catch(e){}
 }
-CAST.forEach(c=>{ if(c.orig){ c.now=c.tribe; } });
 let savedView=null; try{ savedView=parseInt(sessionStorage.getItem("s51-view")); }catch(e){}
 applyView(Number.isFinite(savedView) ? savedView : null);
-const swapText = c => c.orig && c.tribe!==c.orig ? ` Swapped from ${c.orig} to ${c.tribe} in Episode ${c.swapEp}.` : "";
+/* Tribe history up to what's being viewed, e.g. " Started on Savu; moved to Toka in Episode 3." */
+function swapText(c){
+  const upTo = viewEp==null ? FULL_AIRED : viewEp; let cur=c.orig; const moves=[];
+  SWAPS.filter(s=>s.ep<=upTo).forEach(s=>{ const t=s.moves[c.id]; if(!t) return; moves.push([s.ep,t,t===cur]); cur=t; });
+  if(!moves.length) return "";
+  if(moves.every(m=>m[2])) return ` Stayed on ${c.orig} through the tribe swap${moves.length>1?"s":""}.`;
+  return ` Started on ${c.orig}; ` + moves.map(([ep,t,same])=>same?`stayed on ${t} in the Episode ${ep} swap`:`moved to ${t} in Episode ${ep}`).join(", then ") + ".";
+}
+/* The Castaways and Picks pages are spoiler-free, so they show original tribes unless someone asks for the current ones. */
+let showSwaps = false;
+const shownTribe = c => showSwaps ? c.tribe : c.orig;
+const swapsSoFar = () => SWAPS.filter(s=>s.ep <= (viewEp==null ? FULL_AIRED : viewEp));
+function tribeToggle(){
+  const sw = swapsSoFar(); if(!sw.length) return "";
+  const last = sw[sw.length-1].ep;
+  return showSwaps
+    ? `<p class="small swap-toggle">Showing tribes after the Episode ${last} swap. <button type="button" class="linkish" id="swapToggle">Show original tribes</button></p>`
+    : `<p class="small swap-toggle">Showing original tribes. <button type="button" class="linkish" id="swapToggle">Show current tribes (spoilers through Episode ${last})</button></p>`;
+}
 
 /* toka: 4 Toka picks · savu: 4 Savu picks · mvp: one of the 8 · merge: extra post-merge pick (null until the merge) */
 const SAMPLE_ENTRANTS = [
@@ -794,7 +828,7 @@ function updateViewChrome(){
   document.getElementById("poolSub").textContent = `21 new castaways. Two tribes. One Sole Survivor. Scores through ${POOL.updatedThrough}.`;
   const vn=document.getElementById("viewNote");
   vn.hidden = viewEp==null;
-  if(viewEp!=null) vn.innerHTML = `<b>Spoiler-safe</b><span>Through Ep ${viewEp}</span><button type="button" class="linkish" id="viewLatest">Show Ep ${FULL_LATEST}</button>`;
+  if(viewEp!=null) vn.innerHTML = `<b>Spoiler-safe</b><span>Through Ep ${viewEp}</span><button type="button" class="linkish" id="viewLatest">Show Ep ${FULL_AIRED}</button>`;
 }
 updateViewChrome();
 document.getElementById("sampleNote").hidden = !usingSample;
@@ -840,17 +874,20 @@ function rulesPage(){
 const flame = `<svg class="flame" viewBox="0 0 48 64" aria-hidden="true"><path d="M24 2C30 14 40 20 40 36a16 16 0 0 1-32 0c0-9 5-14 8-20 1 6 4 9 7 10-2-8 0-17 1-24z" fill="var(--torch)"/><path d="M24 30c3 5 7 8 7 14a7 7 0 0 1-14 0c0-5 4-8 7-14z" fill="var(--gate-ink)" opacity=".9"/></svg>`;
 
 function prevScoredEp(){ const eps=SCORED_EPS(); return eps.length>1 ? eps[eps.length-2] : null; }
+/* The episode to wind back to for someone who hasn't watched the newest one: the last scored episode if
+   the newest has aired but isn't scored yet, otherwise the one before the latest scored episode. */
+function prevViewEp(){ return AIRED_EP()>LATEST_EP() ? (LATEST_EP()||null) : prevScoredEp(); }
 function gatePage(ep, back){
   return `<section class="page gate" role="alertdialog" aria-labelledby="gateTitle" aria-describedby="gateText">
     ${flame}
     <div class="eyebrow">Spoiler warning</div>
-    <h2 id="gateTitle">Have you watched ${ep?`Episode ${ep}`:esc(POOL.updatedThrough)}?</h2>
+    <h2 id="gateTitle">Have you watched Episode ${ep||AIRED_EP()}?</h2>
     <p id="gateText">${ep?"This recap":"The scoreboard"} shows who has been voted out and who is earning points. Don't open it until you're caught up.</p>
     <div class="row">
       <button class="btn" id="reveal" data-ep="${ep||LATEST_EP()}">I'm caught up. Show scores</button>
       <a class="btn ghost" href="#rules">Take me back</a>
     </div>
-    ${!ep && prevScoredEp()!=null ? `<button type="button" class="linkish gate-prev" id="revealPrev">Haven't watched Episode ${LATEST_EP()} yet? Show me everything as of Episode ${prevScoredEp()}</button>` : ""}
+    ${!ep && prevViewEp()!=null ? `<button type="button" class="linkish gate-prev" id="revealPrev">Haven't watched Episode ${AIRED_EP()} yet? Show me everything as of Episode ${prevViewEp()}</button>` : ""}
   </section>`;
 }
 
@@ -1246,7 +1283,7 @@ function boardPage(){
       <div class="cp-pop" role="tooltip" id="cp-${c.id}">${breakdownHTML(c)}</div></li>`).join("");
   return `<section class="page">
     <h2>Scoreboard</h2>
-    <p class="meta-line">Through ${esc(POOL.updatedThrough)}</p>
+    <p class="meta-line">Through ${esc(POOL.updatedThrough)}${AIRED_EP()>LATEST_EP()?` · Episode ${AIRED_EP()} points coming soon (eliminations and tribes are up to date)`:""}</p>
     <nav class="board-tabs" aria-label="Scoreboard views">
       <a class="ep-tab" href="#scoreboard" ${boardTab!=="power"?'aria-current="page"':""}>Standings</a>
       <a class="ep-tab" href="#power" ${boardTab==="power"?'aria-current="page"':""}>Power rankings</a></nav>
@@ -1260,29 +1297,32 @@ function boardPage(){
     </div>
     <h3 style="margin:32px 0 10px">Points by episode</h3>
     <div class="tablewrap"><table class="board eps">
-      <thead><tr><th>Castaway</th>${EPISODES.map(e=>`<th class="r">Ep ${e.ep}</th>`).join("")}<th class="r">Total</th></tr></thead>
+      <thead><tr><th>Castaway</th>${EPISODES.filter(e=>e.ep<=LATEST_EP()).map(e=>`<th class="r">Ep ${e.ep}</th>`).join("")}<th class="r">Total</th></tr></thead>
       <tbody>${CAST.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(c=>{const r=RESULTS[c.id];
-        return `<tr><td>${esc(c.name)} <span class="tribe ${c.tribe}">${c.tribe}</span></td>${EPISODES.map(e=>`<td class="mono r">${r.out===e.ep?'<span class="chip">Out</span>':(r.out!=null&&e.ep>r.out?'–':(r.byEp[e.ep]??0))}</td>`).join("")}<td class="mono r"><strong>${r.pts}</strong></td></tr>`}).join("")}</tbody>
+        return `<tr><td>${esc(c.name)} <span class="tribe ${c.tribe}">${c.tribe}</span></td>${EPISODES.filter(e=>e.ep<=LATEST_EP()).map(e=>`<td class="mono r">${r.out===e.ep?'<span class="chip">Out</span>':(r.out!=null&&e.ep>r.out?'–':(r.byEp[e.ep]??0))}</td>`).join("")}<td class="mono r"><strong>${r.pts}</strong></td></tr>`}).join("")}</tbody>
     </table></div>
     </section>`}`;
 }
 
 let tribeFilter = "All";
 function castPage(){
-  const list = CAST.filter(c=>tribeFilter==="All"||c.tribe===tribeFilter);
-  const btn = t=>`<button type="button" data-tribe="${t}" aria-pressed="${tribeFilter===t}">${t}${t==="All"?` (${CAST.length})`:` (${CAST.filter(c=>c.tribe===t).length})`}</button>`;
+  const tribes = TRIBE_ORDER.filter(t=>CAST.some(c=>shownTribe(c)===t));
+  if(tribeFilter!=="All" && !tribes.includes(tribeFilter)) tribeFilter="All";
+  const list = CAST.filter(c=>tribeFilter==="All"||shownTribe(c)===tribeFilter);
+  const btn = t=>`<button type="button" data-tribe="${t}" aria-pressed="${tribeFilter===t}">${t}${t==="All"?` (${CAST.length})`:` (${CAST.filter(c=>shownTribe(c)===t).length})`}</button>`;
   return `<section class="page">
     <h2>Castaways</h2>
     <p class="lede">Meet the 21 first-time players of Survivor 51. Spoiler-free: nothing here says who is still in the game.</p>
-    <div class="filter" role="group" aria-label="Filter by tribe">${btn("All")}${btn("Toka")}${btn("Savu")}</div>
+    <div class="filter" role="group" aria-label="Filter by tribe">${btn("All")}${tribes.map(btn).join("")}</div>
+    ${tribeToggle()}
     <div class="grid">${list.map(c=>`
-      <article class="card t-${c.tribe}" id="c-${c.id}" tabindex="0" aria-label="${esc(c.name)}: show who picked them">
+      <article class="card t-${shownTribe(c)}" id="c-${c.id}" tabindex="0" aria-label="${esc(c.name)}: show who picked them">
         <div class="badge" aria-hidden="true">${initials(c)}</div>
         <div style="min-width:0">
-          <div class="tribe ${c.tribe}">${c.tribe}</div>
+          <div class="tribe ${shownTribe(c)}">${shownTribe(c)}</div>
           <h3>${esc(c.name)}${c.nick?` <span style="color:var(--muted);font-weight:600">“${esc(c.nick)}”</span>`:""}</h3>
           <div class="facts">${c.age} · ${esc(c.job)} · ${esc(c.home)}</div>
-          <p>${esc(c.bio+swapText(c))}</p>
+          <p>${esc(c.bio+(showSwaps?swapText(c):""))}</p>
           ${ownersBadge(c)}
         </div>
         ${ownersPop(c)}
@@ -1313,14 +1353,14 @@ function pickLi(id, mvp){
   const c=byId[id];
   const pid = `bio-${c.id}-${++bioSeq}`;
   return `<li class="pick ${id===mvp?'mvp':''}"><button type="button" class="pick-link" aria-describedby="${pid}">
-    <div class="badge t-${c.tribe}" aria-hidden="true">${initials(c)}</div>
-    <div style="min-width:0"><div class="nm">${esc(c.name)}${id===mvp?'<span class="mvp-tag">MVP</span>':''}</div><div class="tribe ${c.tribe}">${c.tribe}${c.orig && c.tribe!==c.orig?` <span class="swap-note">· from ${c.orig}</span>`:""}</div></div></button>
+    <div class="badge t-${shownTribe(c)}" aria-hidden="true">${initials(c)}</div>
+    <div style="min-width:0"><div class="nm">${esc(c.name)}${id===mvp?'<span class="mvp-tag">MVP</span>':''}</div><div class="tribe ${shownTribe(c)}">${shownTribe(c)}${showSwaps && c.tribe!==c.orig?` <span class="swap-note">· from ${c.orig}</span>`:""}</div></div></button>
     <div class="bio-pop" role="tooltip" id="${pid}">
-      <div class="bp-top"><span class="badge t-${c.tribe}" aria-hidden="true">${initials(c)}</span>
+      <div class="bp-top"><span class="badge t-${shownTribe(c)}" aria-hidden="true">${initials(c)}</span>
         <div><div class="bd-title">${esc(c.name)}</div>${c.nick?`<div class="bp-nick">“${esc(c.nick)}”</div>`:""}</div></div>
-      <div class="bd-head"><span>${c.tribe} tribe</span></div>
+      <div class="bd-head"><span>${shownTribe(c)} tribe</span></div>
       <div class="bp-facts">${c.age} · ${esc(c.job)} · ${esc(c.home)}</div>
-      <p class="bp-bio">${esc(c.bio+swapText(c))}</p>
+      <p class="bp-bio">${esc(c.bio+(showSwaps?swapText(c):""))}</p>
     </div></li>`;
 }
 function entryCard(e){
@@ -1348,6 +1388,7 @@ function picksPage(){
   return `<section class="page">
     <h2>Picks</h2>
     <p class="lede">Every entrant's Fantasy Tribe: four Toka, four Savu, an MVP, and a merge pick once the tribes merge. Spoiler-free: no points or eliminations shown here.</p>
+    ${tribeToggle()}
     <div class="picker"><label for="entrantSel">Entrant</label>
       <select id="entrantSel"><option value="__all" ${picksSel==="__all"?"selected":""}>Everyone's picks</option>${opts}</select></div>
     ${body}</section>`;
@@ -1624,7 +1665,7 @@ async function refreshState(){
 /* ---------- Scoreboard image (canvas) ---------- */
 const IMG_FONTS = ['900 96px "Big Shoulders Stencil Display"','800 40px "Big Shoulders Display"','600 26px "Work Sans"','500 20px "IBM Plex Mono"'];
 const fontsReady = (document.fonts && document.fonts.load) ? Promise.all(IMG_FONTS.map(f=>document.fonts.load(f).catch(()=>{}))) : Promise.resolve();
-const C = {night:"#0A1A14", night2:"#123528", jungle:"#2A4A35", ink:"#F3EEE4", muted:"#A9BDB4", ember:"#FF8A3D", hi:"#FFD27A", toka:"#E6A93A", savu:"#4FB3C8", line:"rgba(243,238,228,.12)", up:"#6FD3A8", down:"#FF8A6B"};
+const C = {night:"#0A1A14", night2:"#123528", jungle:"#2A4A35", ink:"#F3EEE4", muted:"#A9BDB4", ember:"#FF8A3D", hi:"#FFD27A", toka:"#E6A93A", savu:"#4FB3C8", dina:"#EA6A80", line:"rgba(243,238,228,.12)", up:"#6FD3A8", down:"#FF8A6B"};
 const F = {stencil:'"Big Shoulders Stencil Display","Big Shoulders Display",Impact,sans-serif', disp:'"Big Shoulders Display","Arial Narrow",Impact,sans-serif', body:'"Work Sans",system-ui,sans-serif', mono:'"IBM Plex Mono",ui-monospace,monospace'};
 function shrink(ctx, text, max, weight, size, min, fam){ let s=size; ctx.font=`${weight} ${s}px ${fam}`; while(s>min && ctx.measureText(text).width>max){ s-=2; ctx.font=`${weight} ${s}px ${fam}`; } return fit(ctx,text,max); }
 function fit(ctx, text, max){ if(ctx.measureText(text).width<=max) return text; let t=text; while(t.length>1 && ctx.measureText(t+"…").width>max) t=t.slice(0,-1); return t+"…"; }
@@ -2235,7 +2276,7 @@ function drawPersonImage(p){
   p.cast.forEach((x,i)=>{
     const top=y+i*castRow, mid=top+castRow/2+9, gone=x.out!=null;
     if(i%2){ ctx.fillStyle="rgba(243,238,228,.03)"; ctx.fillRect(PAD,top,W-PAD*2,castRow); }
-    ctx.fillStyle = x.c.tribe==="Toka"?C.toka:C.savu; ctx.beginPath(); ctx.arc(PAD+20, mid-8, 8, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = ({Toka:C.toka, Savu:C.savu, Dina:C.dina})[x.c.tribe]||C.savu; ctx.beginPath(); ctx.arc(PAD+20, mid-8, 8, 0, Math.PI*2); ctx.fill();
     ctx.globalAlpha = gone ? .5 : 1;
     ctx.fillStyle=C.ink; ctx.font=`600 27px ${F.body}`; const nm=fit(ctx,x.c.name,420); ctx.fillText(nm, PAD+44, mid);
     let nx = PAD+44+ctx.measureText(nm).width+12;
@@ -2360,11 +2401,13 @@ function flipUp(anchor, pop, row){
 function wire(){
   const rv=document.getElementById("reveal");
   const rp=document.getElementById("revealPrev");
-  if(rp) rp.addEventListener("click",()=>{ applyView(prevScoredEp()); updateViewChrome(); revealed=true; revealedThrough=LATEST_EP(); view.innerHTML=ROUTES[currentPage()](); wire(); scrollTo(0,0); });
+  if(rp) rp.addEventListener("click",()=>{ applyView(prevViewEp()); updateViewChrome(); revealed=true; revealedThrough=LATEST_EP(); view.innerHTML=ROUTES[currentPage()](); wire(); scrollTo(0,0); });
   if(rv) rv.addEventListener("click",()=>{revealed=true; revealedThrough=Math.max(revealedThrough,+rv.dataset.ep||0); view.innerHTML=ROUTES[currentPage()](); wire(); scrollTo(0,0);});
   wireRecap();
   wirePersonRecap();
   wireRoast();
+  const stg=document.getElementById("swapToggle");
+  if(stg) stg.addEventListener("click",()=>{ showSwaps=!showSwaps; view.innerHTML=ROUTES[currentPage()](); wire(); });
   view.querySelectorAll("[data-tribe]").forEach(b=>b.addEventListener("click",()=>{tribeFilter=b.dataset.tribe;view.innerHTML=castPage();wire();}));
   const sel=document.getElementById("entrantSel");
   if(sel) sel.addEventListener("change",()=>{picksSel=sel.value;view.innerHTML=picksPage();wire();document.getElementById("entrantSel").focus();});

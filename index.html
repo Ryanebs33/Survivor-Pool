@@ -436,6 +436,11 @@ html.intro-lock, html.intro-lock body{overflow:hidden}
 .t-Savu .badge,.badge.t-Savu{background:var(--savu-soft);color:var(--savu);box-shadow:inset 0 0 0 2px var(--savu)}
 .t-Dina .badge,.badge.t-Dina{background:var(--dina-soft);color:var(--dina);box-shadow:inset 0 0 0 2px var(--dina)}
 .swap-toggle{margin:-4px 0 14px}
+.spoil-wrap{position:fixed;inset:0;z-index:900;display:grid;place-items:center;padding:16px;background:rgba(5,12,9,.74);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);overflow:auto}
+.spoil-wrap .gate{width:100%;max-width:540px;margin:0;box-shadow:0 24px 60px -12px rgba(0,0,0,.6)}
+.spoil-wrap .gate .row{flex-direction:column;align-items:stretch;width:100%;max-width:360px}
+.spoil-wrap .gate .row .btn{width:100%;justify-content:center;text-align:center}
+body.spoil-open{overflow:hidden}
 .tribe{font:500 11px/1 var(--mono);text-transform:uppercase;letter-spacing:.1em}
 .tribe.Toka{color:var(--toka)} .tribe.Savu{color:var(--savu)} .tribe.Dina{color:var(--dina)}
 .card .facts{font-size:13px;color:var(--muted);margin:4px 0 8px}
@@ -790,10 +795,11 @@ function swapText(c){
   return ` Started on ${c.orig}; ` + moves.map(([ep,t,same])=>same?`stayed on ${t} in the Episode ${ep} swap`:`moved to ${t} in Episode ${ep}`).join(", then ") + ".";
 }
 /* The Castaways and Picks pages are spoiler-free, so they show original tribes unless someone asks for the current ones. */
-let showSwaps = false;
+let showSwaps = true;      // the one spoiler warning on entry decides what's shown, so pages show tribes as of that choice
 const shownTribe = c => showSwaps ? c.tribe : c.orig;
 const swapsSoFar = () => SWAPS.filter(s=>s.ep <= (viewEp==null ? FULL_AIRED : viewEp));
 function tribeToggle(){
+  return "";                // retired: the entry spoiler warning covers this
   const sw = swapsSoFar(); if(!sw.length) return "";
   const last = sw[sw.length-1].ep;
   return showSwaps
@@ -2359,7 +2365,7 @@ function wireRecap(){
 
 }
 
-const ROUTES = {rules:rulesPage, scoreboard:()=>revealedThrough>=LATEST_EP()&&revealed?boardPage():gatePage(), recap:recapPage, castaways:castPage, picks:picksPage, submit:submitPage, commissioner:commishPage};
+const ROUTES = {rules:rulesPage, scoreboard:boardPage, recap:recapPage, castaways:castPage, picks:picksPage, submit:submitPage, commissioner:commishPage};
 let focusCast = null;
 const currentPage = () => { const r=(location.hash||"").slice(1);
   const m=/^recap-ep(\d+)$/.exec(r); if(m){ recapEp=+m[1]; commishTab="recap"; return "commissioner"; }
@@ -2476,6 +2482,33 @@ const setNavH = () => { const n=document.querySelector("nav.tabs"); if(n) docume
 setNavH(); addEventListener("resize", setNavH);
 addEventListener("hashchange",()=>{ route(); const h=document.querySelector(".hero"); const top=h?h.offsetHeight:0; if(scrollY>top) scrollTo(0,top); });
 route();
+
+/* One spoiler warning, shown once when someone first opens the site (per visit). Their answer sets
+   what the whole site shows: everything, or everything as of the episode before the newest one. */
+(function entrySpoiler(){
+  let seen=false; try{ seen=sessionStorage.getItem("s51-spoiler")==="1"; }catch(e){}
+  if(seen || FULL_AIRED<1) return;
+  const scored = ALL_EPISODES.filter(e=>Object.keys(e.pts).length).map(e=>e.ep);
+  const prev = FULL_AIRED>FULL_LATEST ? (FULL_LATEST||null) : (scored.length>1 ? scored[scored.length-2] : null);
+  const wrap=document.createElement("div"); wrap.className="spoil-wrap";
+  wrap.innerHTML=`<section class="gate" role="alertdialog" aria-modal="true" aria-labelledby="spTitle" aria-describedby="spText">
+    ${flame}
+    <div class="eyebrow">Spoiler warning</div>
+    <h2 id="spTitle">Have you watched Episode ${FULL_AIRED}?</h2>
+    <p id="spText">This site shows who has been voted out, tribe swaps and everyone's points.</p>
+    <div class="row">
+      <button class="btn" id="spLatest" type="button">I'm caught up. Show everything</button>
+      ${prev!=null?`<button class="btn ghost" id="spPrev" type="button">Not yet. Show me through Episode ${prev}</button>`:""}
+    </div></section>`;
+  document.body.appendChild(wrap); document.body.classList.add("spoil-open");
+  const done=(n)=>{ try{ sessionStorage.setItem("s51-spoiler","1"); }catch(e){}
+    applyView(n); updateViewChrome(); wrap.remove(); document.body.classList.remove("spoil-open"); route(); };
+  wrap.querySelector("#spLatest").addEventListener("click",()=>done(null));
+  wrap.querySelector("#spPrev")?.addEventListener("click",()=>done(prev));
+  // focus the first choice once the intro has gone
+  const focusIt=()=>{ const i=document.getElementById("intro"); if(i && !i.classList.contains("gone")) return setTimeout(focusIt,300); wrap.querySelector("#spLatest")?.focus({preventScroll:true}); };
+  focusIt();
+})();
 </script>
 
 </body>

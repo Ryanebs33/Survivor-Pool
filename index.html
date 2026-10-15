@@ -2506,9 +2506,12 @@ function flipUp(anchor, pop, row){
   if(!anchor || !pop) return;
   pop.classList.remove("up");
   // The last three names in a list always open upward.
-  if(row && row.parentElement){ const sib=[...row.parentElement.children]; if(sib.length-sib.indexOf(row)<=3){ pop.classList.add("up"); return; } }
+  if(row && row.parentElement){ const sib=[...row.parentElement.children], i=sib.indexOf(row);
+    if(i<4) return;                                            // the first four always open downward (no room above under the tab bar)
+    if(sib.length-i<=3){ pop.classList.add("up"); return; } }
   const a = anchor.getBoundingClientRect(), h = pop.offsetHeight, vh = window.innerHeight;
-  const below = vh - a.bottom, above = a.top;
+  const navH = document.querySelector("nav.tabs")?.getBoundingClientRect().bottom || 0;
+  const below = vh - a.bottom, above = a.top - Math.max(0, navH);
   if(h + 16 > below && h + 16 <= above) pop.classList.add("up");   // only flip when it fits above; otherwise keep opening down
 }
 function wire(){
@@ -2572,6 +2575,10 @@ document.addEventListener("click", ev=>{
     document.querySelectorAll(".open").forEach(o=>{ if(o!==host && o.matches(POP_HOSTS)){ o.classList.remove("open"); o.classList.add("pop-closed"); } });
     host.classList.add("open"); host.classList.remove("pop-closed");
     host.dispatchEvent(new Event("focusin"));               // run the card's placement (flip up / keep on screen)
+    // if a card that opens downward runs off the bottom of the screen, scroll just enough to show it
+    requestAnimationFrame(()=>{ const pop=host.querySelector(POP_BODIES); if(!pop) return;
+      const r=pop.getBoundingClientRect(), navB=document.querySelector("nav.tabs")?.getBoundingClientRect().bottom||0;
+      if(r.bottom > innerHeight-8){ const dy=Math.min(r.bottom-innerHeight+16, r.top-navB-12); if(dy>0) scrollBy({top:dy, behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"}); } });
   }
 });
 document.addEventListener("mouseout", ev=>{

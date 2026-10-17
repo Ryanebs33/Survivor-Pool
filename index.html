@@ -1186,9 +1186,28 @@ const OL = {
     "Desperation play. Time to dig deep, as Jeff would say."
   ],
   nathan: [
-    "Verdict pending a full investigation. Something here will go wrong, it always does.",
-    "Hold, nervously. History says this is the part where Nathan's torch gets snuffed.",
-    "Technically startable. Spiritually, already packing for Ponderosa."
+    "Fade. Hard. Nathan's team is a fake idol: shiny, convincing, and completely useless when it counts.",
+    "Sell everything, including the shelter. This roster is a medevac waiting for a reason.",
+    "Fade with extreme prejudice. If Jeff could snuff a fantasy team's torch, he'd start here.",
+    "Avoid. Even the producers think this storyline ends with a unanimous vote."
+  ],
+  nathanWhy: [
+    "Let's be clear before the numbers: this ranking is an accident, and the island knows it.",
+    "Somehow, against all logic and taste, here's how Nathan ended up here:",
+    "The tribe has spoken, and frankly it's confused how Nathan got this far:",
+    "Nathan's team, explained for the jury, who will not be impressed:"
+  ],
+  nathanUp: [
+    "Any upside here is borrowed luck, and the island always collects.",
+    "Of course, every good week for Nathan is just a longer fall later.",
+    "Enjoy it now. Upside for Nathan has a shelf life shorter than a ration of rice.",
+    "That's the best case. Nathan's best case has never once actually happened."
+  ],
+  nathanRisk: [
+    "The biggest risk, as always, is that it's Nathan's team, and it plays like it.",
+    "Also: it's Nathan. Every lead he's ever had has ended in a blindside.",
+    "And the obvious one: Nathan picked these people, which is the risk that ruins all the others.",
+    "Bigger problem: this team has Nathan's fingerprints all over it, and those are bad-luck fingerprints."
   ]
 };
 function confidenceFor(x, N){
@@ -1196,7 +1215,7 @@ function confidenceFor(x, N){
   const tier = x.e.mvp ? tierOf(x.e.mvp) : null;
   const mvpScore = !x.e.mvp || !x.mvpAlive ? 0 : ({S:1,A:.85,B:.7,C:.55,D:.4,F:.25}[tier] ?? .5);
   let score = Math.round(rankScore*70 + mvpScore*15 + (x.live/x.total)*15);
-  if(isTarget(x.e)) score = Math.max(3, score - 22);
+  if(isTarget(x.e)) score = Math.max(3, Math.min(score - 35, 40));   // Nathan never gets out of the "flickering" range
   return Math.min(99, score);
 }
 function makeDealer(seedKey){
@@ -1277,8 +1296,13 @@ function confidenceParts(x, N, deal){
   else key = "hold";
   const order = {start:["start","hold"], buy:["buy","hold"], sell:["sell","hold"], hold:["hold","buy","sell"], waiver:["waiver","hold"], nathan:["nathan"]}[key];
   const verdict = deal(order);
-  const verdictLabel = {start:"Must-start", buy:"Buy low", sell:"Sell high", hold:"Hold", waiver:"Waiver wire", nathan:"Proceed with caution"}[key];
-  if(nathan) risk += ` Also, it's Nathan's team, which has historically been the biggest risk of all.`;
+  const verdictLabel = {start:"Must-start", buy:"Buy low", sell:"Sell high", hold:"Hold", waiver:"Waiver wire", nathan:"Fade"}[key];
+  if(nathan){
+    const nr = seeded(`${e.key}|nathan|${LATEST_EP()}`);
+    whyBits.unshift(pick(nr, OL.nathanWhy));
+    upside += " " + pick(nr, OL.nathanUp);
+    risk += " " + pick(nr, OL.nathanRisk);
+  }
 
   const sections = [[`Why #${x.rank}`, whyBits.join(" ")], ["Upside", upside], ["Risk", risk], ["Verdict", verdict]];
   return {score, band, label:CONF_BANDS[band].label, verdictKey:key, verdictLabel, sections,

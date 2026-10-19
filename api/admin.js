@@ -3,6 +3,7 @@
 import { readEntry, writeEntry, deleteEntry, writeSettings, cleanEntry, newId, publicEntry, safeEqual, send, readBody, clientIp, getStore, ensureSeeded } from "./_lib.js";
 
 const MAX_FAILS = 10, WINDOW_SECONDS = 15*60;
+export const config = { maxDuration: 60 };   // reading a roster screenshot with Claude can take 10–30 s
 
 export default async function handler(req, res){
   if(req.method !== "POST") return send(res, 405, {error:"Use POST."});
@@ -24,6 +25,10 @@ export default async function handler(req, res){
         const { getFlying } = await import("./_flying.js");   // loaded only here: it carries the airport list
         const data = await getFlying(s, { force: !!b.refresh });
         return send(res, 200, data);
+      }
+      case "roster": {
+        const { readRoster } = await import("./_roster.js");
+        return send(res, 200, await readRoster(b));
       }
       case "save": {
         const {entry, error} = cleanEntry(b.entry||{});

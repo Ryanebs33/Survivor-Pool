@@ -11,6 +11,8 @@ The pool website: rules, a spoiler-gated scoreboard with power rankings, castawa
 | `api/submit.js` | Saves a member's own picks. Each member gets a private edit link, and the deadline is enforced here. |
 | `api/admin.js` | Commissioner actions. The commissioner code is checked here, on the server, and locks out after 10 wrong tries in 15 minutes. |
 | `api/_seed.js` | The 17 entries and pick deadline from the Claude version. They're loaded into the database automatically the first time the site runs, and only once. |
+| `roster.js` | Roster Snap (Commissioner → Roster Snap): turns 360pairings screenshots into Google Calendar events and a month picture to share. |
+| `api/_roster.js` | Reads a Roster Snap screenshot with Claude. Needs `ANTHROPIC_API_KEY` in Vercel's environment variables. |
 | `api/_lib.js` | Database connection, pick validation, and the `MERGED` / `PICKS_OPEN` switches. |
 
 ## Put it online

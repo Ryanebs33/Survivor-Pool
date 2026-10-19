@@ -1645,8 +1645,10 @@ function commishPage(){
       <a class="ep-tab" href="#commissioner" ${commishTab==="picks"?'aria-current="page"':""}>Picks &amp; deadline</a>
       <a class="ep-tab" href="#recap" ${commishTab==="recap"?'aria-current="page"':""}>Weekly recap</a>
       <a class="ep-tab" href="#roast" ${commishTab==="roast"?'aria-current="page"':""}>Weekly roast</a>
-      <a class="ep-tab" href="#flying">Flying</a></nav>`;
+      <a class="ep-tab" href="#flying">Flying</a>
+      <a class="ep-tab" href="#roster">Roster Snap</a></nav>`;
   if(commishTab==="flying") return `<div id="flyRoot"></div>`;
+  if(commishTab==="roster") return `<div id="rosterRoot"></div>`;
   if(commishTab==="recap") return `<section class="page">${head}</section>${recapPage()}`;
   if(commishTab==="roast") return `<section class="page">${head}</section>${roastPage()}`;
   if(dbState==="loading") return `<section class="page">${head}<p class="lede">Loading the pool…</p></section>`;
@@ -1784,7 +1786,7 @@ function applyEntries(snap){
   if((page==="picks" || page==="scoreboard" || page==="recap") && !cardOpen) { view.innerHTML = ROUTES[page](); wire(); }
   if(page==="castaways" && !cardOpen && !view.contains(document.activeElement)) { view.innerHTML = ROUTES[page](); wire(); }
   if(page==="submit" && !saving && !FORMS.self.loaded && myEntry) rerender();
-  if(page==="commissioner" && commishUnlocked && !saving){
+  if(page==="commissioner" && commishUnlocked && !saving && commishTab!=="roster"){
     // refresh the entrant list without discarding an edit in progress
     const ts=document.getElementById("targetSel");
     if(!ts || document.activeElement===document.body || !view.contains(document.activeElement)) rerender();
@@ -1956,6 +1958,21 @@ function mountFlying(){
   root.innerHTML=`<p class="lede">Loading…</p>`;
   loadFlyingJS().then(()=>{ if(document.body.contains(root)) Flying.mount(root,{tab:flyTab, code:adminCode, api}); })
     .catch(()=>{ root.innerHTML=`<div class="notice"><b>Flying didn't load</b><span>Check your connection and refresh the page.</span></div>`; });
+}
+
+/* Roster Snap: the commissioner's work-schedule tool lives in roster.js and loads only when opened. */
+function loadRosterJS(){
+  if(window.RosterSnap) return Promise.resolve();
+  if(loadRosterJS.p) return loadRosterJS.p;
+  return loadRosterJS.p = new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.src="roster.js?v=1"; sc.onload=res; sc.onerror=()=>{loadRosterJS.p=null; rej(new Error("load"));}; document.head.appendChild(sc); });
+}
+function mountRoster(){
+  const root=document.getElementById("rosterRoot");
+  document.body.classList.toggle("roster", !!root);
+  if(!root){ if(window.RosterSnap) RosterSnap.unmount(); return; }
+  root.innerHTML=`<p class="lede">Loading…</p>`;
+  loadRosterJS().then(()=>{ if(document.body.contains(root)) RosterSnap.mount(root,{code:adminCode, api}); })
+    .catch(()=>{ root.innerHTML=`<div class="notice"><b>Roster Snap didn't load</b><span>Check your connection and refresh the page.</span></div>`; });
 }
 
 /* Points one entrant earned in one episode, with the castaways that earned them. */
@@ -2516,6 +2533,7 @@ const currentPage = () => { const r=(location.hash||"").slice(1);
   const m=/^recap-ep(\d+)$/.exec(r); if(m){ recapEp=+m[1]; commishTab="recap"; return "commissioner"; }
   if(r==="recap"){ recapEp=null; commishTab="recap"; return "commissioner"; }
   if(r==="commissioner") commishTab="picks";
+  if(r==="roster"){ commishTab="roster"; return "commissioner"; }
   const fm=/^flying(?:-(map|career|story))?$/.exec(r); if(fm){ commishTab="flying"; flyTab=fm[1]||"logbook"; return "commissioner"; }
   const rm=/^roast(?:-ep(\d+))?$/.exec(r); if(rm){ roastEp=rm[1]?+rm[1]:null; commishTab="roast"; roastMsg=""; return "commissioner"; }
   if(r==="power"){ boardTab="power"; return "scoreboard"; }
@@ -2592,6 +2610,7 @@ function wire(){
   });
   wireSubmit();
   mountFlying();
+  mountRoster();
 }
 /* Info cards (points breakdowns, bios, who-picked, outlooks): pressing a name opens its card,
    and the card stays open until that same name or button is pressed again. Opening a new card

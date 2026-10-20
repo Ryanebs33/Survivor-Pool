@@ -120,6 +120,9 @@ body.roster nav.tabs a[aria-current="page"]{color:var(--rs-ink)!important;border
 .rs details.help b{color:var(--rs-ink)}
 .rs details.help a{color:var(--rs-link)}
 
+.rs .seg{display:flex;gap:3px;background:var(--rs-bg);border:1px solid var(--rs-line);border-radius:10px;padding:3px}
+.rs .seg button{flex:1;margin:0;border:0;background:none;padding:9px 10px;border-radius:8px;font:600 .9rem var(--rs-body);color:var(--rs-muted);cursor:pointer;text-transform:none;letter-spacing:0}
+.rs .seg button[aria-pressed="true"]{background:var(--rs-surface);color:var(--rs-ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
 .rs .share-f{display:grid;grid-template-columns:1.6fr 1fr;gap:10px}
 @media (max-width:440px){.rs .share-f{grid-template-columns:1fr}}
 .rs .shot{border-radius:10px;overflow:hidden;border:1px solid var(--rs-line);background:#fff;min-height:120px}
@@ -237,7 +240,7 @@ Day 2
   return {pairings:[p], example:true, shareTitle:"Work schedule"};
 }
 function loadState(){ try{ const s = JSON.parse(localStorage.getItem(STORE)||"null"); if(s && Array.isArray(s.pairings)) return s; }catch(e){} return exampleState(); }
-const S = { root:null, code:null, api:null, st:loadState(), open:new Set(), cal:null, det:[], ctl:null, stepIdx:0, monthPicked:false, imgBlob:null, imgURL:null, drawT:null };
+const S = { root:null, code:null, api:null, st:loadState(), open:new Set(), cal:null, det:[], ctl:null, stepIdx:0, monthPicked:false, kind:"month", imgBlob:null, imgURL:null, drawT:null };
 function persist(){ try{ localStorage.setItem(STORE, JSON.stringify(S.st)); }catch(e){} }
 const $ = sel => S.root.querySelector(sel);
 const ready = () => S.st.pairings.filter(p => p.on).map(p => ({p, ev:eventOf(p)})).filter(x => !x.ev.err).sort((a,b) => a.ev.s - b.ev.s);
@@ -297,8 +300,12 @@ function shell(){
 
   <section aria-labelledby="rs4">
     <div class="sh"><span class="n">4</span><h3 id="rs4">Share with family</h3></div>
-    <p class="sub">A picture of the month with your start and finish times and where you're staying overnight.</p>
-    <div class="shot"><img id="rsImg" alt="Month calendar of work pairings"></div>
+    <div class="seg" role="group" aria-label="Picture style">
+      <button type="button" data-kind="month" aria-pressed="true">Month view</button>
+      <button type="button" data-kind="flights" aria-pressed="false">Every flight</button>
+    </div>
+    <p class="sub" id="rsShareSub" style="margin:0"></p>
+    <div class="shot"><img id="rsImg" alt="Picture of your work schedule"></div>
     <div class="share-f">
       <div><label class="lbl" for="rsShareTitle">Heading</label><input id="rsShareTitle"></div>
       <div><label class="lbl" for="rsShareMonth">Month</label><input type="month" id="rsShareMonth"></div>
@@ -529,6 +536,7 @@ async function drawMonth(){
   const DISP = '"Barlow Condensed","Arial Narrow",sans-serif', BODY = '"IBM Plex Sans",system-ui,sans-serif';
   try{ await Promise.all(['700 80px "Barlow Condensed"','600 30px "Barlow Condensed"','400 24px "IBM Plex Sans"'].map(f => document.fonts.load(f))); }catch(e){}
   if(!S.root) return;
+  if(S.kind==="flights") return drawFlights(mi.value, DISP, BODY);
 
   const day = {};
   ready().forEach(({p,ev}) => {
@@ -591,7 +599,96 @@ async function drawMonth(){
   ctx.fillStyle = NAVY; rrect(ctx,PAD,H-FOOT+26,24,24,6); ctx.fill();
   ctx.fillStyle = MUTE; ctx.font = `400 22px ${BODY}`; ctx.fillText("Working", PAD+36, H-FOOT+45);
   ctx.textAlign = "right"; ctx.fillText("All times are local", W-PAD, H-FOOT+45); ctx.textAlign = "left";
+  showCanvas(cv);
+}
+function showCanvas(cv){
   cv.toBlob(b => { if(!b || !S.root) return; S.imgBlob = b; if(S.imgURL) URL.revokeObjectURL(S.imgURL); S.imgURL = URL.createObjectURL(b); $("#rsImg").src = S.imgURL; }, "image/png");
+}
+
+/* Every flight in the month, pairing by pairing: a tall picture that reads well on a phone. */
+async function drawFlights(ym, DISP, BODY){
+  const MONO = '"IBM Plex Mono",ui-monospace,Menlo,monospace';
+  try{ await Promise.all(['500 28px "IBM Plex Mono"','600 22px "IBM Plex Sans"'].map(f => document.fonts.load(f))); }catch(e){}
+  if(!S.root) return;
+  const [Y,M] = ym.split("-").map(Number);
+  const list = ready().filter(({ev}) => ev.start.slice(0,7)===ym || ev.end.slice(0,7)===ym);
+  const W = 1200, PAD = 56, CX = PAD, CW = W-2*PAD;
+  const HEAD = 214, PH = 108, DAYH = 54, LEGH = 56, NIGHT = 52, GAP = 36, FOOT = 92;
+  const blocks = list.map(({p,ev}) => {
+    const days = parseFlights(p.flights);
+    let h = PH + 14;
+    days.forEach((legs,i) => { h += DAYH + legs.length*LEGH; if(i < days.length-1) h += NIGHT; });
+    return {p, ev, days, h: h + 16};
+  });
+  const H = HEAD + (blocks.length ? blocks.reduce((a,b) => a+b.h, 0) + GAP*(blocks.length-1) : 160) + FOOT;
+  const cv = document.createElement("canvas"); cv.width = W; cv.height = H;
+  const ctx = cv.getContext("2d");
+  const NAVY = "#1B3A5C", INK = "#15202B", MUTE = "#6B7785", LINE = "#E2E7EC", ZEBRA = "#F5F7F9", AMBER = "#E8A317", SOFT = "#C9D8EA";
+  ctx.fillStyle = "#FFFFFF"; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle = AMBER; ctx.fillRect(0,0,W,10);
+
+  const nFlights = blocks.reduce((a,b) => a + b.days.flat().length, 0);
+  ctx.fillStyle = INK; ctx.font = `700 76px ${DISP}`; ctx.fillText((MONTHS[M-1]+" "+Y).toUpperCase(), PAD, 112);
+  ctx.fillStyle = MUTE; ctx.font = `400 28px ${BODY}`; ctx.fillText((S.st.shareTitle.trim()||"Work schedule")+" · every flight", PAD, 158);
+  ctx.textAlign = "right"; ctx.fillStyle = INK; ctx.font = `600 32px ${DISP}`;
+  ctx.fillText(`${blocks.length} PAIRING${blocks.length===1?"":"S"}`, W-PAD, 112);
+  ctx.fillStyle = MUTE; ctx.font = `400 24px ${BODY}`; ctx.fillText(`${nFlights} flight${nFlights===1?"":"s"}`, W-PAD, 152);
+  ctx.textAlign = "left";
+
+  let y = HEAD;
+  if(!blocks.length){ ctx.fillStyle = MUTE; ctx.font = `400 28px ${BODY}`; ctx.fillText("No pairings this month.", PAD, y+60); }
+  const longDate = ds => (dow(ds)+" "+header(ds)).toUpperCase();
+  blocks.forEach(({p,ev,days,h}) => {
+    ctx.fillStyle = "#FFFFFF"; rrect(ctx,CX,y,CW,h,16); ctx.fill();
+    ctx.strokeStyle = LINE; ctx.lineWidth = 2; rrect(ctx,CX+1,y+1,CW-2,h-2,16); ctx.stroke();
+    ctx.fillStyle = NAVY; rrect(ctx,CX,y,CW,PH,16); ctx.fill(); ctx.fillRect(CX,y+PH-16,CW,16);
+    ctx.fillStyle = "#FFFFFF"; ctx.font = `700 40px ${DISP}`; ctx.fillText(ev.title.toUpperCase(), CX+28, y+50);
+    const span = ev.end===ev.start ? dow(ev.start)+" "+header(ev.start) : dow(ev.start)+" "+header(ev.start)+"  →  "+dow(ev.end)+" "+header(ev.end);
+    ctx.fillStyle = SOFT; ctx.font = `400 24px ${BODY}`; ctx.fillText(span, CX+28, y+88);
+    ctx.textAlign = "right";
+    ctx.fillStyle = "#FFFFFF"; ctx.font = `500 30px ${MONO}`; ctx.fillText(`${ev.startT} → ${ev.endT}`, CX+CW-28, y+50);
+    ctx.fillStyle = SOFT; ctx.font = `400 22px ${BODY}`;
+    ctx.fillText(ev.end===ev.start ? "Report  ·  Done" : `Report ${dow(ev.start)}  ·  Done ${dow(ev.end)}`, CX+CW-28, y+88);
+    ctx.textAlign = "left";
+
+    let cy = y + PH + 14;
+    const base = days.flat()[0]?.from;
+    days.forEach((legs,i) => {
+      const ds = addDays(ev.start, i);
+      ctx.fillStyle = MUTE; ctx.font = `600 22px ${BODY}`; ctx.fillText(longDate(ds), CX+28, cy+36);
+      cy += DAYH;
+      legs.forEach((l,k) => {
+        if(k%2===0){ ctx.fillStyle = ZEBRA; rrect(ctx,CX+14,cy+2,CW-28,LEGH-4,10); ctx.fill(); }
+        const ty = cy + 37;
+        if(l.dh){
+          ctx.fillStyle = "#FFF1D6"; rrect(ctx,CX+28,cy+12,56,32,8); ctx.fill();
+          ctx.fillStyle = "#8A5A00"; ctx.font = `600 20px ${BODY}`; ctx.textAlign = "center"; ctx.fillText("DH", CX+56, cy+35); ctx.textAlign = "left";
+        }
+        ctx.fillStyle = INK; ctx.font = `500 28px ${MONO}`; ctx.fillText(l.flight, CX+100, ty);
+        ctx.font = `600 28px ${BODY}`; ctx.fillText(l.from, CX+310, ty);
+        const ax = CX+310+ctx.measureText(l.from).width+16;
+        ctx.fillStyle = MUTE; ctx.font = `400 26px ${BODY}`; ctx.fillText("→", ax, ty);
+        const tx = ax+ctx.measureText("→").width+16;
+        ctx.fillStyle = INK; ctx.font = `600 28px ${BODY}`; ctx.fillText(l.to, tx, ty);
+        ctx.textAlign = "right"; ctx.font = `500 28px ${MONO}`;
+        ctx.fillText(`${l.dep} – ${l.arr}${l.arr<l.dep?" +1":""}`, CX+CW-28, ty);
+        ctx.textAlign = "left";
+        cy += LEGH;
+      });
+      if(i < days.length-1){
+        const stay = legs[legs.length-1]?.to;
+        const txt = !stay ? "Day off" : stay===base ? "Home overnight" : "Overnight in "+stay;
+        ctx.fillStyle = NAVY; ctx.beginPath(); ctx.arc(CX+36, cy+28, 6, 0, 7); ctx.fill();
+        ctx.fillStyle = MUTE; ctx.font = `400 22px ${BODY}`; ctx.fillText(txt, CX+52, cy+36);
+        cy += NIGHT;
+      }
+    });
+    y += h + GAP;
+  });
+  ctx.fillStyle = MUTE; ctx.font = `400 22px ${BODY}`;
+  ctx.fillText("All times are local to each airport.", PAD, H-FOOT+50);
+  ctx.textAlign = "right"; ctx.fillStyle = "#8A5A00"; ctx.fillText("DH = deadhead", W-PAD, H-FOOT+50); ctx.textAlign = "left";
+  showCanvas(cv);
 }
 
 /* ---------------- wiring ---------------- */
@@ -636,9 +733,19 @@ function wire(){
   const ti = $("#rsShareTitle"); ti.value = S.st.shareTitle || "Work schedule";
   ti.addEventListener("input", () => { S.st.shareTitle = ti.value; persist(); queueDraw(); });
   $("#rsShareMonth").addEventListener("input", () => { S.monthPicked = true; queueDraw(); });
+  const setKind = k => {
+    S.kind = k;
+    S.root.querySelectorAll(".seg [data-kind]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.kind===k)));
+    $("#rsShareSub").textContent = k==="flights"
+      ? "Every flight in the month, pairing by pairing, with report and done times and where you're staying overnight."
+      : "The month at a glance: when you start, when you finish and where you're staying overnight.";
+    queueDraw();
+  };
+  S.root.querySelectorAll(".seg [data-kind]").forEach(b => b.addEventListener("click", () => setKind(b.dataset.kind)));
+  setKind(S.kind);
   $("#rsSaveImg").addEventListener("click", async () => {
     const st = $("#rsImgStatus"); if(!S.imgBlob) return;
-    const name = `work-schedule-${$("#rsShareMonth").value}.png`, file = new File([S.imgBlob], name, {type:"image/png"});
+    const name = `${S.kind==="flights"?"flight":"work"}-schedule-${$("#rsShareMonth").value}.png`, file = new File([S.imgBlob], name, {type:"image/png"});
     if(navigator.canShare && navigator.canShare({files:[file]})){
       try{ await navigator.share({files:[file]}); st.textContent = ""; return; }
       catch(e){ if(e.name==="AbortError") return; }

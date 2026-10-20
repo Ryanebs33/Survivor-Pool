@@ -1964,7 +1964,7 @@ function mountFlying(){
 function loadRosterJS(){
   if(window.RosterSnap) return Promise.resolve();
   if(loadRosterJS.p) return loadRosterJS.p;
-  return loadRosterJS.p = new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.src="roster.js?v=1"; sc.onload=res; sc.onerror=()=>{loadRosterJS.p=null; rej(new Error("load"));}; document.head.appendChild(sc); });
+  return loadRosterJS.p = new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.src="roster.js?v=2"; sc.onload=res; sc.onerror=()=>{loadRosterJS.p=null; rej(new Error("load"));}; document.head.appendChild(sc); });
 }
 function mountRoster(){
   const root=document.getElementById("rosterRoot");

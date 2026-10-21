@@ -2268,7 +2268,8 @@ function standData(ep){
         ? `${c.why[0]} ${pick(seeded(`${x.e.key}|short|${ep}|${standSeed}`), OL.nathanShort)}`
         : `${c.why[0]} ${c.verdict}`;
       const edited = STAND_EDITS[ep]?.[x.e.key];
-      return {x, key:c.verdictKey, label:c.verdictLabel, auto, text: edited ?? auto, edited: edited!=null};
+      const quip = isTarget(x.e) ? auto.slice(c.why[0].length).trim() : c.verdict;   // one-liner for the share image
+      return {x, key:c.verdictKey, label:c.verdictLabel, auto, quip, text: edited ?? auto, edited: edited!=null};
     });
     const out = (EPISODES.find(e=>e.ep===ep)?.out)||[];
     const owners = id => ENTRANTS.filter(e=>e.picks.includes(id)).length;
@@ -2324,78 +2325,61 @@ function wrapText(ctx, text, maxW){
   for(const w of words){ const t = cur ? cur+" "+w : w; if(ctx.measureText(t).width>maxW && cur){ lines.push(cur); cur=w; } else cur=t; }
   if(cur) lines.push(cur); return lines;
 }
+/* One compact image, 1080 wide and kept under 2048 tall so Facebook shares it at full sharpness. */
 function drawStandImage(d){
-  const W=1080, PAD=60, headH=360;
+  const W=1080, PAD=48, headH=250;
   const meas = document.createElement("canvas").getContext("2d");
-  meas.font = `400 23px ${F.body}`;
-  const textW = W-PAD*2-110;
-  // One list in standings order; each team's power ranking rides along as a secondary number.
+  const nx = PAD+70, textW = W-PAD-nx-16;
+  meas.font = `400 20px ${F.body}`;
   const pwBy = Object.fromEntries(d.power.map(o=>[o.x.e.key,o]));
-  const rows = d.rows.map(r=>{ const o=pwBy[r.e.key]; return {r, o, lines: o ? wrapText(meas, o.text, textW) : []}; });
-  const rowHs = rows.map(x=>112 + x.lines.length*31 + 18);
-  const tilesH = 2*150 + 16;
-  const H = headH + 30 + tilesH + 90 + rowHs.reduce((a,b)=>a+b,0) + 110;
+  const rows = d.rows.map(r=>{ const o=pwBy[r.e.key];
+    const lines = o ? wrapText(meas, o.edited ? o.text : o.quip, textW).slice(0,2) : [];
+    if(o && wrapText(meas, o.edited ? o.text : o.quip, textW).length>2) lines[1]=fit(meas, lines[1]+" …", textW);
+    return {r, o, lines}; });
+  const rowHs = rows.map(x=>64 + Math.max(x.lines.length,1)*24 + 6);
+  const H = headH + 50 + rowHs.reduce((a,b)=>a+b,0) + 64;
   const cv=document.createElement("canvas"); cv.width=W; cv.height=H; const ctx=cv.getContext("2d");
   let g=ctx.createLinearGradient(0,0,0,H); g.addColorStop(0,C.night); g.addColorStop(.3,C.night2); g.addColorStop(1,C.night); ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
-  let rg=ctx.createRadialGradient(W*.75,headH-40,10,W*.75,headH-40,W*.7); rg.addColorStop(0,"rgba(255,138,61,.5)"); rg.addColorStop(1,"rgba(255,138,61,0)"); ctx.fillStyle=rg; ctx.fillRect(0,0,W,H);
-  ctx.save(); ctx.shadowColor="rgba(255,138,61,.9)"; ctx.shadowBlur=40;
-  [[W-150,36,5.2,C.ember],[W-110,96,2.8,C.hi],[W-200,92,3,C.ember],[W-80,30,2.2,C.ember]].forEach(([x,y,s,c])=>{ctx.fillStyle=c; flamePath(ctx,x,y,s);});
+  let rg=ctx.createRadialGradient(W*.8,120,10,W*.8,120,W*.6); rg.addColorStop(0,"rgba(255,138,61,.45)"); rg.addColorStop(1,"rgba(255,138,61,0)"); ctx.fillStyle=rg; ctx.fillRect(0,0,W,H);
+  ctx.save(); ctx.shadowColor="rgba(255,138,61,.9)"; ctx.shadowBlur=30;
+  [[W-130,30,3.8,C.ember],[W-96,74,2,C.hi],[W-170,70,2.2,C.ember]].forEach(([x,y,s,c])=>{ctx.fillStyle=c; flamePath(ctx,x,y,s);});
   ctx.restore();
   ctx.textBaseline="alphabetic";
-  ctx.fillStyle=C.hi; ctx.font=`500 22px ${F.mono}`; ctx.fillText(`SURVIVOR 51 FANTASY POOL · EPISODE ${d.ep}`, PAD, 92);
-  ctx.fillStyle=C.ink; ctx.font=`900 136px ${F.stencil}`; ctx.fillText("STANDINGS", PAD, 230);
-  ctx.fillStyle=C.ember; ctx.font=`800 40px ${F.disp}`; if(ctx.letterSpacing!==undefined) ctx.letterSpacing="5px"; ctx.fillText("WITH THE POWER RANKINGS", PAD, 296); if(ctx.letterSpacing!==undefined) ctx.letterSpacing="0px";
-  const by=headH-14; for(let x=0;x<W;x+=16){ ctx.fillStyle=(x/16)%2?C.savu:C.toka; ctx.beginPath(); ctx.moveTo(x,by+16); ctx.lineTo(x+8,by); ctx.lineTo(x+16,by+16); ctx.fill(); }
-  const tiles = [
-    ["IN THE LEAD", d.rows[0].e.name, `${d.rows[0].total} PTS`],
-    ["THE BASEMENT", d.last.e.name, `${d.last.total} PTS · ${d.rows[0].total-d.last.total} BACK`],
-    ["BIGGEST CLIMBER", d.climber?d.climber.e.name:"Nobody yet", d.climber?`UP ${d.climber.move}`:(d.prevEp==null?"FIRST SCORED WEEK":"NO MOVEMENT")],
-    ["CASTAWAY OF THE WEEK", d.castTop.c.name, `${d.castTop.pts} PTS · ON ${d.owners} TEAMS`],
-    ["TORCH SNUFFED", d.snuffed.length?d.snuffed.map(s=>short(s.c)).join(" & "):"Nobody", d.snuffed.length?`ON ${d.snuffed.reduce((a,s)=>a+s.n,0)} TEAMS · ${d.snuffed.reduce((a,s)=>a+s.mvps,0)} MVPs`:"EVERYONE SURVIVED"],
-    ["POWER #1", d.power[0].x.e.name, `${d.power[0].x.final} PROJECTED FINAL PTS`]
-  ];
-  const ty=headH+30, gap=16, tw=(W-PAD*2-gap*2)/3, th=150;
-  tiles.forEach((t,i)=>{ const x=PAD+(i%3)*(tw+gap), y=ty+Math.floor(i/3)*(th+gap);
-    ctx.fillStyle="rgba(243,238,228,.06)"; ctx.beginPath(); ctx.roundRect?ctx.roundRect(x,y,tw,th,14):ctx.rect(x,y,tw,th); ctx.fill(); ctx.strokeStyle=C.line; ctx.lineWidth=1.5; ctx.stroke();
-    ctx.fillStyle=C.hi; ctx.font=`500 16px ${F.mono}`; ctx.fillText(t[0], x+18, y+36);
-    ctx.fillStyle=C.ink; ctx.fillText(shrink(ctx, t[1].toUpperCase(), tw-36, 800, 38, 22, F.disp), x+18, y+88);
-    ctx.fillStyle=C.muted; ctx.font=`500 15px ${F.mono}`; ctx.fillText(fit(ctx,t[2],tw-36), x+18, y+122);
-  });
-  const heading = (txt, y) => { ctx.fillStyle=C.ink; ctx.font=`800 40px ${F.disp}`; ctx.fillText(txt, PAD, y); ctx.fillStyle=C.ember; ctx.fillRect(PAD, y+14, W-PAD*2, 3); };
-  const bar = (top, val, max) => { const bw=260, bx=W-PAD-bw-130, bh=10;
-    ctx.fillStyle="rgba(243,238,228,.12)"; ctx.fillRect(bx, top, bw, bh);
-    const bg=ctx.createLinearGradient(bx,0,bx+bw,0); bg.addColorStop(0,C.toka); bg.addColorStop(1,C.ember); ctx.fillStyle=bg; ctx.fillRect(bx, top, Math.max(4,bw*val/max), bh); };
-  const leadBg = (top,h) => { const lg=ctx.createLinearGradient(PAD,0,W-PAD,0); lg.addColorStop(0,"rgba(255,138,61,.25)"); lg.addColorStop(1,"rgba(255,138,61,0)"); ctx.fillStyle=lg; ctx.fillRect(PAD,top,W-PAD*2,h); };
-  let y = ty + tilesH + 64;
-  heading("STANDINGS", y);
-  ctx.textAlign="right"; ctx.fillStyle=C.muted; ctx.font=`500 15px ${F.mono}`; ctx.fillText("POINTS · POWER RANK & PROJECTION", W-PAD, y); ctx.textAlign="left";
-  y += 34;
-  const maxT = Math.max(...d.rows.map(r=>r.total),1);
+  ctx.fillStyle=C.hi; ctx.font=`500 20px ${F.mono}`; ctx.fillText(`SURVIVOR 51 FANTASY POOL · EPISODE ${d.ep}`, PAD, 58);
+  ctx.fillStyle=C.ink; ctx.font=`900 100px ${F.stencil}`; ctx.fillText("STANDINGS", PAD, 152);
+  ctx.fillStyle=C.ember; ctx.font=`800 28px ${F.disp}`; if(ctx.letterSpacing!==undefined) ctx.letterSpacing="4px"; ctx.fillText("WITH THE POWER RANKINGS", PAD, 192); if(ctx.letterSpacing!==undefined) ctx.letterSpacing="0px";
+  const hl = [`CASTAWAY OF THE WEEK: ${short(d.castTop.c).toUpperCase()} (${d.castTop.pts})`,
+    `TORCH SNUFFED: ${d.snuffed.length?d.snuffed.map(s=>short(s.c).toUpperCase()).join(" & "):"NOBODY"}`].join("   ·   ");
+  ctx.fillStyle=C.muted; ctx.font=`500 16px ${F.mono}`; ctx.fillText(fit(ctx,hl,W-PAD*2), PAD, 226);
+  const by=headH-8; for(let x=0;x<W;x+=16){ ctx.fillStyle=(x/16)%2?C.savu:C.toka; ctx.beginPath(); ctx.moveTo(x,by+12); ctx.lineTo(x+8,by); ctx.lineTo(x+16,by+12); ctx.fill(); }
+  // column labels
+  let y = headH + 36;
+  ctx.fillStyle=C.muted; ctx.font=`500 14px ${F.mono}`; ctx.fillText("TEAM · POWER RANK & PROJECTED FINAL", nx, y);
+  ctx.textAlign="right"; ctx.fillText("POINTS", W-PAD-12, y); ctx.textAlign="left";
+  ctx.fillStyle=C.ember; ctx.fillRect(PAD, y+10, W-PAD*2, 2); y += 14;
   rows.forEach(({r,o,lines},i)=>{
     const top=y, h=rowHs[i];
-    if(r.rank===1) leadBg(top,h); else if(i%2){ ctx.fillStyle="rgba(243,238,228,.03)"; ctx.fillRect(PAD,top,W-PAD*2,h); }
-    ctx.fillStyle = r.rank===1?C.ember:C.ink; ctx.font=`900 44px ${F.disp}`; ctx.fillText(String(r.rank), PAD+14, top+52);
-    const nx = PAD+96;
-    ctx.fillStyle=C.ink; ctx.font=`700 28px ${F.body}`; const nm=fit(ctx,r.e.name, 250); ctx.fillText(nm, nx, top+42);
-    let tx = nx + ctx.measureText(nm).width + 14;
-    if(r.move){ ctx.fillStyle = r.move>0?C.up:C.down; ctx.font=`600 18px ${F.mono}`; const mt=r.move>0?`▲${r.move}`:`▼${-r.move}`; ctx.fillText(mt, tx, top+40); tx += ctx.measureText(mt).width + 14; }
-    if(o){ // verdict pill
-      ctx.font=`600 14px ${F.mono}`; const lbl=o.label.toUpperCase(), lw=ctx.measureText(lbl).width+18;
-      ctx.fillStyle = VERDICT_COLOR[o.key] || "rgba(243,238,228,.16)"; ctx.beginPath(); ctx.roundRect?ctx.roundRect(tx, top+20, lw, 28, 6):ctx.rect(tx, top+20, lw, 28); ctx.fill();
-      ctx.fillStyle="#fff"; ctx.fillText(lbl, tx+9, top+39);
-      // secondary number: power ranking
-      ctx.fillStyle=C.hi; ctx.font=`500 17px ${F.mono}`; ctx.fillText(`POWER #${o.x.rank} · ${o.x.final} PROJECTED FINAL PTS`, nx, top+78);
+    if(r.rank===1){ const lg=ctx.createLinearGradient(PAD,0,W-PAD,0); lg.addColorStop(0,"rgba(255,138,61,.25)"); lg.addColorStop(1,"rgba(255,138,61,0)"); ctx.fillStyle=lg; ctx.fillRect(PAD,top,W-PAD*2,h); }
+    else if(i%2){ ctx.fillStyle="rgba(243,238,228,.04)"; ctx.fillRect(PAD,top,W-PAD*2,h); }
+    ctx.fillStyle = r.rank===1?C.ember:C.ink; ctx.font=`900 34px ${F.disp}`; ctx.fillText(String(r.rank), PAD+12, top+40);
+    ctx.fillStyle=C.ink; ctx.font=`700 26px ${F.body}`; const nm=fit(ctx,r.e.name, 330); ctx.fillText(nm, nx, top+33);
+    let tx = nx + ctx.measureText(nm).width + 12;
+    if(r.move){ ctx.fillStyle = r.move>0?C.up:C.down; ctx.font=`600 17px ${F.mono}`; const mt=r.move>0?`▲${r.move}`:`▼${-r.move}`; ctx.fillText(mt, tx, top+31); tx += ctx.measureText(mt).width + 12; }
+    if(o){
+      ctx.font=`600 13px ${F.mono}`; const lbl=o.label.toUpperCase(), lw=ctx.measureText(lbl).width+16;
+      ctx.fillStyle = VERDICT_COLOR[o.key] || "rgba(243,238,228,.18)"; ctx.beginPath(); ctx.roundRect?ctx.roundRect(tx, top+13, lw, 25, 5):ctx.rect(tx, top+13, lw, 25); ctx.fill();
+      ctx.fillStyle="#fff"; ctx.fillText(lbl, tx+8, top+30);
+      ctx.fillStyle=C.hi; ctx.font=`500 16px ${F.mono}`; ctx.fillText(`POWER #${o.x.rank} · ${o.x.final} PROJECTED FINAL`, nx, top+57);
     }
-    bar(top+30, r.total, maxT);
-    ctx.textAlign="right"; ctx.fillStyle=C.ink; ctx.font=`800 50px ${F.disp}`; ctx.fillText(String(r.total), W-PAD-14, top+52);
-    ctx.fillStyle=C.hi; ctx.font=`500 15px ${F.mono}`; ctx.fillText(`+${r.week} THIS WEEK`, W-PAD-14, top+76); ctx.textAlign="left";
-    ctx.fillStyle=C.muted; ctx.font=`400 23px ${F.body}`;
-    lines.forEach((ln,k)=>ctx.fillText(ln, nx, top+118+k*31));
+    ctx.textAlign="right"; ctx.fillStyle = r.rank===1?C.ember:C.ink; ctx.font=`800 46px ${F.disp}`; ctx.fillText(String(r.total), W-PAD-12, top+44);
+    ctx.fillStyle=C.hi; ctx.font=`500 14px ${F.mono}`; ctx.fillText(`+${r.week} THIS WEEK`, W-PAD-12, top+65); ctx.textAlign="left";
+    ctx.fillStyle=C.muted; ctx.font=`400 20px ${F.body}`;
+    lines.forEach((ln,k)=>ctx.fillText(ln, nx, top+83+k*24));
     ctx.fillStyle=C.line; ctx.fillRect(PAD, top+h-1, W-PAD*2, 1);
     y += h;
   });
-  ctx.fillStyle=C.muted; ctx.font=`500 17px ${F.mono}`; ctx.fillText(`SCORES THROUGH EPISODE ${d.ep} · ALL IN GOOD FUN`, PAD, H-50);
-  ctx.textAlign="right"; ctx.fillStyle=C.ember; ctx.font=`800 26px ${F.disp}`; ctx.fillText("OUTWIT · OUTPLAY · OUTLAST", W-PAD, H-48); ctx.textAlign="left";
+  ctx.fillStyle=C.muted; ctx.font=`500 15px ${F.mono}`; ctx.fillText(`SCORES THROUGH EPISODE ${d.ep} · ALL IN GOOD FUN`, PAD, H-26);
+  ctx.textAlign="right"; ctx.fillStyle=C.ember; ctx.font=`800 22px ${F.disp}`; ctx.fillText("OUTWIT · OUTPLAY · OUTLAST", W-PAD, H-24); ctx.textAlign="left";
   return cv;
 }
 let standBlob=null, standUrl=null;

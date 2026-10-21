@@ -287,6 +287,12 @@ button.pick-link{font:inherit;color:inherit;background:none;border:0;text-align:
 .roast-text{margin:4px 0 0;padding:4px 6px;margin-left:-6px;border-radius:6px;line-height:1.45;cursor:text}
 .roast-text:hover{background:var(--bg)}
 .roast-text:focus{outline:2px solid var(--torch);background:var(--bg)}
+.stand-list li{padding:10px 16px;align-items:center}
+.stand-list .rk{font-size:24px}
+.st-nums{display:flex;align-items:baseline;gap:12px}
+.st-total{font:800 22px/1 var(--display);min-width:2.2em;text-align:right}
+.roast-list .ol-tag{margin:0 0 0 6px;vertical-align:2px}
+.roast-list .ol-tag.ol-hold,.roast-list .ol-tag.ol-waiver{background:var(--bg);color:var(--ink);box-shadow:inset 0 0 0 1px var(--line)}
 .linkish{background:none;border:0;padding:0;margin-top:4px;color:var(--torch);font:600 12px/1 var(--body);cursor:pointer;text-decoration:underline}
 
 /* upward cards for names near the bottom of a list */
@@ -1213,6 +1219,15 @@ const OL = {
     "Also: it's Nathan. Every lead he's ever had has ended in a blindside.",
     "And the obvious one: Nathan picked these people, which is the risk that ruins all the others.",
     "Bigger problem: this team has Nathan's fingerprints all over it, and those are bad-luck fingerprints."
+  ],
+  // one-line openers for the short outlook on the commissioner's Standings tab
+  nathanShort: [
+    "Nathan's roster has the shelf life of a coconut left out in the sun.",
+    "Whatever this ranking says, Nathan's team is one Tribal away from a group hug at Ponderosa.",
+    "Nathan drafted like he was blindfolded at the reward auction, and it shows.",
+    "Every projection here comes with an asterisk, and the asterisk is Nathan.",
+    "Nathan's team is the fire nobody can get lit, no matter how many times Jeff hands over the flint.",
+    "If confidence were points, Nathan would be winning. It isn't, and he isn't."
   ]
 };
 function confidenceFor(x, N){
@@ -1233,13 +1248,14 @@ function makeDealer(seedKey){
     const k=cats[0]; decks.round=(decks.round||0)+1; const r=seeded(`${seedKey}|${k}|round${decks.round}`); decks[k]=OL[k].slice().sort(()=>r()-.5); return decks[k].pop();
   };
 }
-function confidenceParts(x, N, deal){
+function confidenceParts(x, N, deal, terse){
   const score = confidenceFor(x, N), band = CONF_BANDS.findIndex(b=>score>=b.min);
   const e = x.e, nathan = isTarget(e), parts = x.parts || [], proj = Math.max(x.proj, 1);
   const nm = id => short(byId[id]);
   const dk = EXPERTS.find(src=>src.source==="DK Network");
   const dkRank = id => { if(!dk) return null; const r = sourceRanks(dk), i = r.indexOf(id); return i<0 ? null : i+1; };
   const why = id => { const t = tierOf(id), d = dkRank(id), p = RESULTS[id].pts;
+    if(terse) return t ? `${t}-tier` : `${p} pts`;
     return [t ? `${t}-tier` : null, d && d<=5 ? `DK's #${d}` : null, `${p} pts banked`].filter(Boolean).join(", "); };
   const ids = [...e.picks, ...(e.merge?[e.merge]:[])];
   const lost = ids.filter(id=>RESULTS[id]?.out!=null);
@@ -1310,7 +1326,7 @@ function confidenceParts(x, N, deal){
   }
 
   const sections = [[`Why #${x.rank}`, whyBits.join(" ")], ["Upside", upside], ["Risk", risk], ["Verdict", verdict]];
-  return {score, band, label:CONF_BANDS[band].label, verdictKey:key, verdictLabel, sections,
+  return {score, band, label:CONF_BANDS[band].label, verdictKey:key, verdictLabel, sections, verdict, why:whyBits,
           text: sections.map(([k,v])=>`${k}: ${v}`).join(" ")};
 }
 
@@ -1644,13 +1660,13 @@ function commishPage(){
   head += `<nav class="ep-tabs sub-tabs" aria-label="Commissioner tools">
       <a class="ep-tab" href="#commissioner" ${commishTab==="picks"?'aria-current="page"':""}>Picks &amp; deadline</a>
       <a class="ep-tab" href="#recap" ${commishTab==="recap"?'aria-current="page"':""}>Weekly recap</a>
-      <a class="ep-tab" href="#roast" ${commishTab==="roast"?'aria-current="page"':""}>Weekly roast</a>
+      <a class="ep-tab" href="#standings" ${commishTab==="standings"?'aria-current="page"':""}>Standings</a>
       <a class="ep-tab" href="#flying">Flying</a>
       <a class="ep-tab" href="#roster">Roster Snap</a></nav>`;
   if(commishTab==="flying") return `<div id="flyRoot"></div>`;
   if(commishTab==="roster") return `<div id="rosterRoot"></div>`;
   if(commishTab==="recap") return `<section class="page">${head}</section>${recapPage()}`;
-  if(commishTab==="roast") return `<section class="page">${head}</section>${roastPage()}`;
+  if(commishTab==="standings") return `<section class="page">${head}</section>${standPage()}`;
   if(dbState==="loading") return `<section class="page">${head}<p class="lede">Loading the pool…</p></section>`;
   if(dbState==="none") return `<section class="page">${head}<div class="notice"><b>Can't reach the pool right now</b><span>The pool database isn't responding. Try again in a minute.</span></div></section>`;
   const sorted=[...realEntries].sort((a,b)=>a.name.localeCompare(b.name));
@@ -2075,7 +2091,7 @@ async function copyText(text, okMsg){
   const st=document.getElementById("recapStatus"); if(st) st.textContent=recapMsg;
 }
 /* ---------- Weekly roast (commissioner): one-liners + shareable infographic ---------- */
-let roastEp = null, roastSeed = 0, roastMsg = "";
+let roastSeed = 0;   // the per-person recap card on the Picks tab still uses these one-liners
 const ROAST_EDITS = {};               // ep -> {entrantKey: text} (commissioner's own edits)
 try{ Object.assign(ROAST_EDITS, JSON.parse(localStorage.getItem("s51-roast-edits")||"{}")); }catch(e){}
 const saveRoastEdits = () => { try{ localStorage.setItem("s51-roast-edits", JSON.stringify(ROAST_EDITS)); }catch(e){} };
@@ -2228,31 +2244,77 @@ function roastData(ep){
   return {...d, lines, mostPicked, avg, snuffed, last:d.rows[N-1]};
 }
 
-function roastPage(){
+/* ---------- Standings (commissioner): the standings, then the power rankings with a short outlook ---------- */
+let standEp = null, standSeed = 0, standMsg = "";
+const STAND_EDITS = {};               // ep -> {entrantKey: outlook text} (commissioner's own edits)
+try{ Object.assign(STAND_EDITS, JSON.parse(localStorage.getItem("s51-standings-edits")||"{}")); }catch(e){}
+const saveStandEdits = () => { try{ localStorage.setItem("s51-standings-edits", JSON.stringify(STAND_EDITS)); }catch(e){} };
+const VERDICT_COLOR = {start:"#2F7D5B", buy:"#2B6E9C", sell:"#B4442A", nathan:"#7A2E2E"};
+
+/* Runs fn with the site wound back to episode ep, so past weeks show the power rankings as they stood then. */
+function atEp(ep, fn){
+  if(ep===LATEST_EP()) return fn();
+  const saved = viewEp; applyView(ep);
+  try{ return fn(); } finally{ applyView(saved); }
+}
+function standData(ep){
+  return atEp(ep, ()=>{
+    const d = recapData(ep);
+    const p = powerData(), N = p.rows.length, deal = makeDealer(`short|${ep}|${standSeed}`);
+    const power = p.rows.map(x=>{
+      const c = confidenceParts(x, N, deal, true);
+      const auto = isTarget(x.e)
+        ? `${pick(seeded(`${x.e.key}|short|${ep}|${standSeed}`), OL.nathanShort)} ${c.verdict}`
+        : `${c.why[0]} ${c.verdict}`;
+      const edited = STAND_EDITS[ep]?.[x.e.key];
+      return {x, key:c.verdictKey, label:c.verdictLabel, auto, text: edited ?? auto, edited: edited!=null};
+    });
+    const out = (EPISODES.find(e=>e.ep===ep)?.out)||[];
+    const owners = id => ENTRANTS.filter(e=>e.picks.includes(id)).length;
+    const mostPicked = CAST.filter(c=>RESULTS[c.id].out==null).map(c=>({c,n:owners(c.id)})).sort((a,b)=>b.n-a.n)[0];
+    const avg = Math.round(d.rows.reduce((s,r)=>s+r.total,0)/Math.max(d.rows.length,1));
+    const snuffed = out.map(id=>({c:byId[id], n:owners(id), mvps:ENTRANTS.filter(e=>e.mvp===id).length}));
+    return {...d, power, epsLeft:p.epsLeft, mostPicked, avg, snuffed, last:d.rows[d.rows.length-1]};
+  });
+}
+const vsText = v => v>0 ? `▲${v}` : v<0 ? `▼${-v}` : "=";
+
+function standPage(){
   const eps = SCORED_EPS();
-  if(!eps.length) return `<section class="page"><h2>Weekly roast</h2><p class="lede">The roast appears once the first episode is scored.</p></section>`;
-  const ep = eps.includes(roastEp) ? roastEp : eps[eps.length-1];
-  const d = roastData(ep);
+  if(!eps.length) return `<section class="page"><h2>Standings</h2><p class="lede">Standings appear once the first episode is scored.</p></section>`;
+  const ep = eps.includes(standEp) ? standEp : eps[eps.length-1];
+  const d = standData(ep);
   return `<section class="page recap roast">
     <div class="recap-head">
-      <div><div class="eyebrow">Weekly roast</div><h2>Episode ${ep}</h2></div>
+      <div><div class="eyebrow">Episode ${ep}</div><h2>Standings</h2></div>
       <div class="share">
-        <button class="btn small-btn" type="button" id="roastImgBtn">Roast infographic</button>
-        <button class="btn ghost small-btn" type="button" id="roastCopy">Copy roast text</button>
-        <button class="btn ghost small-btn" type="button" id="roastShuffle">New jokes</button>
+        <button class="btn small-btn" type="button" id="standImgBtn">Standings infographic</button>
+        <button class="btn ghost small-btn" type="button" id="standCopy">Copy text</button>
+        <button class="btn ghost small-btn" type="button" id="standShuffle">New outlooks</button>
       </div>
     </div>
-    <nav class="ep-tabs" aria-label="Choose an episode">${eps.map(n=>`<a class="ep-tab" href="#roast-ep${n}" ${n===ep?'aria-current="page"':""}>Ep ${n}</a>`).join("")}</nav>
-    <span class="small" role="status" id="roastStatus">${esc(roastMsg)}</span>
-    <div id="roastImgHolder"></div>
-    <p class="small" style="margin:14px 0 10px">Tap any line to edit it. Your edits are used in the copied text and the infographic.</p>
-    <ol class="roast-list">${d.lines.map(x=>`
-      <li class="${x.rank===1?"lead":""}">
-        <span class="rk">${x.rank}</span>
-        <div class="rb"><div class="rh"><strong>${esc(x.e.name)}</strong><span class="mono">${x.total} pts · +${x.week}</span></div>
-          <p class="roast-text" contenteditable="true" spellcheck="true" data-key="${esc(x.e.key)}">${esc(x.text)}</p>
-          ${x.edited?`<button type="button" class="linkish" data-reset="${esc(x.e.key)}">Undo my edit</button>`:""}</div>
+    <nav class="ep-tabs" aria-label="Choose an episode">${eps.map(n=>`<a class="ep-tab" href="#standings-ep${n}" ${n===ep?'aria-current="page"':""}>Ep ${n}</a>`).join("")}</nav>
+    <span class="small" role="status" id="standStatus">${esc(standMsg)}</span>
+    <div id="standImgHolder"></div>
+    <h3 style="margin:22px 0 10px">Standings after Episode ${ep}</h3>
+    <ol class="roast-list stand-list">${d.rows.map(r=>`
+      <li class="${r.rank===1?"lead":""}">
+        <span class="rk">${r.rank}</span>
+        <div class="rh"><strong>${esc(r.e.name)}</strong>
+          <span class="st-nums">${moveHTML(r.move)}<span class="mono">+${r.week}</span><b class="st-total">${r.total}</b></span></div>
       </li>`).join("")}</ol>
+    <p class="small">Movement compares with ${d.prevEp!=null?`Episode ${d.prevEp}`:"the previous week"}.</p>
+    <h3 style="margin:26px 0 6px">Power rankings</h3>
+    <p class="small" style="margin:0 0 10px">Ranked by the points each team is projected to score from here to the finale (${d.epsLeft} episode${d.epsLeft===1?"":"s"} left). Tap an outlook to edit it; your edits are used in the copied text and the infographic.</p>
+    <ol class="roast-list">${d.power.map(o=>`
+      <li class="${o.x.rank===1?"lead":""}">
+        <span class="rk">${o.x.rank}</span>
+        <div class="rb"><div class="rh"><strong>${esc(o.x.e.name)} <span class="ol-tag ol-${o.key}">${esc(o.label)}</span></strong>
+          <span class="mono">${o.x.proj} proj · ${o.x.current} now · ${vsText(o.x.vsStand)}</span></div>
+          <p class="roast-text" contenteditable="true" spellcheck="true" data-key="${esc(o.x.e.key)}">${esc(o.text)}</p>
+          ${o.edited?`<button type="button" class="linkish" data-reset="${esc(o.x.e.key)}">Undo my edit</button>`:""}</div>
+      </li>`).join("")}</ol>
+    <p class="small">▲/▼ shows how many spots higher or lower a team sits in the power rankings than in the standings. The full outlooks and how the projection works are on the Scoreboard's Power rankings tab.</p>
   </section>`;
 }
 
@@ -2261,37 +2323,33 @@ function wrapText(ctx, text, maxW){
   for(const w of words){ const t = cur ? cur+" "+w : w; if(ctx.measureText(t).width>maxW && cur){ lines.push(cur); cur=w; } else cur=t; }
   if(cur) lines.push(cur); return lines;
 }
-function drawRoastImage(d){
+function drawStandImage(d){
   const W=1080, PAD=60, headH=360;
   const meas = document.createElement("canvas").getContext("2d");
   meas.font = `400 23px ${F.body}`;
   const textW = W-PAD*2-110;
-  const rows = d.lines.map(x=>({x, lines: wrapText(meas, x.text, textW)}));
-  const rowHs = rows.map(r=>92 + r.lines.length*31 + 16);
-  const tilesH = 2*150 + 16;
-  const H = headH + 30 + tilesH + 90 + rowHs.reduce((a,b)=>a+b,0) + 110;
+  const pw = d.power.map(o=>({o, lines: wrapText(meas, o.text, textW)}));
+  const pwHs = pw.map(r=>96 + r.lines.length*31 + 16);
+  const stH = 76, tilesH = 2*150 + 16;
+  const H = headH + 30 + tilesH + 90 + d.rows.length*stH + 120 + pwHs.reduce((a,b)=>a+b,0) + 110;
   const cv=document.createElement("canvas"); cv.width=W; cv.height=H; const ctx=cv.getContext("2d");
-  // background
   let g=ctx.createLinearGradient(0,0,0,H); g.addColorStop(0,C.night); g.addColorStop(.3,C.night2); g.addColorStop(1,C.night); ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
   let rg=ctx.createRadialGradient(W*.75,headH-40,10,W*.75,headH-40,W*.7); rg.addColorStop(0,"rgba(255,138,61,.5)"); rg.addColorStop(1,"rgba(255,138,61,0)"); ctx.fillStyle=rg; ctx.fillRect(0,0,W,H);
-  // big flames (roast!)
   ctx.save(); ctx.shadowColor="rgba(255,138,61,.9)"; ctx.shadowBlur=40;
   [[W-150,36,5.2,C.ember],[W-110,96,2.8,C.hi],[W-200,92,3,C.ember],[W-80,30,2.2,C.ember]].forEach(([x,y,s,c])=>{ctx.fillStyle=c; flamePath(ctx,x,y,s);});
   ctx.restore();
   ctx.textBaseline="alphabetic";
   ctx.fillStyle=C.hi; ctx.font=`500 22px ${F.mono}`; ctx.fillText(`SURVIVOR 51 FANTASY POOL · EPISODE ${d.ep}`, PAD, 92);
-  ctx.fillStyle=C.ink; ctx.font=`900 136px ${F.stencil}`; ctx.fillText("THE ROAST", PAD, 230);
-  ctx.fillStyle=C.ember; ctx.font=`800 40px ${F.disp}`; if(ctx.letterSpacing!==undefined) ctx.letterSpacing="5px"; ctx.fillText("THE TRIBE HAS SPOKEN. IT WAS RUDE.", PAD, 296); if(ctx.letterSpacing!==undefined) ctx.letterSpacing="0px";
-  // tribal band
+  ctx.fillStyle=C.ink; ctx.font=`900 136px ${F.stencil}`; ctx.fillText("STANDINGS", PAD, 230);
+  ctx.fillStyle=C.ember; ctx.font=`800 40px ${F.disp}`; if(ctx.letterSpacing!==undefined) ctx.letterSpacing="5px"; ctx.fillText("PLUS THE POWER RANKINGS", PAD, 296); if(ctx.letterSpacing!==undefined) ctx.letterSpacing="0px";
   const by=headH-14; for(let x=0;x<W;x+=16){ ctx.fillStyle=(x/16)%2?C.savu:C.toka; ctx.beginPath(); ctx.moveTo(x,by+16); ctx.lineTo(x+8,by); ctx.lineTo(x+16,by+16); ctx.fill(); }
-  // stat tiles
   const tiles = [
     ["IN THE LEAD", d.rows[0].e.name, `${d.rows[0].total} PTS`],
     ["THE BASEMENT", d.last.e.name, `${d.last.total} PTS · ${d.rows[0].total-d.last.total} BACK`],
     ["BIGGEST CLIMBER", d.climber?d.climber.e.name:"Nobody yet", d.climber?`UP ${d.climber.move}`:(d.prevEp==null?"FIRST SCORED WEEK":"NO MOVEMENT")],
     ["CASTAWAY OF THE WEEK", d.castTop.c.name, `${d.castTop.pts} PTS · ON ${d.owners} TEAMS`],
     ["TORCH SNUFFED", d.snuffed.length?d.snuffed.map(s=>short(s.c)).join(" & "):"Nobody", d.snuffed.length?`ON ${d.snuffed.reduce((a,s)=>a+s.n,0)} TEAMS · ${d.snuffed.reduce((a,s)=>a+s.mvps,0)} MVPs`:"EVERYONE SURVIVED"],
-    ["POOL AVERAGE", `${d.avg} PTS`, `MOST PICKED: ${d.mostPicked?short(d.mostPicked.c).toUpperCase()+" ("+d.mostPicked.n+")":"—"}`]
+    ["POWER #1", d.power[0].x.e.name, `${d.power[0].x.proj} PROJECTED PTS`]
   ];
   const ty=headH+30, gap=16, tw=(W-PAD*2-gap*2)/3, th=150;
   tiles.forEach((t,i)=>{ const x=PAD+(i%3)*(tw+gap), y=ty+Math.floor(i/3)*(th+gap);
@@ -2300,26 +2358,49 @@ function drawRoastImage(d){
     ctx.fillStyle=C.ink; ctx.fillText(shrink(ctx, t[1].toUpperCase(), tw-36, 800, 38, 22, F.disp), x+18, y+88);
     ctx.fillStyle=C.muted; ctx.font=`500 15px ${F.mono}`; ctx.fillText(fit(ctx,t[2],tw-36), x+18, y+122);
   });
-  // list
+  const heading = (txt, y) => { ctx.fillStyle=C.ink; ctx.font=`800 40px ${F.disp}`; ctx.fillText(txt, PAD, y); ctx.fillStyle=C.ember; ctx.fillRect(PAD, y+14, W-PAD*2, 3); };
+  const bar = (top, val, max) => { const bw=260, bx=W-PAD-bw-130, bh=10;
+    ctx.fillStyle="rgba(243,238,228,.12)"; ctx.fillRect(bx, top, bw, bh);
+    const bg=ctx.createLinearGradient(bx,0,bx+bw,0); bg.addColorStop(0,C.toka); bg.addColorStop(1,C.ember); ctx.fillStyle=bg; ctx.fillRect(bx, top, Math.max(4,bw*val/max), bh); };
+  const leadBg = (top,h) => { const lg=ctx.createLinearGradient(PAD,0,W-PAD,0); lg.addColorStop(0,"rgba(255,138,61,.25)"); lg.addColorStop(1,"rgba(255,138,61,0)"); ctx.fillStyle=lg; ctx.fillRect(PAD,top,W-PAD*2,h); };
+  // standings
   let y = ty + tilesH + 64;
-  ctx.fillStyle=C.ink; ctx.font=`800 40px ${F.disp}`; ctx.fillText(`STANDINGS & ROASTS`, PAD, y); 
-  ctx.fillStyle=C.ember; ctx.fillRect(PAD, y+14, W-PAD*2, 3); y += 34;
+  heading("STANDINGS", y); y += 34;
   const maxT = Math.max(...d.rows.map(r=>r.total),1);
-  rows.forEach(({x,lines},i)=>{
-    const top=y, h=rowHs[i];
-    if(x.rank===1){ const lg=ctx.createLinearGradient(PAD,0,W-PAD,0); lg.addColorStop(0,"rgba(255,138,61,.25)"); lg.addColorStop(1,"rgba(255,138,61,0)"); ctx.fillStyle=lg; ctx.fillRect(PAD,top,W-PAD*2,h); }
-    else if(i%2){ ctx.fillStyle="rgba(243,238,228,.03)"; ctx.fillRect(PAD,top,W-PAD*2,h); }
+  d.rows.forEach((r,i)=>{
+    const top=y;
+    if(r.rank===1) leadBg(top,stH); else if(i%2){ ctx.fillStyle="rgba(243,238,228,.03)"; ctx.fillRect(PAD,top,W-PAD*2,stH); }
+    ctx.fillStyle = r.rank===1?C.ember:C.ink; ctx.font=`900 40px ${F.disp}`; ctx.fillText(String(r.rank), PAD+14, top+50);
+    ctx.fillStyle=C.ink; ctx.font=`700 28px ${F.body}`; ctx.fillText(fit(ctx,r.e.name, 330), PAD+96, top+48);
+    if(r.move){ ctx.fillStyle = r.move>0?C.up:C.down; ctx.font=`600 18px ${F.mono}`; ctx.fillText(r.move>0?`▲${r.move}`:`▼${-r.move}`, PAD+440, top+46); }
+    bar(top+32, r.total, maxT);
+    ctx.textAlign="right"; ctx.fillStyle=C.ink; ctx.font=`800 36px ${F.disp}`; ctx.fillText(String(r.total), W-PAD-14, top+44);
+    ctx.fillStyle=C.hi; ctx.font=`500 15px ${F.mono}`; ctx.fillText(`+${r.week} THIS WEEK`, W-PAD-14, top+66); ctx.textAlign="left";
+    ctx.fillStyle=C.line; ctx.fillRect(PAD, top+stH-1, W-PAD*2, 1);
+    y += stH;
+  });
+  // power rankings
+  y += 86;
+  heading("POWER RANKINGS", y);
+  ctx.textAlign="right"; ctx.fillStyle=C.muted; ctx.font=`500 15px ${F.mono}`; ctx.fillText("PROJECTED REST-OF-SEASON PTS", W-PAD, y); ctx.textAlign="left";
+  y += 34;
+  const maxP = Math.max(...d.power.map(o=>o.x.proj),1);
+  pw.forEach(({o,lines},i)=>{
+    const top=y, h=pwHs[i], x=o.x;
+    if(x.rank===1) leadBg(top,h); else if(i%2){ ctx.fillStyle="rgba(243,238,228,.03)"; ctx.fillRect(PAD,top,W-PAD*2,h); }
     ctx.fillStyle = x.rank===1?C.ember:C.ink; ctx.font=`900 44px ${F.disp}`; ctx.fillText(String(x.rank), PAD+14, top+52);
     const nx = PAD+96;
-    ctx.fillStyle=C.ink; ctx.font=`700 28px ${F.body}`; ctx.fillText(fit(ctx,x.e.name, 420), nx, top+42);
-    // points bar
-    const bw = 260, bx = W-PAD-bw-120, bh=10;
-    ctx.fillStyle="rgba(243,238,228,.12)"; ctx.fillRect(bx, top+30, bw, bh);
-    const bg=ctx.createLinearGradient(bx,0,bx+bw,0); bg.addColorStop(0,C.toka); bg.addColorStop(1,C.ember); ctx.fillStyle=bg; ctx.fillRect(bx, top+30, Math.max(4,bw*x.total/maxT), bh);
-    ctx.textAlign="right"; ctx.fillStyle=C.ink; ctx.font=`800 38px ${F.disp}`; ctx.fillText(String(x.total), W-PAD-14, top+44);
-    ctx.fillStyle=C.hi; ctx.font=`500 15px ${F.mono}`; ctx.fillText(`+${x.week} THIS WEEK`, W-PAD-14, top+68); ctx.textAlign="left";
+    ctx.fillStyle=C.ink; ctx.font=`700 28px ${F.body}`; const nm=fit(ctx,x.e.name, 300); ctx.fillText(nm, nx, top+42);
+    // verdict pill
+    const tx = nx + ctx.measureText(nm).width + 14;
+    ctx.font=`600 14px ${F.mono}`; const lbl=o.label.toUpperCase(), lw=ctx.measureText(lbl).width+18;
+    ctx.fillStyle = VERDICT_COLOR[o.key] || "rgba(243,238,228,.16)"; ctx.beginPath(); ctx.roundRect?ctx.roundRect(tx, top+20, lw, 28, 6):ctx.rect(tx, top+20, lw, 28); ctx.fill();
+    ctx.fillStyle="#fff"; ctx.fillText(lbl, tx+9, top+39);
+    bar(top+30, x.proj, maxP);
+    ctx.textAlign="right"; ctx.fillStyle=C.ink; ctx.font=`800 38px ${F.disp}`; ctx.fillText(String(x.proj), W-PAD-14, top+44);
+    ctx.fillStyle=C.hi; ctx.font=`500 15px ${F.mono}`; ctx.fillText(`${x.current} NOW · ${vsText(x.vsStand)}`, W-PAD-14, top+68); ctx.textAlign="left";
     ctx.fillStyle=C.muted; ctx.font=`400 23px ${F.body}`;
-    lines.forEach((ln,k)=>ctx.fillText(ln, nx, top+102+k*31));
+    lines.forEach((ln,k)=>ctx.fillText(ln, nx, top+104+k*31));
     ctx.fillStyle=C.line; ctx.fillRect(PAD, top+h-1, W-PAD*2, 1);
     y += h;
   });
@@ -2327,46 +2408,51 @@ function drawRoastImage(d){
   ctx.textAlign="right"; ctx.fillStyle=C.ember; ctx.font=`800 26px ${F.disp}`; ctx.fillText("OUTWIT · OUTPLAY · OUTLAST", W-PAD, H-48); ctx.textAlign="left";
   return cv;
 }
-let roastBlob=null, roastUrl=null;
-async function makeRoastImage(ep){
-  const st=document.getElementById("roastStatus"); if(st) st.textContent="Making the infographic…";
+let standBlob=null, standUrl=null;
+async function makeStandImage(ep){
+  const st=document.getElementById("standStatus"); if(st) st.textContent="Making the infographic…";
   await fontsReady;
-  const cv = drawRoastImage(roastData(ep));
-  roastBlob = await new Promise(res=>cv.toBlob(res,"image/png"));
-  if(roastUrl) URL.revokeObjectURL(roastUrl); roastUrl = URL.createObjectURL(roastBlob);
-  const holder=document.getElementById("roastImgHolder"); if(!holder) return;
-  holder.innerHTML = `<div class="img-panel"><img src="${roastUrl}" alt="Episode ${ep} roast infographic" class="score-img">
-    <div class="img-actions"><button class="btn small-btn" type="button" id="roastCopyImg">Copy image</button>
-    <button class="btn ghost small-btn" type="button" id="roastSaveImg">Save image</button>
-    <button class="btn ghost small-btn" type="button" id="roastCloseImg">Close</button></div>
+  const cv = drawStandImage(standData(ep));
+  standBlob = await new Promise(res=>cv.toBlob(res,"image/png"));
+  if(standUrl) URL.revokeObjectURL(standUrl); standUrl = URL.createObjectURL(standBlob);
+  const holder=document.getElementById("standImgHolder"); if(!holder) return;
+  holder.innerHTML = `<div class="img-panel"><img src="${standUrl}" alt="Episode ${ep} standings and power rankings infographic" class="score-img">
+    <div class="img-actions"><button class="btn small-btn" type="button" id="standCopyImg">Copy image</button>
+    <button class="btn ghost small-btn" type="button" id="standSaveImg">Save image</button>
+    <button class="btn ghost small-btn" type="button" id="standCloseImg">Close</button></div>
     <span class="small">On a phone, you can also press and hold the image to save or share it.</span></div>`;
   if(st) st.textContent="Infographic ready.";
-  document.getElementById("roastCopyImg").addEventListener("click", async()=>{
-    try{ if(!window.ClipboardItem||!navigator.clipboard?.write) throw 0; await navigator.clipboard.write([new ClipboardItem({"image/png":roastBlob})]); st.textContent="Infographic copied. Paste it into your group chat."; }
+  document.getElementById("standCopyImg").addEventListener("click", async()=>{
+    try{ if(!window.ClipboardItem||!navigator.clipboard?.write) throw 0; await navigator.clipboard.write([new ClipboardItem({"image/png":standBlob})]); st.textContent="Infographic copied. Paste it into your group chat."; }
     catch(e){ st.textContent="This browser won't copy images. Press and hold (or right-click) the image to copy or save it."; } });
-  document.getElementById("roastSaveImg").addEventListener("click", async()=>{ const dl=await getDownloads(); try{ await dl.save({filename:`survivor51-roast-episode-${ep}.png`, data:roastBlob}); st.textContent="Image saved."; }catch(e){ st.textContent="Couldn't save here. Press and hold (or right-click) the image instead."; } });
-  document.getElementById("roastCloseImg").addEventListener("click", ()=>{ holder.innerHTML=""; st.textContent=""; });
+  document.getElementById("standSaveImg").addEventListener("click", async()=>{ const dl=await getDownloads(); try{ await dl.save({filename:`survivor51-standings-episode-${ep}.png`, data:standBlob}); st.textContent="Image saved."; }catch(e){ st.textContent="Couldn't save here. Press and hold (or right-click) the image instead."; } });
+  document.getElementById("standCloseImg").addEventListener("click", ()=>{ holder.innerHTML=""; st.textContent=""; });
   holder.scrollIntoView({block:"nearest"});
 }
-function wireRoast(){
-  const btn=document.getElementById("roastImgBtn"); if(!btn) return;
-  const eps=SCORED_EPS(), ep = eps.includes(roastEp)?roastEp:eps[eps.length-1];
-  btn.addEventListener("click",()=>makeRoastImage(ep));
-  document.getElementById("roastShuffle").addEventListener("click",()=>{ roastSeed++; roastMsg="New jokes loaded. Your own edits were kept."; rerender(); });
-  document.getElementById("roastCopy").addEventListener("click", async()=>{
-    const d=roastData(ep); const text=[`${POOL.name}: Episode ${ep} roast`, "", ...d.lines.map(x=>`${x.rank}. ${x.e.name} (${x.total} pts): ${x.text}`)].join("\n");
-    const st=document.getElementById("roastStatus");
-    try{ await navigator.clipboard.writeText(text); st.textContent="Roast copied. Paste it into your group chat."; }catch(e){ st.textContent="Couldn't copy automatically."; }
+function standText(d){
+  return [`${POOL.name}: Episode ${d.ep} standings`, "",
+    ...d.rows.map(r=>`${r.rank}. ${r.e.name}: ${r.total} pts (+${r.week} this week)`),
+    "", "Power rankings (projected points from here to the finale)", "",
+    ...d.power.map(o=>`${o.x.rank}. ${o.x.e.name} (${o.x.proj} projected) · ${o.label}: ${o.text}`)].join("\n");
+}
+function wireStand(){
+  const btn=document.getElementById("standImgBtn"); if(!btn) return;
+  const eps=SCORED_EPS(), ep = eps.includes(standEp)?standEp:eps[eps.length-1];
+  btn.addEventListener("click",()=>makeStandImage(ep));
+  document.getElementById("standShuffle").addEventListener("click",()=>{ standSeed++; standMsg="New outlooks loaded. Your own edits were kept."; rerender(); });
+  document.getElementById("standCopy").addEventListener("click", async()=>{
+    const st=document.getElementById("standStatus");
+    try{ await navigator.clipboard.writeText(standText(standData(ep))); st.textContent="Copied. Paste it into your group chat."; }catch(e){ st.textContent="Couldn't copy automatically."; }
   });
   view.querySelectorAll(".roast-text").forEach(p=>{
     p.addEventListener("blur",()=>{ const key=p.dataset.key, val=p.textContent.trim();
-      const auto = roastData(ep).lines.find(x=>x.e.key===key)?.auto;
-      ROAST_EDITS[ep] = ROAST_EDITS[ep]||{};
-      if(!val || val===auto) delete ROAST_EDITS[ep][key]; else ROAST_EDITS[ep][key]=val;
-      saveRoastEdits(); });
+      const auto = standData(ep).power.find(o=>o.x.e.key===key)?.auto;
+      STAND_EDITS[ep] = STAND_EDITS[ep]||{};
+      if(!val || val===auto) delete STAND_EDITS[ep][key]; else STAND_EDITS[ep][key]=val;
+      saveStandEdits(); });
     p.addEventListener("keydown",ev=>{ if(ev.key==="Enter"){ ev.preventDefault(); p.blur(); } });
   });
-  view.querySelectorAll("[data-reset]").forEach(b=>b.addEventListener("click",()=>{ delete ROAST_EDITS[ep]?.[b.dataset.reset]; saveRoastEdits(); rerender(); }));
+  view.querySelectorAll("[data-reset]").forEach(b=>b.addEventListener("click",()=>{ delete STAND_EDITS[ep]?.[b.dataset.reset]; saveStandEdits(); rerender(); }));
 }
 
 /* ---------- Picks tab: one person's weekly recap infographic ---------- */
@@ -2535,7 +2621,7 @@ const currentPage = () => { const r=(location.hash||"").slice(1);
   if(r==="commissioner") commishTab="picks";
   if(r==="roster"){ commishTab="roster"; return "commissioner"; }
   const fm=/^flying(?:-(map|career|story))?$/.exec(r); if(fm){ commishTab="flying"; flyTab=fm[1]||"logbook"; return "commissioner"; }
-  const rm=/^roast(?:-ep(\d+))?$/.exec(r); if(rm){ roastEp=rm[1]?+rm[1]:null; commishTab="roast"; roastMsg=""; return "commissioner"; }
+  const rm=/^(?:standings|roast)(?:-ep(\d+))?$/.exec(r); if(rm){ standEp=rm[1]?+rm[1]:null; commishTab="standings"; standMsg=""; return "commissioner"; }
   if(r==="power"){ boardTab="power"; return "scoreboard"; }
   if(r==="scoreboard") boardTab="standings";
   const cm=/^castaway-([a-z]+)$/.exec(r); if(cm && byId[cm[1]]){ focusCast=cm[1]; tribeFilter="All"; return "castaways"; }
@@ -2577,7 +2663,7 @@ function wire(){
   if(rv) rv.addEventListener("click",()=>{revealed=true; revealedThrough=Math.max(revealedThrough,+rv.dataset.ep||0); view.innerHTML=ROUTES[currentPage()](); wire(); scrollTo(0,0);});
   wireRecap();
   wirePersonRecap();
-  wireRoast();
+  wireStand();
   const stg=document.getElementById("swapToggle");
   if(stg) stg.addEventListener("click",()=>{ showSwaps=!showSwaps; view.innerHTML=ROUTES[currentPage()](); wire(); });
   view.querySelectorAll("[data-tribe]").forEach(b=>b.addEventListener("click",()=>{tribeFilter=b.dataset.tribe;view.innerHTML=castPage();wire();}));

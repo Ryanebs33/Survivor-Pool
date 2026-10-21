@@ -2331,7 +2331,7 @@ function drawStandImage(d){
   // One list in standings order; each team's power ranking rides along as a secondary number.
   const pwBy = Object.fromEntries(d.power.map(o=>[o.x.e.key,o]));
   const rows = d.rows.map(r=>{ const o=pwBy[r.e.key]; return {r, o, lines: o ? wrapText(meas, o.text, textW) : []}; });
-  const rowHs = rows.map(x=>112 + x.lines.length*31 + 18);
+  const rowHs = rows.map(x=>126 + x.lines.length*31 + 18);
   const tilesH = 2*150 + 16;
   const H = headH + 30 + tilesH + 90 + rowHs.reduce((a,b)=>a+b,0) + 110;
   const cv=document.createElement("canvas"); cv.width=W; cv.height=H; const ctx=cv.getContext("2d");
@@ -2367,13 +2367,12 @@ function drawStandImage(d){
   const leadBg = (top,h) => { const lg=ctx.createLinearGradient(PAD,0,W-PAD,0); lg.addColorStop(0,"rgba(255,138,61,.25)"); lg.addColorStop(1,"rgba(255,138,61,0)"); ctx.fillStyle=lg; ctx.fillRect(PAD,top,W-PAD*2,h); };
   let y = ty + tilesH + 64;
   heading("STANDINGS", y);
-  ctx.textAlign="right"; ctx.fillStyle=C.muted; ctx.font=`500 15px ${F.mono}`; ctx.fillText("POINTS · POWER RANK & PROJECTION", W-PAD, y); ctx.textAlign="left";
+  ctx.textAlign="right"; ctx.fillStyle=C.muted; ctx.font=`500 15px ${F.mono}`; ctx.fillText("CURRENT POINTS", W-PAD, y); ctx.textAlign="left";
   y += 34;
-  const maxT = Math.max(...d.rows.map(r=>r.total),1);
   rows.forEach(({r,o,lines},i)=>{
     const top=y, h=rowHs[i];
     if(r.rank===1) leadBg(top,h); else if(i%2){ ctx.fillStyle="rgba(243,238,228,.03)"; ctx.fillRect(PAD,top,W-PAD*2,h); }
-    ctx.fillStyle = r.rank===1?C.ember:C.ink; ctx.font=`900 44px ${F.disp}`; ctx.fillText(String(r.rank), PAD+14, top+52);
+    ctx.fillStyle = r.rank===1?C.ember:C.muted; ctx.font=`800 34px ${F.disp}`; ctx.fillText(String(r.rank), PAD+14, top+48);
     const nx = PAD+96;
     ctx.fillStyle=C.ink; ctx.font=`700 28px ${F.body}`; const nm=fit(ctx,r.e.name, 250); ctx.fillText(nm, nx, top+42);
     let tx = nx + ctx.measureText(nm).width + 14;
@@ -2383,13 +2382,14 @@ function drawStandImage(d){
       ctx.fillStyle = VERDICT_COLOR[o.key] || "rgba(243,238,228,.16)"; ctx.beginPath(); ctx.roundRect?ctx.roundRect(tx, top+20, lw, 28, 6):ctx.rect(tx, top+20, lw, 28); ctx.fill();
       ctx.fillStyle="#fff"; ctx.fillText(lbl, tx+9, top+39);
       // secondary number: power ranking
-      ctx.fillStyle=C.hi; ctx.font=`500 17px ${F.mono}`; ctx.fillText(`POWER #${o.x.rank} · ${o.x.proj} PROJECTED PTS`, nx, top+78);
+      ctx.fillStyle=C.muted; ctx.font=`500 15px ${F.mono}`; ctx.fillText(`POWER RANK #${o.x.rank} · ${o.x.proj} PROJECTED`, nx, top+82);
     }
-    bar(top+30, r.total, maxT);
-    ctx.textAlign="right"; ctx.fillStyle=C.ink; ctx.font=`800 38px ${F.disp}`; ctx.fillText(String(r.total), W-PAD-14, top+44);
-    ctx.fillStyle=C.hi; ctx.font=`500 15px ${F.mono}`; ctx.fillText(`+${r.week} THIS WEEK`, W-PAD-14, top+68); ctx.textAlign="left";
+    // current score: the headline number
+    ctx.textAlign="right"; ctx.fillStyle = r.rank===1?C.ember:C.ink; ctx.font=`900 76px ${F.disp}`; ctx.fillText(String(r.total), W-PAD-58, top+74);
+    ctx.fillStyle=C.muted; ctx.font=`700 20px ${F.disp}`; ctx.fillText("PTS", W-PAD-14, top+74);
+    ctx.fillStyle=C.hi; ctx.font=`500 15px ${F.mono}`; ctx.fillText(`+${r.week} THIS WEEK`, W-PAD-14, top+100); ctx.textAlign="left";
     ctx.fillStyle=C.muted; ctx.font=`400 23px ${F.body}`;
-    lines.forEach((ln,k)=>ctx.fillText(ln, nx, top+118+k*31));
+    lines.forEach((ln,k)=>ctx.fillText(ln, nx, top+132+k*31));
     ctx.fillStyle=C.line; ctx.fillRect(PAD, top+h-1, W-PAD*2, 1);
     y += h;
   });

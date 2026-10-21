@@ -1222,12 +1222,12 @@ const OL = {
   ],
   // one-line openers for the short outlook on the commissioner's Standings tab
   nathanShort: [
-    "Nathan's roster has the shelf life of a coconut left out in the sun.",
-    "Whatever this ranking says, Nathan's team is one Tribal away from a group hug at Ponderosa.",
-    "Nathan drafted like he was blindfolded at the reward auction, and it shows.",
-    "Every projection here comes with an asterisk, and the asterisk is Nathan.",
-    "Nathan's team is the fire nobody can get lit, no matter how many times Jeff hands over the flint.",
-    "If confidence were points, Nathan would be winning. It isn't, and he isn't."
+    "Respectable, though nobody's quite sure how Nathan put this roster together.",
+    "Solid on paper, which is the nicest thing anyone has ever said about a Nathan game plan.",
+    "Nathan insists this was all part of the plan. Sure, Nathan.",
+    "The team is fine. Nathan's confessionals about it are another story.",
+    "Jeff would call it a work in progress, which is generous for a Nathan production.",
+    "Not bad, but Nathan's teams do have a way of finding the one coconut to trip over."
   ]
 };
 function confidenceFor(x, N){
@@ -1248,9 +1248,9 @@ function makeDealer(seedKey){
     const k=cats[0]; decks.round=(decks.round||0)+1; const r=seeded(`${seedKey}|${k}|round${decks.round}`); decks[k]=OL[k].slice().sort(()=>r()-.5); return decks[k].pop();
   };
 }
-function confidenceParts(x, N, deal, terse){
+function confidenceParts(x, N, deal, terse, gentle){
   const score = confidenceFor(x, N), band = CONF_BANDS.findIndex(b=>score>=b.min);
-  const e = x.e, nathan = isTarget(e), parts = x.parts || [], proj = Math.max(x.proj, 1);
+  const e = x.e, nathan = isTarget(e) && !gentle, parts = x.parts || [], proj = Math.max(x.proj, 1);
   const nm = id => short(byId[id]);
   const dk = EXPERTS.find(src=>src.source==="DK Network");
   const dkRank = id => { if(!dk) return null; const r = sourceRanks(dk), i = r.indexOf(id); return i<0 ? null : i+1; };
@@ -2262,9 +2262,10 @@ function standData(ep){
     const d = recapData(ep);
     const p = powerData(), N = p.rows.length, deal = makeDealer(`short|${ep}|${standSeed}`);
     const power = p.rows.map(x=>{
-      const c = confidenceParts(x, N, deal, true);
+      const c = confidenceParts(x, N, deal, true, true);
+      // Nathan gets his real tag and the same facts as everyone, with a lighter ribbing in place of the verdict line.
       const auto = isTarget(x.e)
-        ? `${pick(seeded(`${x.e.key}|short|${ep}|${standSeed}`), OL.nathanShort)} ${c.verdict}`
+        ? `${c.why[0]} ${pick(seeded(`${x.e.key}|short|${ep}|${standSeed}`), OL.nathanShort)}`
         : `${c.why[0]} ${c.verdict}`;
       const edited = STAND_EDITS[ep]?.[x.e.key];
       return {x, key:c.verdictKey, label:c.verdictLabel, auto, text: edited ?? auto, edited: edited!=null};
@@ -2386,8 +2387,8 @@ function drawStandImage(d){
       ctx.fillStyle=C.hi; ctx.font=`500 17px ${F.mono}`; ctx.fillText(`POWER #${o.x.rank} · ${o.x.proj} PROJECTED PTS`, nx, top+78);
     }
     bar(top+30, r.total, maxT);
-    ctx.textAlign="right"; ctx.fillStyle=C.ink; ctx.font=`800 38px ${F.disp}`; ctx.fillText(String(r.total), W-PAD-14, top+44);
-    ctx.fillStyle=C.hi; ctx.font=`500 15px ${F.mono}`; ctx.fillText(`+${r.week} THIS WEEK`, W-PAD-14, top+68); ctx.textAlign="left";
+    ctx.textAlign="right"; ctx.fillStyle=C.ink; ctx.font=`800 50px ${F.disp}`; ctx.fillText(String(r.total), W-PAD-14, top+52);
+    ctx.fillStyle=C.hi; ctx.font=`500 15px ${F.mono}`; ctx.fillText(`+${r.week} THIS WEEK`, W-PAD-14, top+76); ctx.textAlign="left";
     ctx.fillStyle=C.muted; ctx.font=`400 23px ${F.body}`;
     lines.forEach((ln,k)=>ctx.fillText(ln, nx, top+118+k*31));
     ctx.fillStyle=C.line; ctx.fillRect(PAD, top+h-1, W-PAD*2, 1);

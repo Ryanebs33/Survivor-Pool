@@ -964,6 +964,12 @@ const EXPERTS = [
       { asOf: 4, ranks: ["devin","jelly","carter","kilby","alexis","ori",            // Early Watch
                          "brady","mike","maggie","kristin","lewis",                 // In the Mix
                          "an","sharonda","eric","cristian","linnea"] }              // Deep Field
+    ] },
+  // Additional edit-based ranking: factored into the projection but not listed on the page.
+  { source: "Edit ranking", hidden: true,
+    versions: [
+      { asOf: 5, ranks: ["sharonda","jelly","kristin","ori","lewis","maggie","an","brady",
+                         "eric","carter","kilby","devin","mike","cristian"] }
     ] }
 ];
 /* Tier strengths (C = average). A numbered ranking maps evenly from 1.6 (1st) down to 0.6 (last). */
@@ -971,11 +977,12 @@ const TIER_MULT = {S:1.6, A:1.35, B:1.15, C:1, D:0.8, F:0.6};
 function sourceRanks(src){
   if(!src.versions) return src.ranks;
   const ep = LATEST_EP(), ok = src.versions.filter(v=>v.asOf<=ep);
-  return (ok.length ? ok[ok.length-1] : src.versions[0]).ranks;
+  if(!ok.length) return src.hidden ? null : src.versions[0].ranks;   // an unlisted source only counts from its own episode on
+  return ok[ok.length-1].ranks;
 }
 function sourceMult(src, id){
   if(src.tiers) return src.tiers[id] ? TIER_MULT[src.tiers[id]] : null;
-  const ranks = sourceRanks(src), i = ranks.indexOf(id); if(i<0) return null;
+  const ranks = sourceRanks(src); if(!ranks) return null; const i = ranks.indexOf(id); if(i<0) return null;
   return 1.6 - (i/(ranks.length-1))*1.0;
 }
 const MULT_CACHE = {};
@@ -1359,13 +1366,13 @@ function powerHTML(){
       <td class="total">${x.final}</td>
     </tr>`).join("");
   return `
-    <p class="lede">Teams ranked by the total points they're expected to finish the season with: what they've banked so far plus what their remaining castaways should score from here to the finale. Projections combine each castaway's scoring so far with expert rankings from ${EXPERTS.map(x=>`<a class="inline-link" href="${x.url}" target="_blank" rel="noopener">${esc(x.source)}</a>`).reduce((a,l,i,arr)=>a+(i===0?"":i===arr.length-1?", and ":", ")+l,"")}.</p>
+    <p class="lede">Teams ranked by the total points they're expected to finish the season with: what they've banked so far plus what their remaining castaways should score from here to the finale. Projections combine each castaway's scoring so far with expert rankings from ${EXPERTS.filter(x=>!x.hidden).map(x=>`<a class="inline-link" href="${x.url}" target="_blank" rel="noopener">${esc(x.source)}</a>`).reduce((a,l,i,arr)=>a+(i===0?"":i===arr.length-1?", and ":", ")+l,"")}.</p>
     <div class="tablewrap stand-wrap"><table class="board power">
       <thead><tr><th>#</th><th>Team</th><th class="r" title="Compared with the current standings">vs. standings</th><th class="r">Now</th><th class="r" title="Expected total at the end of the season">Proj. final</th></tr></thead>
       <tbody>${rows}</tbody></table></div>
     <details class="how"><summary>How the projection works</summary>
       <p>A team's projected final is its current points plus the points its remaining castaways are expected to add. For each castaway still in the game, the projection takes their average points per episode so far (pulled toward the cast average so one big week doesn't dominate) and multiplies it by how many of the ${d.epsLeft} remaining episodes they're expected to last in a ${SEASON_EPISODES}-episode season.</p>
-      <p>The expert rankings set that staying power. Each source becomes a strength score: In-Between Media's tiers count S 1.6, A 1.35, B 1.15, C 1 (average), D 0.8 and F 0.6. DK Network's and RotoWire's numbered lists run evenly from 1.6 for 1st down to 0.6 for last. RotoWire ranks by each castaway's edit (screen time and story) and updates after every episode, since betting markets haven't opened yet. The three scores are averaged. An average castaway is expected to last about half of the remaining episodes, and stronger ones longer. The same scores split the finale bonuses (10, 20 and 30 points) and the 30-point MVP bonus. Castaways who are out add nothing.</p>
+      <p>The expert rankings set that staying power. Each source becomes a strength score: In-Between Media's tiers count S 1.6, A 1.35, B 1.15, C 1 (average), D 0.8 and F 0.6. DK Network's and RotoWire's numbered lists run evenly from 1.6 for 1st down to 0.6 for last. RotoWire ranks by each castaway's edit (screen time and story) and updates after every episode, since betting markets haven't opened yet. The scores are averaged. An average castaway is expected to last about half of the remaining episodes, and stronger ones longer. The same scores split the finale bonuses (10, 20 and 30 points) and the 30-point MVP bonus. Castaways who are out add nothing.</p>
       <p>The badges show each team's remaining castaways by consensus tier, from all three sources combined. "vs. standings" shows how many spots higher (▲) or lower (▼) a team sits here than in the current standings. It's a guide for bragging rights, not a prediction of who goes home next.</p>
     </details>`;
 }

@@ -700,7 +700,7 @@ nav.tabs::after{content:"";position:absolute;top:0;right:0;bottom:0;width:36px;p
 /* ============ POOL DATA — edit this block each week ============ */
 const POOL = {
   name: "Survivor 51 Fantasy Pool",
-  updatedThrough: "Episode 4",
+  updatedThrough: "Episode 5",
   picksOpen: true,         // set to false to lock the original 8 picks + MVP
   merged: false,           // true once the tribes merge (unlocks merge picks)
   winner: null             // castaway id of the Sole Survivor, at the finale (+30 to every entrant whose MVP it is)
@@ -766,8 +766,18 @@ const ALL_EPISODES = [
      jelly:[["Cried on camera",5]],
      jenna:[["Voted out unanimously",10],["Torch snuffed as a result of a blindside",10],["Cried on camera",5]]
    }},
-  // Episode 5 has aired (double boot: Alexis and Linnea out). Points get added once Global posts them.
-  {ep:5, pts:{}, out:["alexis","linnea"]}
+  // Episode 5: double boot (Alexis and Linnea); Toka won reward and immunity.
+  {ep:5, pts:{alexis:25, an:11, brady:11, carter:11, cristian:1, devin:6, eric:1, jelly:6, kilby:11, kristin:11,
+              lewis:26, linnea:25, maggie:21, mike:11, ori:1, sharonda:1}, out:["alexis","linnea"],
+   detail:{
+     an:[["Wins a group Reward Challenge",5],["Wins a group Immunity Challenge",5]], brady:[["Wins a group Reward Challenge",5],["Wins a group Immunity Challenge",5]], carter:[["Wins a group Reward Challenge",5],["Wins a group Immunity Challenge",5]], kristin:[["Wins a group Reward Challenge",5],["Wins a group Immunity Challenge",5]], mike:[["Wins a group Reward Challenge",5],["Wins a group Immunity Challenge",5]],
+     maggie:[["Wins a group Reward Challenge",5],["Wins a group Immunity Challenge",5],["Chosen to go on a journey",10]],
+     alexis:[["Says a curse word that is bleeped",5],["Torch snuffed as a result of a blindside",10],["Voted out unanimously",10]],
+     linnea:[["Says a curse word that is bleeped",5],["Torch snuffed as a result of a blindside",10],["Voted out unanimously",10]],
+     devin:[["Cried on camera",5]], jelly:[["Cried on camera",5]],
+     kilby:[["Finds or gets a game advantage",5],["Played an advantage at Tribal",5]],
+     lewis:[["Created a fake idol",15],["Finds or gets a game advantage",5],["Played an advantage at Tribal",5]]
+   }}
 ];
 /* Tribe swaps. CAST above holds each castaway's ORIGINAL tribe (what picks were made from);
    each swap lists where people went from that episode on. */
@@ -1364,7 +1374,7 @@ const SHORT_CAT = {"Wins a group Reward Challenge":"Group reward","Wins a group 
   "Says a curse word that is bleeped":"Curse word","Survived the week":"Survived","Found a hidden immunity idol":"Found idol",
   "Treated for a medical emergency":"Medical emergency","Torch snuffed as a result of a blindside":"Blindsided","Other point categories":"Other",
   "Finds or gets a game advantage":"Got advantage","Finds or gets a game advantage (before giving it away)":"Got advantage","Chosen to go on a journey":"Journey",
-  "Found a hidden immunity idol":"Found idol","Searches through someone else's bag":"Bag search","Chooses to forfeit the game":"Quit","Gives an immunity idol away":"Gave idol away","Cried on camera":"Cried","Voted out unanimously":"Unanimous boot"};
+  "Found a hidden immunity idol":"Found idol","Searches through someone else's bag":"Bag search","Chooses to forfeit the game":"Quit","Gives an immunity idol away":"Gave idol away","Cried on camera":"Cried","Voted out unanimously":"Unanimous boot","Created a fake idol":"Fake idol","Played an advantage at Tribal":"Played advantage"};
 /* A castaway's points by category across scored episodes (optionally only after a given episode). */
 function castCats(id, afterEp, onlyEp){
   const r=RESULTS[id], cats=new Map(); let total=0;

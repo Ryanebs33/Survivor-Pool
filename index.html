@@ -166,6 +166,14 @@ input[type="datetime-local"]:focus-visible{outline:3px solid var(--torch);outlin
 .ok-dot{color:var(--ok);font-weight:600} .out-dot{color:var(--torch);font-weight:600;text-decoration:line-through}
 .how{margin-top:18px;background:var(--surface);border-radius:10px;padding:12px 16px;max-width:72ch}
 .how summary{cursor:pointer;font-weight:600}
+#castRankBtn{margin-top:4px}
+.cast-rank{margin-top:12px}
+.cast-rank-t{width:100%;border-collapse:collapse;font-size:14px}
+.cast-rank-t th{font:500 10.5px/1.2 var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted);text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+.cast-rank-t th.r,.cast-rank-t td.r{text-align:right}
+.cast-rank-t td{padding:7px 8px;border-bottom:1px solid var(--line)}
+.cast-rank-t tr:last-child td{border-bottom:0}
+.cast-rank-t .tribe{margin-left:4px}
 .how p{font-size:14px;color:var(--muted);margin:10px 0 0}
 
 .tiers{display:flex;gap:4px;flex-wrap:wrap;margin:2px 0 4px}
@@ -1030,7 +1038,9 @@ function powerData(){
   const standRank = {}; let sr=0, sp=null;
   [...rows].sort((a,b)=>b.current-a.current).forEach((x,i)=>{ if(x.current!==sp){sr=i+1;sp=x.current} standRank[x.e.key]=sr; });
   rows.forEach(x=>x.vsStand = standRank[x.e.key] - x.rank);
-  return {rows, epsLeft, nAlive, latest};
+  const castList = alive.map(c=>({c, v:Math.round(castValue(c)), tier:tierOf(c.id), pts:RESULTS[c.id].pts, m:multOf(c.id)}))
+    .sort((a,b)=>b.v-a.v || b.m-a.m || a.c.name.localeCompare(b.c.name));
+  return {rows, epsLeft, nAlive, latest, castList};
 }
 /* ---------- Power rankings: tap a team for a (mostly) honest confidence report ---------- */
 const CONF_BANDS = [
@@ -1378,7 +1388,13 @@ function powerHTML(){
     <details class="how"><summary>How the projection works</summary>
       <p>A team's projected final is its current points plus the points its remaining castaways are expected to add. For each castaway still in the game, the projection takes their average points per episode so far (pulled toward the cast average so one big week doesn't dominate) and multiplies it by how many of the ${d.epsLeft} remaining episodes they're expected to last in a ${SEASON_EPISODES}-episode season.</p>
       <p>The expert rankings set that staying power. Each source becomes a strength score: In-Between Media's tiers count S 1.6, A 1.35, B 1.15, C 1 (average), D 0.8 and F 0.6. DK Network's and RotoWire's numbered lists run evenly from 1.6 for 1st down to 0.6 for last. RotoWire ranks by each castaway's edit (screen time and story) and updates after every episode, since betting markets haven't opened yet. The scores are averaged. An average castaway is expected to last about half of the remaining episodes, and stronger ones longer. The same scores split the finale bonuses (10, 20 and 30 points) and the 30-point MVP bonus. Castaways who are out add nothing.</p>
-      <p>The badges show each team's remaining castaways by consensus tier, from all three sources combined. "vs. standings" shows how many spots higher (▲) or lower (▼) a team sits here than in the current standings. It's a guide for bragging rights, not a prediction of who goes home next.</p>
+      <p>The badges show each team's remaining castaways by consensus tier, from the expert sources combined. "vs. standings" shows how many spots higher (▲) or lower (▼) a team sits here than in the current standings. It's a guide for bragging rights, not a prediction of who goes home next.</p>
+      <button type="button" class="btn ghost small-btn" id="castRankBtn" aria-expanded="false" aria-controls="castRankList">Show castaway power rankings</button>
+      <div id="castRankList" class="cast-rank" hidden>
+        <p class="small">Every castaway still in the game, ranked by the points they're projected to add from here to the finale (their scoring rate, expected staying power and share of the finale bonuses).</p>
+        <table class="cast-rank-t"><thead><tr><th>#</th><th>Castaway</th><th class="r">Tier</th><th class="r">So far</th><th class="r">Projected</th></tr></thead>
+        <tbody>${d.castList.map((x,i)=>`<tr><td class="mono">${i+1}</td><td>${esc(short(x.c))} <span class="tribe ${x.c.tribe}">${x.c.tribe}</span></td><td class="r">${x.tier?`<span class="tier t${x.tier}">${x.tier}</span>`:"–"}</td><td class="mono r">${x.pts}</td><td class="mono r"><strong>${x.v}</strong></td></tr>`).join("")}</tbody></table>
+      </div>
     </details>`;
 }
 
@@ -2662,6 +2678,8 @@ function wire(){
   wireRecap();
   wirePersonRecap();
   wireStand();
+  const crb=document.getElementById("castRankBtn");
+  if(crb) crb.addEventListener("click",()=>{ const l=document.getElementById("castRankList"); l.hidden=!l.hidden; crb.setAttribute("aria-expanded", String(!l.hidden)); crb.textContent = l.hidden ? "Show castaway power rankings" : "Hide castaway power rankings"; });
   const stg=document.getElementById("swapToggle");
   if(stg) stg.addEventListener("click",()=>{ showSwaps=!showSwaps; view.innerHTML=ROUTES[currentPage()](); wire(); });
   view.querySelectorAll("[data-tribe]").forEach(b=>b.addEventListener("click",()=>{tribeFilter=b.dataset.tribe;view.innerHTML=castPage();wire();}));

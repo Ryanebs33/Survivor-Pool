@@ -1477,6 +1477,30 @@ function makeDealer(seedKey){
     const k = cats[0]; used[k] = new Set(); return OL[k][start(seedKey+"|again", k, team)];
   };
 }
+/* Storylines from each episode, worked into the outlook's "This week" line for teams that own the castaway.
+   Listed most newsworthy first; each team gets one, and teams sharing castaways get different ones where possible. */
+const EP_NOTES = {
+  6: [
+    ["kristin", "Storyline: Kristin left Exile with a tethered idol she can only play on Sharonda, and with Ori gone, one more boot makes it all hers. Also, the 25-year-old audition tapes. Iconic."],
+    ["jelly", "Storyline: Jelly pulled out an idol at a three-person Tribal and flatly refused to be the eighth woman out in a row. Fantasy managers, take notes."],
+    ["kilby", "Storyline: Eric called Kilby \"the most dangerous player in this game\" on national TV, which is either a death sentence or the best press release a fantasy team could ask for."],
+    ["sharonda", "Storyline: Sharonda came home from the summit carrying ribs and corn, which is how you buy goodwill right before a merge."],
+    ["devin", "Storyline: Devin called voting out an ally \"soul-crushing,\" right after giving Ori a runway lesson. Heart and catwalk, both intact."],
+    ["mike", "Storyline: Mike's tribe can't stand him, he offered his hat for the summit and got ignored, and he's openly pining for Savu. The merge can't come soon enough."],
+    ["eric", "Storyline: Eric called Kilby's move the \"biggest betrayal\" of his life. Grudges score nothing, but they sure make a jury."],
+    ["lewis", "Storyline: Lewis admitted he and Kilby were \"absolutely in trouble\" and needed a miracle. Good news: it's called the merge."],
+    ["brady", "Storyline: Brady did a baby penguin impression of Maggie and is reportedly handing out merge nicknames. Content machine."],
+    ["maggie", "Storyline: Maggie tried to catch fish with a hammock while the boys built a swing. Points for initiative, none for fish."],
+    ["carter", "Storyline: Carter built a sack swing, which won't win immunity but did win the camp."],
+    ["cristian", "Storyline: Cristian made sure the Savu boat had no room for Kilby or Eric. Quietly ruthless."]
+  ]
+};
+function storyNote(ep, ids, used){
+  const notes = (EP_NOTES[ep] || []).filter(([id])=>ids.includes(id) && RESULTS[id]?.out==null);
+  if(!notes.length) return null;
+  const n = notes.find(([id])=>!used.has(id)) || notes[0];
+  used.add(n[0]); return n[1];
+}
 /* What happened to a team in the latest scored episode, for the outlook's "This week" line. */
 const WEEK_CACHE = {};
 function weekInfo(key){
@@ -1528,6 +1552,8 @@ function confidenceParts(x, N, deal, terse, gentle){
     const bits = [D(pool, v)];
     if(wi.r.move>0) bits.push(D("wkUp", v)); else if(wi.r.move<0) bits.push(D("wkDown", v));
     if(lostNow.length) bits.push(D("wkLost", v));
+    const note = storyNote(wi.ep, [...e.picks, ...(e.merge?[e.merge]:[])], deal.notes || (deal.notes = new Set()));
+    if(note) bits.push(note);
     thisWeek = bits.join(" ");
   }
 

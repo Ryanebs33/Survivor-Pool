@@ -477,6 +477,7 @@ nav.tabs a.tab-alert::before{content:"";position:absolute;top:9px;right:4px;widt
 .swap-note-line{margin:4px 0 0}
 .card.gone{background:color-mix(in srgb,var(--surface) 70%,var(--bg))}
 .card.gone > .badge, .card.gone > div:not(.own-pop){filter:grayscale(1);opacity:.5}
+.swap-tag{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:4px;border:1px solid currentColor;font:600 9.5px/1.2 var(--mono);letter-spacing:.06em;text-transform:none;vertical-align:1px;opacity:.85}
 .out-tag{display:inline-block;margin-left:6px;padding:2px 6px;border-radius:4px;background:var(--muted);color:var(--surface);font:600 9.5px/1.2 var(--mono);letter-spacing:.08em;vertical-align:1px}
 .spoil-wrap{position:fixed;inset:0;z-index:900;display:grid;place-items:center;padding:16px;background:rgba(5,12,9,.74);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);overflow:auto}
 .spoil-wrap .gate{width:100%;max-width:540px;margin:0;box-shadow:0 24px 60px -12px rgba(0,0,0,.6)}
@@ -1753,7 +1754,7 @@ function castPage(){
       <article class="card t-${shownTribe(c)}${RESULTS[c.id].out!=null?" gone":""}" id="c-${c.id}" tabindex="0" aria-label="${esc(c.name)}${RESULTS[c.id].out!=null?`, out in Episode ${RESULTS[c.id].out}`:""}: show who picked them">
         <div class="badge" aria-hidden="true">${initials(c)}</div>
         <div style="min-width:0">
-          <div class="tribe ${shownTribe(c)}">${shownTribe(c)}${RESULTS[c.id].out!=null?` <span class="out-tag">Out · Ep ${RESULTS[c.id].out}</span>`:""}</div>
+          <div class="tribe ${shownTribe(c)}">${shownTribe(c)}${showSwaps && c.tribe!==c.orig?` <span class="swap-tag" title="Started on ${c.orig}">⇄ from ${c.orig}</span>`:""}${RESULTS[c.id].out!=null?` <span class="out-tag">Out · Ep ${RESULTS[c.id].out}</span>`:""}</div>
           <h3>${esc(c.name)}${c.nick?` <span style="color:var(--muted);font-weight:600">“${esc(c.nick)}”</span>`:""}</h3>
           <div class="facts">${c.age} · ${esc(c.job)} · ${esc(c.home)}</div>
           <p>${esc(c.bio+(showSwaps?swapText(c):""))}</p>

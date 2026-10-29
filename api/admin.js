@@ -1,6 +1,6 @@
 // POST /api/admin — commissioner tools. Every call must carry the commissioner code,
 // which is checked here on the server (set COMMISH_CODE in Vercel's environment variables).
-import { readEntry, writeEntry, deleteEntry, writeSettings, cleanEntry, newId, publicEntry, safeEqual, send, readBody, clientIp, getStore, ensureSeeded } from "./_lib.js";
+import { readEntry, writeEntry, deleteEntry, writeSettings, readSettings, cleanEntry, newId, publicEntry, safeEqual, send, readBody, clientIp, getStore, ensureSeeded } from "./_lib.js";
 
 const MAX_FAILS = 10, WINDOW_SECONDS = 15*60;
 export const config = { maxDuration: 60 };   // reading a roster screenshot with Claude can take 10–30 s
@@ -47,8 +47,13 @@ export default async function handler(req, res){
       case "deadline": {
         const d = b.deadline;
         if(d !== null && (typeof d !== "string" || isNaN(Date.parse(d)))) return send(res, 400, {error:"That date and time isn't valid."});
-        await writeSettings({deadline: d, updatedAt: new Date().toISOString()});
+        await writeSettings({...(await readSettings()), deadline: d, updatedAt: new Date().toISOString()});
         return send(res, 200, {deadline: d});
+      }
+      case "mergePrompt": {
+        const on = !!b.on;
+        await writeSettings({...(await readSettings()), mergePrompt: on, updatedAt: new Date().toISOString()});
+        return send(res, 200, {mergePrompt: on});
       }
       default: return send(res, 400, {error:"Unknown action."});
     }

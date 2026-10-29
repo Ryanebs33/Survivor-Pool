@@ -456,6 +456,16 @@ html.intro-lock, html.intro-lock body{overflow:hidden}
 .t-Savu .badge,.badge.t-Savu{background:var(--savu-soft);color:var(--savu);box-shadow:inset 0 0 0 2px var(--savu)}
 .t-Dina .badge,.badge.t-Dina{background:var(--dina-soft);color:var(--dina);box-shadow:inset 0 0 0 2px var(--dina)}
 .swap-toggle{margin:-4px 0 14px}
+.mp-panel{margin-top:14px}
+.switch{display:inline-flex;align-items:center;gap:8px;border:0;background:transparent;cursor:pointer;padding:2px 0;font:600 12px/1 var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.switch .knob{position:relative;width:44px;height:24px;border-radius:12px;background:color-mix(in srgb,var(--muted) 45%,transparent);transition:background .15s}
+.switch .knob::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:left .15s}
+.switch[aria-checked="true"]{color:var(--ok)} .switch[aria-checked="true"] .knob{background:var(--ok)} .switch[aria-checked="true"] .knob::after{left:23px}
+.switch:focus-visible{outline:3px solid var(--torch);outline-offset:3px;border-radius:6px}
+.switch:disabled{opacity:.6;cursor:default}
+nav.tabs a.tab-alert{position:relative}
+nav.tabs a.tab-alert::before{content:"";position:absolute;top:9px;right:4px;width:8px;height:8px;border-radius:50%;background:var(--ember,#FF8A3D);box-shadow:0 0 8px var(--ember,#FF8A3D)}
+@media (prefers-reduced-motion:reduce){.switch .knob,.switch .knob::after{transition:none}}
 .merge-panel{background:var(--surface);border-radius:12px;padding:18px 18px 16px;margin-top:8px;box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--torch) 45%,transparent)}
 .merge-panel h3{margin:0 0 6px}
 .merge-panel .field{margin:12px 0 0;max-width:420px}
@@ -1863,6 +1873,12 @@ function commishPage(){
       </form>
       <span class="small" role="status">${dlMsg?`<span class="${dlMsg.kind}">${esc(dlMsg.text)}</span>`:""}</span>
     </section>
+    <section class="dl-panel mp-panel" aria-labelledby="mpTitle">
+      <div class="dl-top"><h3 id="mpTitle">Merge pick reminder</h3>
+        <button type="button" class="switch" id="mpToggle" role="switch" aria-checked="${mergePrompt}" aria-labelledby="mpTitle"><span class="knob"></span><span class="sw-txt">${mergePrompt?"On":"Off"}</span></button></div>
+      <p class="small" style="margin:6px 0 0">When on, visitors get a pop-up pointing them to the merge bonus pick on the Submit picks tab, and that tab is highlighted. It doesn't show to anyone viewing in spoiler-safe mode, and it stops on its own when merge picks close ${esc(fmtMergeClose())}.${mergeClosed()?" <b>Merge picks have closed, so the reminder isn't showing.</b>":""}</p>
+      <span class="small" role="status" id="mpStatus"></span>
+    </section>
     <div class="admin-bar">
       <div class="field"><label for="targetSel">Entering picks for</label>
         <select id="targetSel"><option value="__new" ${adminTarget==="__new"?"selected":""}>+ New person</option>
@@ -1888,6 +1904,13 @@ function wireSubmit(){
       catch(e){ commishErr = e.userMsg || "Couldn't check the code. Try again."; }
       rerender();});
   }
+  const mpt=document.getElementById("mpToggle");
+  mpt && mpt.addEventListener("click", async()=>{
+    const want = !mergePrompt, st=document.getElementById("mpStatus");
+    mpt.disabled = true; st.textContent = "Saving…";
+    try{ await api("/api/admin",{code:adminCode, action:"mergePrompt", on:want}); mergePrompt = want; markSubmitTab(); rerender(); }
+    catch(e){ st.innerHTML = `<span class="err">${esc(e.userMsg || "That didn't save. Try again.")}</span>`; mpt.disabled = false; }
+  });
   const dlf=document.getElementById("dlForm");
   if(dlf){
     const saveDl = async (iso, okText) => {
@@ -1987,8 +2010,12 @@ function applyEntries(snap){
     if(!ts || document.activeElement===document.body || !view.contains(document.activeElement)) rerender();
   }
 }
+let mergePrompt = false;     // commissioner switch: point visitors to the merge bonus pick
 function applyState(data){
   applyEntries({docs:(data.entries||[]).map(e=>({id:e.id, exists:true, data:()=>e}))});
+  const mp = !!data.mergePrompt;
+  if(mp!==mergePrompt){ mergePrompt=mp; markSubmitTab(); maybePromptMerge();
+    if(currentPage()==="commissioner" && commishUnlocked && !saving && !view.contains(document.activeElement)) rerender(); }
   const d = data.deadline || null;
   if(d!==deadline){ deadline=(d && !isNaN(Date.parse(d)))?d:null; scheduleLock();
     const pg=currentPage();
@@ -2886,7 +2913,7 @@ document.addEventListener("mouseout", ev=>{
   if(host && host.classList.contains("pop-closed") && !host.contains(ev.relatedTarget)) host.classList.remove("pop-closed");
 });
 document.addEventListener("click", ev=>{ if(ev.target.id!=="viewLatest") return;
-  applyView(null); updateViewChrome(); revealed=false; revealedThrough=0; route(); });
+  applyView(null); updateViewChrome(); revealed=false; revealedThrough=0; route(); markSubmitTab(); });
 function updateFade(){ const st=document.querySelector(".tabs-in"); if(!st) return;
   document.querySelector("nav.tabs").style.setProperty("--fade", st.scrollLeft+st.clientWidth < st.scrollWidth-4 ? "1" : "0"); }
 document.querySelector(".tabs-in").addEventListener("scroll",updateFade,{passive:true});
@@ -2895,6 +2922,35 @@ const setNavH = () => { const n=document.querySelector("nav.tabs"); if(n) docume
 setNavH(); addEventListener("resize", setNavH);
 addEventListener("hashchange",()=>{ route(); const h=document.querySelector(".hero"); const top=h?h.offsetHeight:0; if(scrollY>top) scrollTo(0,top); });
 route();
+
+/* Merge pick reminder: when the commissioner turns it on, visitors get one pop-up per visit pointing
+   them to the merge bonus pick, and the Submit picks tab gets a dot. */
+const mergePromptLive = () => mergePrompt && POOL.merged && mergeVisible() && !mergeClosed();
+function markSubmitTab(){
+  const a=document.querySelector('nav.tabs a[data-r="submit"]'); if(!a) return;
+  a.classList.toggle("tab-alert", mergePromptLive());
+}
+function maybePromptMerge(){
+  if(!mergePromptLive() || currentPage()==="submit" || document.querySelector(".mp-wrap")) return;
+  let seen=false; try{ seen = sessionStorage.getItem("s51-mergeprompt")==="1"; }catch(e){}
+  if(seen) return;
+  const intro=document.getElementById("intro");
+  if((intro && !intro.classList.contains("gone")) || document.querySelector(".spoil-wrap")) return void setTimeout(maybePromptMerge, 400);
+  try{ sessionStorage.setItem("s51-mergeprompt","1"); }catch(e){}
+  const wrap=document.createElement("div"); wrap.className="spoil-wrap mp-wrap";
+  wrap.innerHTML=`<section class="gate" role="dialog" aria-modal="true" aria-labelledby="mpT">
+    ${flame}
+    <div class="eyebrow">Merge bonus pick</div>
+    <h2 id="mpT">Your merge pick is waiting</h2>
+    <p>Add one more castaway to your team, or swap one out if all eight are still in the game. Picks close ${esc(fmtMergeClose())}.</p>
+    <div class="row"><button class="btn" type="button" id="mpGo">Make my merge pick</button><button class="btn ghost" type="button" id="mpLater">Not now</button></div></section>`;
+  document.body.appendChild(wrap); document.body.classList.add("spoil-open");
+  const close=()=>{ wrap.remove(); document.body.classList.remove("spoil-open"); };
+  wrap.querySelector("#mpLater").addEventListener("click", close);
+  wrap.querySelector("#mpGo").addEventListener("click", ()=>{ close(); location.hash="submit";
+    setTimeout(()=>{ const n=document.getElementById("mgName"); if(n){ n.scrollIntoView({block:"center"}); n.focus({preventScroll:true}); } }, 250); });
+  wrap.querySelector("#mpGo").focus({preventScroll:true});
+}
 
 /* One spoiler warning, shown once when someone first opens the site (per visit). Their answer sets
    what the whole site shows: everything, or everything as of the episode before the newest one. */
@@ -2915,7 +2971,7 @@ route();
     </div></section>`;
   document.body.appendChild(wrap); document.body.classList.add("spoil-open");
   const done=(n)=>{ try{ sessionStorage.setItem("s51-spoiler","1"); }catch(e){}
-    applyView(n); updateViewChrome(); wrap.remove(); document.body.classList.remove("spoil-open"); route(); };
+    applyView(n); updateViewChrome(); wrap.remove(); document.body.classList.remove("spoil-open"); route(); markSubmitTab(); maybePromptMerge(); };
   wrap.querySelector("#spLatest").addEventListener("click",()=>done(null));
   wrap.querySelector("#spPrev")?.addEventListener("click",()=>done(prev));
   // focus the first choice once the intro has gone

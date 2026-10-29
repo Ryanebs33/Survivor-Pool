@@ -1129,7 +1129,57 @@ function confidenceHTML(x, N, deal){
 /* Fantasy-football-style outlook: why the team sits where it does, its upside, its risk and a verdict.
    The facts are the team's own; only the cheek is borrowed. Quips are dealt like cards so no two teams share one. */
 const OL = {
+  wkTop: [
+    "{wk} points this week, the best haul in the pool, with {bc} leading the way ({bp}).",
+    "Week {ep} belonged to this team: {wk} points, tops in the pool, powered by {bc} ({bp}).",
+    "Nobody scored more in Episode {ep}. {wk} points, and {bc} ({bp}) did the heavy lifting.",
+    "A pool-best {wk} points in Episode {ep}; {bc} chipped in {bp} and the rest kept pace.",
+    "Episode {ep} MVP team: {wk} points, {bc} with {bp} of them."
+  ],
+  wkGood: [
+    "A strong Episode {ep}: {wk} points, {wkr} best in the pool, led by {bc} ({bp}).",
+    "{wk} points this week ({wkr} in the pool), with {bc} supplying {bp}.",
+    "Solid week. {wk} points ranks {wkr}, and {bc} ({bp}) was the spark.",
+    "Episode {ep} was kind: {wk} points, {wkr} in the pool, {bc} good for {bp}.",
+    "A {wk}-point week, {wkr} best, thanks largely to {bc} ({bp})."
+  ],
+  wkMid: [
+    "A middling Episode {ep}: {wk} points, {wkr} in the pool. {bc} led with {bp}.",
+    "{wk} points this week ({wkr}), nothing flashy; {bc} topped the team with {bp}.",
+    "Episode {ep} was a quiet {wk} points, {wkr} in the pool, with {bc} at {bp}.",
+    "Treading water: {wk} points ({wkr}), {bc} the high scorer at {bp}.",
+    "An average week by pool standards, {wk} points and {wkr}. {bc} had {bp}."
+  ],
+  wkBad: [
+    "A rough Episode {ep}: just {wk} points, {wkr} in the pool. Even {bc} only managed {bp}.",
+    "{wk} points this week ({wkr}); {bc} led a quiet team with {bp}.",
+    "Episode {ep} was a dud: {wk} points, {wkr} of {N}. {bc} salvaged {bp}.",
+    "Only {wk} points in Episode {ep} ({wkr}), and {bc}'s {bp} was the best of it.",
+    "Cold week. {wk} points, {wkr} in the pool, with {bc} on {bp}."
+  ],
+  wkLost: [
+    "Lost {lostNow} at Tribal, too.",
+    "And {lostNow} {lostAre} gone as of this episode.",
+    "{lostNow} took the walk this week.",
+    "The episode also cost them {lostNow}.",
+    "Minus {lostNow}, as of this week."
+  ],
+  wkUp: [
+    "Up {mv} in the standings.",
+    "That's a {mv}-spot climb on the scoreboard.",
+    "Moved up {mv} on the board.",
+    "Climbed {mv} {spots} this week."
+  ],
+  wkDown: [
+    "Down {mv} in the standings.",
+    "Slid {mv} {spots} on the scoreboard.",
+    "Dropped {mv} on the board.",
+    "That cost {mv} {spots} in the standings."
+  ],
   carry: [
+    "{a} ({aw}) is carrying this team like the last bag of rice: roughly {share}% of the projection.",
+    "Everything runs through {a} ({aw}), about {share}% of what's left to score.",
+    "{a} ({aw}) is the whole plan, around {share}% of the projected points.",
     "{a} is the engine ({aw}), carrying about {share}% of the points still to come.",
     "This is {a}'s team and everyone else is renting ({aw}, roughly {share}% of the projection).",
     "One-castaway show: {a} ({aw}) accounts for about {share}% of what's projected to come.",
@@ -1137,6 +1187,10 @@ const OL = {
     "Feed {a}. About {share}% of the points still to come hinge on them ({aw})."
   ],
   balanced: [
+    "{a} ({aw}) and {b} ({bw}) set the tone; no one owns more than {share}% of the outlook.",
+    "A true tribe effort led by {a} ({aw}) and {b} ({bw}), top share {share}%.",
+    "{a} ({aw}) and {b} ({bw}) are the twin torches here; nobody above {share}%.",
+    "Led by {a} ({aw}) with {b} ({bw}) close behind, and a top share of only {share}%.",
     "{a} ({aw}) sets the pace, {b} ({bw}) keeps up, and the rest of the tribe is pulling oars. Max share: {share}%.",
     "No superstar, just a sturdy shelter: {a} ({aw}) and {b} ({bw}) are the load-bearing poles, none above {share}%.",
     "Balanced attack. {a} ({aw}) and {b} ({bw}) lead, and the top slice is a modest {share}%.",
@@ -1155,6 +1209,8 @@ const OL = {
     "Depth over stars. {a} ({aw}) and {b} ({bw}) lead, and the biggest single slice is only {share}%."
   ],
   lostSome: [
+    "{lost} is out, but {live} of {total} keep the fire going.",
+    "{live} of {total} remain after saying goodbye to {lost}.",
     "{lost} already got their torch snuffed, leaving {live} of {total}.",
     "Minus {lost}, {live} of {total} are still fighting for rice.",
     "{live} of {total} still in. RIP to {lost}'s fantasy career.",
@@ -1167,6 +1223,8 @@ const OL = {
     "Down {lost}, still {live} deep."
   ],
   lostMany: [
+    "{lost} are out; {live} of {total} soldier on.",
+    "Down to {live} of {total} after {lost} left the island.",
     "{lost} are gone, so {live} of {total} now carry the whole thing.",
     "Ponderosa is getting crowded with this roster: {lost} are out, {live} of {total} remain.",
     "The tribe has spoken, repeatedly: {lost} are out, {live} of {total} left.",
@@ -1177,11 +1235,15 @@ const OL = {
     "With {lost} gone, the depth chart reads {live} of {total} and shrinking."
   ],
   full: [
+    "No casualties yet: all {total} are still in it.",
+    "Full roster, all {total} still dodging the vote.",
     "All {total} picks are still breathing, a full roster is its own advantage.",
     "Zero castaways lost. Full health heading into the swap chaos.",
     "Perfect attendance: all {total} still on the island."
   ],
   vsUp: [
+    "Board says {stand}; projection says {vs} spots better. Stock rising.",
+    "{vs} spots ahead of their {stand}-place standing on projection. Quiet strength.",
     "The board has them {stand}; the projection has them {vs} spots higher. Sleeper alert.",
     "{vs} spots better on projection than their {stand}-place standing. The comeback edit is loading.",
     "Real points: {stand}. Projected finish: {vs} spots better. Somebody's been playing a quiet game.",
@@ -1192,6 +1254,8 @@ const OL = {
     "Sitting {stand} in real points but {vs} spots better on projection: the market hasn't caught on."
   ],
   vsDown: [
+    "Board says {stand}; projection says {vs} spots worse. Enjoy the view while it lasts.",
+    "Projected {vs} spots below their {stand}-place standing. The cushion is shrinking.",
     "Ranked {stand} on points, {vs} spots lower on projection. The hot start is cooling.",
     "{vs} spots below the {stand}-place standing on projection; cash those bragging rights now.",
     "The scoreboard is generous ({stand}); the projection, {vs} spots lower, is not.",
@@ -1202,16 +1266,22 @@ const OL = {
     "A {stand}-place standing that projects {vs} spots lower: enjoy it while the fire's still lit."
   ],
   upMvp: [
+    "MVP {mvp} ({mt}-tier) is the jackpot ticket; a finale run swings the whole pool.",
+    "With {mvp} ({mt}-tier) as MVP, the ceiling is a Sole Survivor-sized bonus.",
     "MVP {mvp} is {mt}-tier, so a deep run cashes a big slice of the 30-point MVP bonus plus finale points.",
     "{mvp} as MVP ({mt}-tier) is the trump card. Make the end and this team jumps the queue.",
     "If MVP {mvp} ({mt}-tier) makes the finale, the bonus points alone flip the board."
   ],
   upDiff: [
+    "Only {k} of {N} teams have {x} ({xt}-tier). That's a separation pick.",
+    "{x} ({xt}-tier) is on just {k} of {N} rosters; every point there is a point on the field.",
     "Differentiator: {x} ({xt}-tier) is on only {k} of {N} teams. If they pop, this team pulls away from the pack.",
     "Low-owned gem: {x} ({xt}-tier) is rostered by just {k} of {N}. That's how pools get won.",
     "Contrarian edge: only {k} of {N} teams have {x} ({xt}-tier), so every {x} point is a separation point."
   ],
   upSleeper: [
+    "{x} ({xt}-tier, {xp} pts) is due. The rank says more is coming.",
+    "Keep an eye on {x}: {xt}-tier with only {xp} pts so far.",
     "{x} ({xt}-tier) has only {xp} pts so far. Due for a breakout, possibly with a hidden idol.",
     "Watch {x}: {xt}-tier, just {xp} pts banked, and plenty of runway left.",
     "{x} ({xt}-tier, {xp} pts) is the quiet one who could end up with the big moves.",
@@ -1222,25 +1292,35 @@ const OL = {
     "{x} ({xt}-tier) has only {xp} pts banked; the experts think that's about to change."
   ],
   upMvpAlive: [
+    "MVP {mvp} is still alive, so the 30-point dream lives another week.",
+    "As long as {mvp} keeps dodging votes, that MVP bonus is still on the table.",
     "MVP {mvp} is still alive, and every week survived keeps the 30-point bonus in play.",
     "{mvp} is still kicking as MVP, so the bonus dream lives."
   ],
   riskMvpOut: [
+    "{mvp} is gone as MVP, so the ceiling dropped by 30.",
+    "Without MVP {mvp}, there's no bonus to chase.",
     "MVP {mvp} is already out, so the 30-point bonus is gone and the ceiling is lower than it looks.",
     "No MVP. {mvp} left early, taking the 30-point bonus to Ponderosa with them.",
     "The MVP slot is a torch with no flame: {mvp} is gone, and so is that bonus."
   ],
   riskConc: [
+    "Lean on {a} too hard and one blindside erases {share}% of the outlook.",
+    "{share}% of the projection walks if {a} does.",
     "Concentration. Lose {a} and roughly {share}% of the projection walks straight to Ponderosa.",
     "All eggs, one basket: if {a} goes, about {share}% of the projection goes with them.",
     "Single point of failure. One {a} blindside and {share}% of the outlook evaporates."
   ],
   riskStack: [
+    "{sn} live picks on {st} ({sl}); one immunity loss and it's chaos.",
+    "Stacked on {st}: {sl}. Win immunity or else.",
     "{sn} of the {live} live picks ({sl}) are on {st}; one bad Tribal and it's a pile-up.",
     "Tribe-stacked on {st} ({sl}). Great if they win immunity, ugly if they don't.",
     "Heavy {st} exposure: {sl}. One lost challenge and the roster takes a double hit."
   ],
   riskWeak: [
+    "{w} ({wt}-tier) is the likeliest next torch on this roster.",
+    "{w} ({wt}-tier) is the soft spot.",
     "{w} ({wt}-tier) is the roster's red flag; don't get attached.",
     "{w} ({wt}-tier) is skating on thin ice, and it's 30 degrees in Fiji.",
     "Keep an eye on {w} ({wt}-tier). The experts already have them packing.",
@@ -1249,14 +1329,21 @@ const OL = {
     "{w} ({wt}-tier) is the likeliest to lose a torch, and soon."
   ],
   riskThin: [
+    "{live} left and no room for another bad Tribal.",
+    "Only {live} remain, so every boot from here stings double.",
     "Only {live} left. Every vote from here is a must-win.",
     "Thin roster: {live} castaways and zero margin for error."
   ],
   riskNone: [
+    "Hard to find a hole, which in Survivor usually means one's coming.",
+    "Clean roster; the only enemy is a twist nobody saw coming.",
     "Not much, honestly. The danger is the swap blender, which doesn't care about projections.",
     "Low risk, but Survivor has never once cared about anyone's spreadsheet."
   ],
   start: [
+    "Lock it in and don't look back.",
+    "Start it every week and dare the island to stop it.",
+    "Keep riding this tribe; it's earned the shelter.",
     "Must-start. Ride it like the last bag of rice.",
     "Lock it in. This is the tribe everyone pretends they aren't scared of.",
     "Start with confidence, then hide that confidence before Tribal.",
@@ -1265,6 +1352,9 @@ const OL = {
     "Set it and forget it, like a fire that somehow survives the rain."
   ],
   buy: [
+    "Buy now, brag later.",
+    "Buy. The projection likes what's left more than the board does.",
+    "Buy low; the late-game edit could be kind.",
     "Buy low. The jury hasn't noticed this team yet, and that's the point.",
     "Buy before the edit catches up and everyone else jumps on.",
     "Classic buy-low. Underdog edit, upside to burn.",
@@ -1273,6 +1363,9 @@ const OL = {
     "Buy and be patient. Slow fires cook the best fish."
   ],
   sell: [
+    "Sell while the scoreboard still flatters.",
+    "Sell. The early points are real; the future is wobbly.",
+    "Sell high and bank the bragging rights.",
     "Sell high. Bank the bragging rights before regression boots them.",
     "Sell. Early lead, shaky foundation, very 'first boot of the merge' energy.",
     "Sell while the stock looks good. Pre-merge leads have a habit of vanishing.",
@@ -1281,6 +1374,9 @@ const OL = {
     "Sell now. Hot starts burn out faster than a fire built with wet bamboo."
   ],
   hold: [
+    "Hold and keep the fire fed.",
+    "Hold. A swing week either way decides this one.",
+    "Hold tight; this is a one-idol-away team.",
     "Hold. Flex-worthy, not franchise-worthy, but nobody gets traded at camp.",
     "Hold steady. Swing-vote team, so be nice to everyone.",
     "Hold. One idol find away from contention, one bad tribal away from the jury bench.",
@@ -1289,6 +1385,9 @@ const OL = {
     "Hold. Comfortable enough to sleep, not comfortable enough to sleep in."
   ],
   waiver: [
+    "Waiver energy. Pray for chaos.",
+    "Long shot, but Survivor loves a long shot.",
+    "Hope for a merge miracle.",
     "Waiver-wire energy. Stream an idol and pray.",
     "Deep sleeper, emphasis on sleeper. Wake it up at the merge.",
     "Bench it emotionally and watch for a miracle.",
@@ -1338,15 +1437,36 @@ function confidenceFor(x, N){
   if(isTarget(x.e)) score = Math.max(3, Math.min(score - 35, 40));   // Nathan never gets out of the "flickering" range
   return Math.min(99, score);
 }
+/* Deals outlook lines so wording stays fresh: no two teams share a line in a week, and each team
+   steers away from the line it would have been given the week before. */
 function makeDealer(seedKey){
-  const decks = {};
-  return (cats) => {
+  const used = {};                                    // pool -> Set of indexes used this week
+  const wk = (seedKey.match(/\|(\d+)(?:\||$)/)||[])[1];
+  const prevKey = wk ? seedKey.replace(`|${wk}`, `|${+wk-1}`) : null;
+  const start = (key, k, team) => Math.floor(seeded(`${key}|${k}|${team||""}`)()*OL[k].length);
+  return (cats, team) => {
     for(const k of cats){
-      if(!decks[k]){ const r=seeded(`${seedKey}|${k}`); decks[k]=OL[k].slice().sort(()=>r()-.5); }
-      if(decks[k].length) return decks[k].pop();
+      const n = OL[k].length, u = used[k] || (used[k] = new Set());
+      if(u.size >= n) continue;
+      const avoid = prevKey ? start(prevKey, k, team) : -1;
+      let i = start(seedKey, k, team);
+      for(let tries=0; tries<n && (u.has(i) || (i===avoid && u.size < n-1)); tries++) i = (i+1) % n;
+      if(!u.has(i)){ u.add(i); return OL[k][i]; }
     }
-    const k=cats[0]; decks.round=(decks.round||0)+1; const r=seeded(`${seedKey}|${k}|round${decks.round}`); decks[k]=OL[k].slice().sort(()=>r()-.5); return decks[k].pop();
+    const k = cats[0]; used[k] = new Set(); return OL[k][start(seedKey+"|again", k, team)];
   };
+}
+/* What happened to a team in the latest scored episode, for the outlook's "This week" line. */
+const WEEK_CACHE = {};
+function weekInfo(key){
+  const ep = LATEST_EP(); if(!ep) return null;
+  const ck = `${ep}|${viewEp}|${ENTRANTS.length}`;
+  if(!WEEK_CACHE[ck]){
+    const d = recapData(ep), byWeek = [...d.rows].sort((a,b)=>b.week-a.week);
+    const out = {}; d.rows.forEach(r=>{ out[r.e.key] = {r, wkRank: byWeek.findIndex(x=>x.week===r.week)+1, N:d.rows.length, ep}; });
+    WEEK_CACHE[ck] = out;
+  }
+  return WEEK_CACHE[ck][key] || null;
 }
 function confidenceParts(x, N, deal, terse, gentle){
   const score = confidenceFor(x, N), band = CONF_BANDS.findIndex(b=>score>=b.min);
@@ -1371,8 +1491,24 @@ function confidenceParts(x, N, deal, terse, gentle){
 
   // Ownership across the pool, for differentiators
   const owned = id => ENTRANTS.filter(o=>o.picks.includes(id) || o.merge===id).length;
-  const D = (pool, vars) => fillT(deal([pool]), {...base, ...vars});
+  const D = (pool, vars) => fillT(deal([pool], e.key), {...base, ...vars});
   const base = {proj:x.proj, live:x.live, total:x.total, N, mvp:e.mvp?nm(e.mvp):"", mt:mvpT||""};
+
+  // This week: what the latest episode did for this team (new every week by nature)
+  let thisWeek = null;
+  const wi = terse ? null : weekInfo(e.key);
+  if(wi){
+    const best = [...wi.r.parts].sort((a,b)=>b.pts-a.pts)[0];
+    const lostNow = [...e.picks, ...(e.merge?[e.merge]:[]), ...(e.swap?[e.swap.out]:[])].filter(id=>RESULTS[id]?.out===wi.ep);
+    const q = wi.wkRank / Math.max(wi.N,1);
+    const pool = wi.wkRank===1 ? "wkTop" : q<=0.3 ? "wkGood" : q<=0.7 ? "wkMid" : "wkBad";
+    const v = {wk:wi.r.week, wkr:ordinal(wi.wkRank), ep:wi.ep, bc: best ? nm(best.id) : "nobody", bp: best ? best.pts : 0, mv: Math.abs(wi.r.move||0), spots: Math.abs(wi.r.move||0)===1 ? "spot" : "spots",
+               lostNow: list(lostNow.map(nm)), lostAre: lostNow.length>1 ? "are" : "is"};
+    const bits = [D(pool, v)];
+    if(wi.r.move>0) bits.push(D("wkUp", v)); else if(wi.r.move<0) bits.push(D("wkDown", v));
+    if(lostNow.length) bits.push(D("wkLost", v));
+    thisWeek = bits.join(" ");
+  }
 
   // Why they sit here
   const whyBits = [];
@@ -1416,7 +1552,7 @@ function confidenceParts(x, N, deal, terse, gentle){
   else if(x.rank > Math.ceil(N*0.7)) key = "waiver";
   else key = "hold";
   const order = {start:["start","hold"], buy:["buy","hold"], sell:["sell","hold"], hold:["hold","buy","sell"], waiver:["waiver","hold"], nathan:["nathan"]}[key];
-  const verdict = deal(order);
+  const verdict = deal(order, e.key);
   const verdictLabel = {start:"Must-start", buy:"Buy low", sell:"Sell high", hold:"Hold", waiver:"Waiver wire", nathan:"Fade"}[key];
   if(nathan){
     const nr = seeded(`${e.key}|nathan|${LATEST_EP()}`);
@@ -1425,7 +1561,7 @@ function confidenceParts(x, N, deal, terse, gentle){
     risk += " " + pick(nr, OL.nathanRisk);
   }
 
-  const sections = [[`Why #${x.rank}`, whyBits.join(" ")], ["Upside", upside], ["Risk", risk], ["Verdict", verdict]];
+  const sections = [...(thisWeek ? [[`Episode ${weekInfo(e.key).ep}`, thisWeek]] : []), [`Why #${x.rank}`, whyBits.join(" ")], ["Upside", upside], ["Risk", risk], ["Verdict", verdict]];
   return {score, band, label:CONF_BANDS[band].label, verdictKey:key, verdictLabel, sections, verdict, why:whyBits,
           text: sections.map(([k,v])=>`${k}: ${v}`).join(" ")};
 }

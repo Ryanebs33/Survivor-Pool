@@ -1763,7 +1763,7 @@ function mergeBodyHTML(){
 }
 function mergeSectionHTML(){
   if(!POOL.merged) return "";
-  if(!mergeVisible()) return `<div class="notice"><b>Merge bonus pick</b><span>Hidden while you're viewing through Episode ${viewEp}. Catch up on Episode ${FULL_AIRED} to see it.</span><button type="button" class="linkish" id="viewLatest">Show Episode ${FULL_AIRED}</button></div>`;
+  if(!mergeVisible()) return `<div class="notice"><b>Merge bonus pick</b><span>Unable until the merge</span></div>`;
   return `<section class="merge-panel" aria-labelledby="mgTitle">
     <h3 id="mgTitle">Merge bonus pick</h3>
     <p class="small">Add one castaway still in the game to your team. They score from Episode ${MERGE_EP+1} on. If all eight of your castaways are still in, you can swap one out instead. One choice per team, and it locks once submitted.</p>

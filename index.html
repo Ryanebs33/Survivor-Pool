@@ -834,6 +834,7 @@ function applyView(n){
     e.out.forEach(id=>RESULTS[id].out=e.ep);
   });
   POOL.updatedThrough = viewEp==null ? FULL_THROUGH : `Episode ${viewEp}`;
+  try{ realEntries.forEach(setRoster); }catch(e){}   // entries load later on first run
   try{ if(viewEp==null) sessionStorage.removeItem("s51-view"); else sessionStorage.setItem("s51-view", String(viewEp)); }catch(e){}
 }
 let savedView=null; try{ savedView=parseInt(sessionStorage.getItem("s51-view")); }catch(e){}
@@ -872,7 +873,10 @@ const SAMPLE_ENTRANTS = [
 /* e.orig = the original eight. e.picks = the current eight (with any merge swap applied).
    Merge picks and swapped-in castaways only count from the episode after MERGE_EP; a swapped-out
    castaway keeps the points they earned before that. */
+/* Merge picks and swaps are hidden in spoiler-safe mode for anyone who hasn't seen Episode MERGE_EP yet. */
+const mergeVisible = () => viewEp==null || viewEp>=MERGE_EP;
 function setRoster(e){
+  if("mergeRaw" in e){ e.merge = mergeVisible() ? e.mergeRaw : null; e.swap = mergeVisible() ? e.swapRaw : null; }
   e.orig = [...e.toka, ...e.savu];
   e.picks = e.swap ? e.orig.map(id=>id===e.swap.out ? e.swap.in : id) : [...e.orig];
 }
@@ -1612,7 +1616,7 @@ function entryCard(e){
   const m = byId[e.mvp];
   const mergeSlot = e.merge ? `<ul class="pick-list">${pickLi(e.merge)}</ul>`
     : e.swap ? `<ul class="pick-list">${pickLi(e.swap.in).replace('<li class="pick ','<li class="pick swap-in ')}</ul><p class="small swap-note-line">Swapped in for ${esc(short(byId[e.swap.out]))}, scoring from Episode ${MERGE_EP+1}.</p>`
-    : `<ul class="pick-list"><li class="pick empty">${POOL.merged?"No merge pick made":"Opens after the merge"}</li></ul>`;
+    : `<ul class="pick-list"><li class="pick empty">${POOL.merged && mergeVisible()?"No merge pick made":"Opens after the merge"}</li></ul>`;
   const li = id => { const h = pickLi(id, e.mvp); return e.swap && id===e.swap.out ? h.replace('<li class="pick ','<li class="pick swapped-out ') : h; };
   return `<article class="entry">
     <div class="entry-head"><div class="pw-name"><h3>${esc(e.name)}</h3><button type="button" class="ov-btn pr-btn" data-key="${esc(e.key)}" aria-expanded="false">Weekly recap</button></div>${m?`<span class="meta-line" style="margin:0">MVP · ${esc(m.name)}</span>`:""}</div>
@@ -1671,7 +1675,7 @@ function scheduleLock(){
 }
 let saving=false, commishUnlocked=false, commishErr="", adminTarget="__new", confirmDelete=false;
 
-function fill(f, e){ Object.assign(f,{name:e?.name||"", toka:[...(e?.toka||[])], savu:[...(e?.savu||[])], mvp:e?.mvp||"", merge:e?.merge||"", swapOut:e?.swap?.out||"", swapIn:e?.swap?.in||"", loaded:true}); }
+function fill(f, e){ Object.assign(f,{name:e?.name||"", toka:[...(e?.toka||[])], savu:[...(e?.savu||[])], mvp:e?.mvp||"", merge:(e?.mergeRaw??e?.merge)||"", swapOut:(e?.swapRaw??e?.swap)?.out||"", swapIn:(e?.swapRaw??e?.swap)?.in||"", loaded:true}); }
 function missingList(f){
   const m=[];
   if(!f.name.trim()) m.push("a name");
@@ -1759,6 +1763,7 @@ function mergeBodyHTML(){
 }
 function mergeSectionHTML(){
   if(!POOL.merged) return "";
+  if(!mergeVisible()) return `<div class="notice"><b>Merge bonus pick</b><span>Hidden while you're viewing through Episode ${viewEp}. Catch up on Episode ${FULL_AIRED} to see it.</span><button type="button" class="linkish" id="viewLatest">Show Episode ${FULL_AIRED}</button></div>`;
   return `<section class="merge-panel" aria-labelledby="mgTitle">
     <h3 id="mgTitle">Merge bonus pick</h3>
     <p class="small">Add one castaway still in the game to your team. They score from Episode ${MERGE_EP+1} on. If all eight of your castaways are still in, you can swap one out instead. One choice per team, and it locks once submitted.</p>
@@ -1798,7 +1803,7 @@ function submitPage(){
   if(dbState==="none") return `<section class="page">${head}<div class="notice"><b>Can't reach the pool right now</b><span>Picks can't be loaded or saved at the moment. Try again in a minute, or ask the commissioner to enter your picks.</span></div></section>`;
   const locked=picksLocked();
   if(locked && POOL.merged) return `<section class="page"><h2>Submit picks</h2>
-    <p class="lede">Original picks are locked. The merge bonus pick is open below.</p>${mergeSectionHTML()}</section>`;
+    <p class="lede">Original picks are locked.${mergeVisible()?" The merge bonus pick is open below.":""}</p>${mergeSectionHTML()}</section>`;
   if(locked && !POOL.merged && !myEntry) return `<section class="page">${head}<div class="notice"><b>Picks are locked</b><span>The draft ${deadline?`closed ${esc(fmtDeadline(deadline))}`:"is closed"}. Check the Picks page to see everyone's Fantasy Tribe.</span></div></section>`;
   const dlNote = (!locked && deadline) ? `<div class="deadline-bar"><span class="dl-label">Picks lock</span><strong>${esc(fmtDeadline(deadline))}</strong></div>` : "";
   return `<section class="page">${head}${dlNote}
@@ -1930,10 +1935,10 @@ function wireSubmit(){
     if(mode==="self" && picksLocked() && !existing){ MSG.self={kind:"err",text:"Picks locked before this was saved."}; rerender(); return; }
     const lockedSelf = mode==="self" && picksLocked();
     const body = lockedSelf
-      ? {name:existing.name, toka:existing.toka, savu:existing.savu, mvp:existing.mvp, merge:existing.merge||null, swap:existing.swap||null, updatedAt:new Date().toISOString()}
+      ? {name:existing.name, toka:existing.toka, savu:existing.savu, mvp:existing.mvp, merge:existing.mergeRaw||null, swap:existing.swapRaw||null, updatedAt:new Date().toISOString()}
       : {name:st.name.trim().slice(0,40), toka:[...st.toka], savu:[...st.savu], mvp:st.mvp,
-         merge: mode==="admin" && POOL.merged ? (st.merge||null) : (existing?.merge||null),
-         swap: mode==="admin" && POOL.merged ? (st.swapOut && st.swapIn ? {out:st.swapOut, in:st.swapIn} : null) : (existing?.swap||null),
+         merge: mode==="admin" && POOL.merged ? (st.merge||null) : (existing?.mergeRaw||null),
+         swap: mode==="admin" && POOL.merged ? (st.swapOut && st.swapIn ? {out:st.swapOut, in:st.swapIn} : null) : (existing?.swapRaw||null),
          updatedAt:new Date().toISOString()};
     if(mode==="admin") body.enteredBy="commissioner";
     saving=true; rerender();
@@ -1957,8 +1962,8 @@ function wireSubmit(){
 function applyEntries(snap){
   realEntries = snap.docs.filter(d=>d.exists).map(d=>{const v=d.data();
     return {key:d.id, name:String(v.name||"Unnamed"), toka:(v.toka||[]).filter(id=>byId[id]), savu:(v.savu||[]).filter(id=>byId[id]),
-      mvp:byId[v.mvp]?v.mvp:"", merge:byId[v.merge]?v.merge:null,
-      swap:(v.swap && byId[v.swap.out] && byId[v.swap.in]) ? {out:v.swap.out, in:v.swap.in} : null};});
+      mvp:byId[v.mvp]?v.mvp:"", mergeRaw:byId[v.merge]?v.merge:null,
+      swapRaw:(v.swap && byId[v.swap.out] && byId[v.swap.in]) ? {out:v.swap.out, in:v.swap.in} : null};});
   realEntries.forEach(setRoster);
   usingSample = realEntries.length===0;
   ENTRANTS = usingSample ? SAMPLE_ENTRANTS : realEntries;

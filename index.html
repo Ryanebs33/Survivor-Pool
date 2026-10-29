@@ -456,6 +456,15 @@ html.intro-lock, html.intro-lock body{overflow:hidden}
 .t-Savu .badge,.badge.t-Savu{background:var(--savu-soft);color:var(--savu);box-shadow:inset 0 0 0 2px var(--savu)}
 .t-Dina .badge,.badge.t-Dina{background:var(--dina-soft);color:var(--dina);box-shadow:inset 0 0 0 2px var(--dina)}
 .swap-toggle{margin:-4px 0 14px}
+.merge-panel{background:var(--surface);border-radius:12px;padding:18px 18px 16px;margin-top:8px;box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--torch) 45%,transparent)}
+.merge-panel h3{margin:0 0 6px}
+.merge-panel .field{margin:12px 0 0;max-width:420px}
+.merge-panel .submit-row{margin-top:14px}
+.mg-who{margin:14px 0 6px} .mg-team{margin:0 0 6px}
+.ok-note{margin-top:12px}
+.swap-row{display:flex;gap:8px;flex-wrap:wrap} .swap-row select{flex:1 1 180px}
+.pick.swapped-out{opacity:.5} .pick.swapped-out .nm{text-decoration:line-through}
+.swap-note-line{margin:4px 0 0}
 .card.gone{background:color-mix(in srgb,var(--surface) 70%,var(--bg))}
 .card.gone > .badge, .card.gone > div:not(.own-pop){filter:grayscale(1);opacity:.5}
 .out-tag{display:inline-block;margin-left:6px;padding:2px 6px;border-radius:4px;background:var(--muted);color:var(--surface);font:600 9.5px/1.2 var(--mono);letter-spacing:.08em;vertical-align:1px}
@@ -710,7 +719,7 @@ const POOL = {
   name: "Survivor 51 Fantasy Pool",
   updatedThrough: "Episode 5",
   picksOpen: true,         // set to false to lock the original 8 picks + MVP
-  merged: false,           // true once the tribes merge (unlocks merge picks)
+  merged: true,            // merge bonus picks (and the one-time swap) are open
   winner: null             // castaway id of the Sole Survivor, at the finale (+30 to every entrant whose MVP it is)
 };
 
@@ -798,7 +807,7 @@ const SWAPS = [
                 kilby:"Dina", lewis:"Dina", sharonda:"Dina", eric:"Dina", linnea:"Dina", cristian:"Dina"}},
 ];
 const TRIBE_ORDER = ["Toka","Savu","Dina"];
-const MERGE_EP = null;   // episode number of the merge; merge picks score from the episode after it
+const MERGE_EP = 6;      // merge picks and swaps score from the episode after this one (Episode 7 on); nothing is retroactive
 /* Optional: how a castaway earned their points in an episode, when the breakdown is known.
    Add to an episode as  detail: { brady: [["Wins an individual Reward Challenge",10], ["Hugs Jeff",5]] }
    Anything not listed shows as "Other point categories". */
@@ -860,7 +869,23 @@ const SAMPLE_ENTRANTS = [
   {name:"Sample Entrant F", toka:["lewis","maggie","jenna","an"], savu:["alexis","kristin","ana","rob"], mvp:"alexis", merge:null}
 ];
 /* ============ end of pool data ============ */
-SAMPLE_ENTRANTS.forEach((e,i)=>{ e.key="sample"+i; e.picks=[...e.toka,...e.savu]; });
+/* e.orig = the original eight. e.picks = the current eight (with any merge swap applied).
+   Merge picks and swapped-in castaways only count from the episode after MERGE_EP; a swapped-out
+   castaway keeps the points they earned before that. */
+function setRoster(e){
+  e.orig = [...e.toka, ...e.savu];
+  e.picks = e.swap ? e.orig.map(id=>id===e.swap.out ? e.swap.in : id) : [...e.orig];
+}
+function rosterAt(e, ep){
+  const post = MERGE_EP!=null && ep>MERGE_EP;
+  const base = (post && e.swap) ? e.orig.map(id=>id===e.swap.out ? e.swap.in : id) : (e.orig || e.picks);
+  const list = base.map(id=>({id, tag:id===e.mvp?"MVP":(post && e.swap && id===e.swap.in ? "Swap" : "")}));
+  if(post && e.merge) list.push({id:e.merge, tag:"Merge"});
+  return list;
+}
+/* Points a castaway actually added to this entrant's total. */
+function pickPts(e, id){ return SCORED_EPS().reduce((s,n)=>s + (rosterAt(e,n).some(x=>x.id===id) ? (RESULTS[id]?.byEp[n]||0) : 0), 0); }
+SAMPLE_ENTRANTS.forEach((e,i)=>{ e.key="sample"+i; setRoster(e); });
 /* Real entries come from the pool's shared database (entries/<person>), filled in on the Submit picks page. */
 let ENTRANTS = SAMPLE_ENTRANTS, usingSample = true;
 
@@ -868,8 +893,7 @@ const byId = Object.fromEntries(CAST.map(c=>[c.id,c]));
 const esc = s => String(s).replace(/[&<>"]/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[ch]));
 const short = c => c.nick || c.name.split(" ")[0];
 const initials = c => (c.nick ? c.nick.slice(0,2) : c.name.split(" ").map(w=>w[0]).join("").slice(0,2)).toUpperCase();
-const score = e => e.picks.reduce((s,id)=>s+(RESULTS[id]?.pts||0),0)
-  + (e.merge ? (RESULTS[e.merge]?.after||0) : 0)
+const score = e => SCORED_EPS().reduce((s,n)=>s + rosterAt(e,n).reduce((t,x)=>t+(RESULTS[x.id]?.byEp[n]||0),0), 0)
   + (POOL.winner && POOL.winner===e.mvp ? 30 : 0);
 
 
@@ -1441,8 +1465,7 @@ function entrantBreakdownHTML(e){
   const head = `<div class="bd-title">${esc(e.name)} <span class="mono">${score(e)} pts</span></div>`;
   if(!eps.length) return head + `<p class="bd-none">No episodes scored yet.</p>`;
   const page = (ep, i) => {
-    const ids = [...e.picks.map(id=>({id, tag:id===e.mvp?"MVP":""}))];
-    if(e.merge && MERGE_EP!=null && ep>MERGE_EP) ids.push({id:e.merge, tag:"Merge"});
+    const ids = rosterAt(e, ep);
     const live = [], gone = [];
     ids.forEach(x=>{ const out=RESULTS[x.id].out; if(out!=null && out<ep) gone.push(x); else live.push({...x, out, ...castCats(x.id, null, ep)}); });
     live.sort((a,b)=>b.total-a.total);
@@ -1492,8 +1515,9 @@ function boardPage(){
     if(e.total!==prev){rank=i+1;prev=e.total}
     const left = [...e.picks,...(e.merge?[e.merge]:[])].filter(id=>RESULTS[id]?.out==null).length;
     const chip=(id,p,tag)=>{const c=byId[id],r=RESULTS[id]||{};return `<span class="chip ${r.out!=null?'out':''}">${esc(short(c))}${tag?` <b style="color:var(--torch)">${tag}</b>`:""}<span class="mono">${p}</span></span>`};
-    const chips = e.picks.map(id=>chip(id,RESULTS[id]?.pts||0,id===e.mvp?"MVP":"")).join("")
-      + (e.merge?chip(e.merge,RESULTS[e.merge]?.after||0,"Merge"):"");
+    const chips = e.picks.map(id=>chip(id,pickPts(e,id),id===e.mvp?"MVP":(e.swap&&id===e.swap.in?"Swap":""))).join("")
+      + (e.merge?chip(e.merge,pickPts(e,e.merge),"Merge"):"")
+      + (e.swap?`<span class="chip out" title="Swapped out after Episode ${MERGE_EP}">${esc(short(byId[e.swap.out]))} <b style="color:var(--muted)">Swapped</b><span class="mono">${pickPts(e,e.swap.out)}</span></span>`:"");
     const mv = moveOf[e.key];
     return `<tr class="${rank===1?'lead':''}"><td class="rank">${rank}</td>
       <td><span class="sb-anchor"><button type="button" class="cp-name sb-name">${esc(e.name)}</button><div class="sb-pop" role="tooltip">${entrantBreakdownHTML(e)}</div></span><div class="chips">${chips}</div></td>
@@ -1587,15 +1611,17 @@ function pickLi(id, mvp){
 function entryCard(e){
   const m = byId[e.mvp];
   const mergeSlot = e.merge ? `<ul class="pick-list">${pickLi(e.merge)}</ul>`
+    : e.swap ? `<ul class="pick-list">${pickLi(e.swap.in).replace('<li class="pick ','<li class="pick swap-in ')}</ul><p class="small swap-note-line">Swapped in for ${esc(short(byId[e.swap.out]))}, scoring from Episode ${MERGE_EP+1}.</p>`
     : `<ul class="pick-list"><li class="pick empty">${POOL.merged?"No merge pick made":"Opens after the merge"}</li></ul>`;
+  const li = id => { const h = pickLi(id, e.mvp); return e.swap && id===e.swap.out ? h.replace('<li class="pick ','<li class="pick swapped-out ') : h; };
   return `<article class="entry">
     <div class="entry-head"><div class="pw-name"><h3>${esc(e.name)}</h3><button type="button" class="ov-btn pr-btn" data-key="${esc(e.key)}" aria-expanded="false">Weekly recap</button></div>${m?`<span class="meta-line" style="margin:0">MVP · ${esc(m.name)}</span>`:""}</div>
     <div class="pr-panel" data-key="${esc(e.key)}" hidden></div>
     <div class="group-label tribe Toka">Toka picks</div>
-    <ul class="pick-list">${e.toka.map(id=>pickLi(id,e.mvp)).join("")}</ul>
+    <ul class="pick-list">${e.toka.map(li).join("")}</ul>
     <div class="group-label tribe Savu">Savu picks</div>
-    <ul class="pick-list">${e.savu.map(id=>pickLi(id,e.mvp)).join("")}</ul>
-    <div class="group-label" style="color:var(--muted)">Merge bonus pick</div>
+    <ul class="pick-list">${e.savu.map(li).join("")}</ul>
+    <div class="group-label" style="color:var(--muted)">${e.swap?"Merge swap":"Merge bonus pick"}</div>
     ${mergeSlot}
   </article>`;
 }
@@ -1629,7 +1655,7 @@ function saveMine(v){ try{ localStorage.setItem(MINE_KEY, JSON.stringify(v)); }c
 let mine = loadMine();                       // {id, token} for this browser's own entry
 let adminCode = null;                         // held in memory only after the server accepts it
 let myId = mine?.id || null, dbState="loading", myEntry=null, realEntries=[];
-const blankForm = () => ({name:"", toka:[], savu:[], mvp:"", merge:"", loaded:false});
+const blankForm = () => ({name:"", toka:[], savu:[], mvp:"", merge:"", swapOut:"", swapIn:"", loaded:false});
 const FORMS = {self: blankForm(), admin: blankForm()};
 const MSG = {self:null, admin:null};
 let deadline=null;        // ISO time when original picks lock (from settings/pool)
@@ -1645,7 +1671,7 @@ function scheduleLock(){
 }
 let saving=false, commishUnlocked=false, commishErr="", adminTarget="__new", confirmDelete=false;
 
-function fill(f, e){ Object.assign(f,{name:e?.name||"", toka:[...(e?.toka||[])], savu:[...(e?.savu||[])], mvp:e?.mvp||"", merge:e?.merge||"", loaded:true}); }
+function fill(f, e){ Object.assign(f,{name:e?.name||"", toka:[...(e?.toka||[])], savu:[...(e?.savu||[])], mvp:e?.mvp||"", merge:e?.merge||"", swapOut:e?.swap?.out||"", swapIn:e?.swap?.in||"", loaded:true}); }
 function missingList(f){
   const m=[];
   if(!f.name.trim()) m.push("a name");
@@ -1669,6 +1695,8 @@ function formHTML(mode, locked, isExisting, nameLabel){
   const eight=[...f.toka,...f.savu];
   if(f.mvp && !eight.includes(f.mvp)) f.mvp="";
   if(f.merge && eight.includes(f.merge)) f.merge="";
+  if(f.swapOut && (!eight.includes(f.swapOut) || f.swapOut===f.mvp)) f.swapOut="";
+  if(f.swapIn && (eight.includes(f.swapIn) || f.swapIn===f.merge)) f.swapIn="";
   const missing=missingList(f), ready=!missing.length && !saving;
   return `<form id="pickForm" class="pform" data-mode="${mode}" novalidate>
       <div class="field"><label for="entName">${nameLabel}</label>
@@ -1676,13 +1704,89 @@ function formHTML(mode, locked, isExisting, nameLabel){
       ${group("Toka","toka")}${group("Savu","savu")}
       <div class="field"><label for="mvpSel">MVP (Sole Survivor prediction)</label>
         <select id="mvpSel" ${locked||!eight.length?"disabled":""}><option value="">${eight.length?"Choose from the eight…":"Pick castaways first"}</option>${eight.map(id=>`<option value="${id}" ${f.mvp===id?"selected":""}>${esc(byId[id].name)}</option>`).join("")}</select></div>
-      ${POOL.merged?`<div class="field"><label for="mergeSel">Merge bonus pick</label>
-        <select id="mergeSel"><option value="">No merge pick</option>${CAST.filter(c=>!eight.includes(c.id)).map(c=>`<option value="${c.id}" ${f.merge===c.id?"selected":""}>${esc(c.name)} (${c.tribe})</option>`).join("")}</select>
-        <span class="small">Scores from the episode after the merge onward.</span></div>`:""}
+      ${POOL.merged && mode==="admin"?`<div class="field"><label for="mergeSel">Merge bonus pick</label>
+        <select id="mergeSel"><option value="">No merge pick</option>${CAST.filter(c=>!eight.includes(c.id)).map(c=>`<option value="${c.id}" ${f.merge===c.id?"selected":""}>${esc(c.name)} (${c.tribe})${RESULTS[c.id].out!=null?" · out":""}</option>`).join("")}</select>
+        <span class="small">Scores from Episode ${MERGE_EP+1} on.</span></div>
+      <div class="field"><label for="swapOutSel">Merge swap (instead of a merge pick)</label>
+        <div class="swap-row"><select id="swapOutSel" aria-label="Swap out"><option value="">No swap</option>${eight.filter(id=>id!==f.mvp).map(id=>`<option value="${id}" ${f.swapOut===id?"selected":""}>Out: ${esc(byId[id].name)}</option>`).join("")}</select>
+        <select id="swapInSel" aria-label="Swap in" ${f.swapOut?"":"disabled"}><option value="">Swap in…</option>${CAST.filter(c=>!eight.includes(c.id) && c.id!==f.merge).map(c=>`<option value="${c.id}" ${f.swapIn===c.id?"selected":""}>In: ${esc(c.name)}${RESULTS[c.id].out!=null?" · out":""}</option>`).join("")}</select></div>
+        <span class="small">The swapped-out castaway keeps the points they banked; the new one scores from Episode ${MERGE_EP+1}. Clearing both the merge pick and swap lets this person choose again on the Submit page.</span></div>`:""}
       <div class="submit-row">
         <button class="btn" type="submit" ${ready?"":"disabled"}>${saving?"Saving…":(isExisting?"Save changes":"Submit picks")}</button>
         <span class="small" id="formStatus" role="status">${msg?`<span class="${msg.kind}">${esc(msg.text)}</span>`:(missing.length?`Still need: ${missing.join(", ")}.`:"Ready to submit.")}</span>
       </div></form>`;
+}
+
+/* ---------- Merge bonus pick: one choice per team, made by first name, then locked ---------- */
+const MG = {name:"", merge:"", out:"", in:"", msg:null, saving:false};
+const normName = n => String(n||"").trim().toLowerCase().replace(/\s+/g," ");
+const firstOf = n => normName(n).replace(/[^a-z\s'-]/g,"").split(" ")[0] || "";
+function mergeMatches(name){
+  if(!normName(name)) return [];
+  const exact = realEntries.filter(e=>normName(e.name)===normName(name));
+  return exact.length ? exact : realEntries.filter(e=>firstOf(e.name)===firstOf(name));
+}
+const stillIn = id => RESULTS[id]?.out==null;
+function mergeBodyHTML(){
+  const m = mergeMatches(MG.name);
+  if(MG.msg?.kind==="ok") return `<div class="notice ok-note"><b>Locked in</b><span>${esc(MG.msg.text)}</span></div>`;
+  const err = MG.msg?.kind==="err" ? `<p class="small"><span class="err">${esc(MG.msg.text)}</span></p>` : "";
+  if(!normName(MG.name)) return `<p class="small">Type your first name to find your team.</p>`;
+  if(!m.length) return `<p class="small">No team found under “${esc(MG.name)}”. Use the name shown on the Picks page.</p>`;
+  if(m.length>1) return `<p class="small">More than one team matches “${esc(MG.name)}”. Type your full name as it appears on the Picks page.</p>`;
+  const e = m[0], eight = e.orig, allIn = eight.every(stillIn);
+  const team = `<div class="chips mg-team">${eight.map(id=>`<span class="chip ${stillIn(id)?"":"out"}">${esc(short(byId[id]))}${id===e.mvp?' <b style="color:var(--torch)">MVP</b>':""}</span>`).join("")}</div>`;
+  if(e.merge || e.swap){
+    const what = e.merge ? `${esc(byId[e.merge].name)} is ${esc(e.name)}'s merge bonus pick` : `${esc(e.name)} swapped ${esc(byId[e.swap.out].name)} out for ${esc(byId[e.swap.in].name)}`;
+    return `<p class="mg-who"><b>${esc(e.name)}</b></p>${team}<div class="notice"><b>Already locked in</b><span>${what}. It can't be changed here; ask the commissioner if it needs fixing.</span></div>`;
+  }
+  const pool = CAST.filter(c=>stillIn(c.id) && !eight.includes(c.id)).sort((a,b)=>a.name.localeCompare(b.name));
+  const opt = (c, sel) => `<option value="${c.id}" ${sel===c.id?"selected":""}>${esc(c.name)} (${c.tribe})</option>`;
+  const busy = MG.saving ? "disabled" : "";
+  if(allIn){
+    const outs = eight.filter(id=>id!==e.mvp);
+    return `<p class="mg-who"><b>${esc(e.name)}</b> · all 8 still in the game</p>${team}
+      <p class="small">Your team is still at the 8-castaway limit, so you can't add a ninth. You can swap one of your castaways for someone else instead (optional). Your MVP can't be swapped out.</p>
+      <div class="field"><label for="mgOut">Swap out</label><select id="mgOut" ${busy}><option value="">Choose one of your castaways…</option>${outs.map(id=>`<option value="${id}" ${MG.out===id?"selected":""}>${esc(byId[id].name)}</option>`).join("")}</select></div>
+      <div class="field"><label for="mgIn">Swap in</label><select id="mgIn" ${busy}><option value="">Choose a castaway…</option>${pool.map(c=>opt(c, MG.in)).join("")}</select></div>
+      <p class="small">${MG.out?`${esc(short(byId[MG.out]))} keeps the points already banked for you.`:""} The new castaway scores from Episode ${MERGE_EP+1} on. Once you lock it in, it can't be changed.</p>
+      <div class="submit-row"><button class="btn" type="button" id="mgGo" ${MG.out && MG.in && !MG.saving ? "" : "disabled"}>${MG.saving?"Saving…":"Lock in my swap"}</button></div>${err}`;
+  }
+  return `<p class="mg-who"><b>${esc(e.name)}</b></p>${team}
+    <div class="field"><label for="mgPick">Merge bonus pick</label><select id="mgPick" ${busy}><option value="">Choose a castaway…</option>${pool.map(c=>opt(c, MG.merge)).join("")}</select></div>
+    <p class="small">Your merge pick scores from Episode ${MERGE_EP+1} on (no points from earlier episodes). Once you lock it in, it can't be changed.</p>
+    <div class="submit-row"><button class="btn" type="button" id="mgGo" ${MG.merge && !MG.saving ? "" : "disabled"}>${MG.saving?"Saving…":"Lock in my merge pick"}</button></div>${err}`;
+}
+function mergeSectionHTML(){
+  if(!POOL.merged) return "";
+  return `<section class="merge-panel" aria-labelledby="mgTitle">
+    <h3 id="mgTitle">Merge bonus pick</h3>
+    <p class="small">Add one castaway still in the game to your team. They score from Episode ${MERGE_EP+1} on. If all eight of your castaways are still in, you can swap one out instead. One choice per team, and it locks once submitted.</p>
+    <div class="field"><label for="mgName">Your first name</label><input id="mgName" type="text" maxlength="40" autocomplete="off" value="${esc(MG.name)}" placeholder="e.g. Jordan"></div>
+    <div id="mgBody">${mergeBodyHTML()}</div></section>`;
+}
+function wireMerge(){
+  const nm=document.getElementById("mgName"); if(!nm) return;
+  const body=document.getElementById("mgBody");
+  const paint=()=>{ body.innerHTML=mergeBodyHTML(); wireMergeBody(); };
+  nm.addEventListener("input",()=>{ MG.name=nm.value; MG.merge=""; MG.out=""; MG.in=""; MG.msg=null; paint(); });
+  function wireMergeBody(){
+    const on=(id,k)=>{ const el=document.getElementById(id); el && el.addEventListener("change",()=>{ MG[k]=el.value; MG.msg=null; paint(); document.getElementById(id)?.focus(); }); };
+    on("mgPick","merge"); on("mgOut","out"); on("mgIn","in");
+    const go=document.getElementById("mgGo");
+    go && go.addEventListener("click", async()=>{
+      const e = mergeMatches(MG.name)[0]; if(!e) return;
+      const swapping = e.orig.every(stillIn);
+      MG.saving=true; paint();
+      try{
+        await api("/api/submit", swapping ? {action:"merge", name:e.name, swapOut:MG.out, swapIn:MG.in} : {action:"merge", name:e.name, merge:MG.merge});
+        MG.msg = {kind:"ok", text: swapping ? `${e.name}: ${byId[MG.out].name} is swapped out for ${byId[MG.in].name}, scoring from Episode ${MERGE_EP+1}.` : `${e.name}: ${byId[MG.merge].name} is your merge bonus pick, scoring from Episode ${MERGE_EP+1}.`};
+        await refreshState();
+      }catch(err){ MG.msg = {kind:"err", text: err.userMsg || "That didn't save. Check your connection and try again."}; }
+      MG.saving=false; paint();
+    });
+  }
+  wireMergeBody();
 }
 
 function submitPage(){
@@ -1693,6 +1797,8 @@ function submitPage(){
   if(dbState==="loading") return `<section class="page">${head}<p class="lede">Loading the pool…</p></section>`;
   if(dbState==="none") return `<section class="page">${head}<div class="notice"><b>Can't reach the pool right now</b><span>Picks can't be loaded or saved at the moment. Try again in a minute, or ask the commissioner to enter your picks.</span></div></section>`;
   const locked=picksLocked();
+  if(locked && POOL.merged) return `<section class="page"><h2>Submit picks</h2>
+    <p class="lede">Original picks are locked. The merge bonus pick is open below.</p>${mergeSectionHTML()}</section>`;
   if(locked && !POOL.merged && !myEntry) return `<section class="page">${head}<div class="notice"><b>Picks are locked</b><span>The draft ${deadline?`closed ${esc(fmtDeadline(deadline))}`:"is closed"}. Check the Picks page to see everyone's Fantasy Tribe.</span></div></section>`;
   const dlNote = (!locked && deadline) ? `<div class="deadline-bar"><span class="dl-label">Picks lock</span><strong>${esc(fmtDeadline(deadline))}</strong></div>` : "";
   return `<section class="page">${head}${dlNote}
@@ -1814,6 +1920,8 @@ function wireSubmit(){
   }));
   const mv=document.getElementById("mvpSel"); mv && mv.addEventListener("change",()=>{st.mvp=mv.value;MSG[mode]=null;rerender();document.getElementById("mvpSel").focus();});
   const mg=document.getElementById("mergeSel"); mg && mg.addEventListener("change",()=>{st.merge=mg.value;MSG[mode]=null;rerender();document.getElementById("mergeSel").focus();});
+  const so=document.getElementById("swapOutSel"); so && so.addEventListener("change",()=>{st.swapOut=so.value; if(!so.value) st.swapIn=""; MSG[mode]=null;rerender();document.getElementById("swapOutSel").focus();});
+  const si=document.getElementById("swapInSel"); si && si.addEventListener("change",()=>{st.swapIn=si.value;MSG[mode]=null;rerender();document.getElementById("swapInSel").focus();});
   f.addEventListener("submit",async ev=>{
     ev.preventDefault(); if(saving||missingList(st).length) return;
     let existing;
@@ -1822,8 +1930,11 @@ function wireSubmit(){
     if(mode==="self" && picksLocked() && !existing){ MSG.self={kind:"err",text:"Picks locked before this was saved."}; rerender(); return; }
     const lockedSelf = mode==="self" && picksLocked();
     const body = lockedSelf
-      ? {name:existing.name, toka:existing.toka, savu:existing.savu, mvp:existing.mvp, merge:st.merge||null, updatedAt:new Date().toISOString()}
-      : {name:st.name.trim().slice(0,40), toka:[...st.toka], savu:[...st.savu], mvp:st.mvp, merge:POOL.merged?(st.merge||null):null, updatedAt:new Date().toISOString()};
+      ? {name:existing.name, toka:existing.toka, savu:existing.savu, mvp:existing.mvp, merge:existing.merge||null, swap:existing.swap||null, updatedAt:new Date().toISOString()}
+      : {name:st.name.trim().slice(0,40), toka:[...st.toka], savu:[...st.savu], mvp:st.mvp,
+         merge: mode==="admin" && POOL.merged ? (st.merge||null) : (existing?.merge||null),
+         swap: mode==="admin" && POOL.merged ? (st.swapOut && st.swapIn ? {out:st.swapOut, in:st.swapIn} : null) : (existing?.swap||null),
+         updatedAt:new Date().toISOString()};
     if(mode==="admin") body.enteredBy="commissioner";
     saving=true; rerender();
     try{
@@ -1846,8 +1957,9 @@ function wireSubmit(){
 function applyEntries(snap){
   realEntries = snap.docs.filter(d=>d.exists).map(d=>{const v=d.data();
     return {key:d.id, name:String(v.name||"Unnamed"), toka:(v.toka||[]).filter(id=>byId[id]), savu:(v.savu||[]).filter(id=>byId[id]),
-      mvp:byId[v.mvp]?v.mvp:"", merge:byId[v.merge]?v.merge:null};});
-  realEntries.forEach(e=>e.picks=[...e.toka,...e.savu]);
+      mvp:byId[v.mvp]?v.mvp:"", merge:byId[v.merge]?v.merge:null,
+      swap:(v.swap && byId[v.swap.out] && byId[v.swap.in]) ? {out:v.swap.out, in:v.swap.in} : null};});
+  realEntries.forEach(setRoster);
   usingSample = realEntries.length===0;
   ENTRANTS = usingSample ? SAMPLE_ENTRANTS : realEntries;
   myEntry = myId ? (realEntries.find(e=>e.key===myId)||null) : null;
@@ -2048,8 +2160,7 @@ function mountRoster(){
 
 /* Points one entrant earned in one episode, with the castaways that earned them. */
 function weekFor(e, ep){
-  const parts = e.picks.map(id=>({id, pts:RESULTS[id]?.byEp[ep]||0, tag:id===e.mvp?"MVP":""}));
-  if(e.merge && MERGE_EP!=null && ep>MERGE_EP) parts.push({id:e.merge, pts:RESULTS[e.merge]?.byEp[ep]||0, tag:"Merge"});
+  const parts = rosterAt(e, ep).map(x=>({id:x.id, pts:RESULTS[x.id]?.byEp[ep]||0, tag:x.tag}));
   let total = parts.reduce((s,p)=>s+p.pts,0);
   if(POOL.winner && POOL.winner===e.mvp && ep===LATEST_EP()) total += 30;
   return {parts, total};
@@ -2496,10 +2607,11 @@ function personData(key){
   const e = row.e, N = rd.rows.length;
   const pw = powerOutlooks()[key];
   const roast = roastData(ep).lines.find(l=>l.e.key===key)?.text || "";
-  const ids = [...e.picks.map(id=>({id, tag:id===e.mvp?"MVP":""})), ...(e.merge?[{id:e.merge, tag:"MERGE"}]:[])];
+  const ids = [...e.picks.map(id=>({id, tag:id===e.mvp?"MVP":(e.swap&&id===e.swap.in?"SWAP":"")})), ...(e.merge?[{id:e.merge, tag:"MERGE"}]:[])];
+  const onNow = new Set(rosterAt(e, ep).map(x=>x.id));
   const cast = ids.map(({id,tag})=>{ const r=RESULTS[id];
-    const season = tag==="MERGE" ? (r.after||0) : r.pts;
-    const week = tag==="MERGE" && !(MERGE_EP!=null && ep>MERGE_EP) ? 0 : (r.byEp[ep]||0);
+    const season = pickPts(e, id);
+    const week = onNow.has(id) ? (r.byEp[ep]||0) : 0;
     return {c:byId[id], tag, season, week, out:r.out, tier:tierOf(id)}; })
     .sort((a,b)=>(a.out!=null)-(b.out!=null) || b.season-a.season || b.week-a.week);
   const alive = cast.filter(x=>x.out==null).length;
@@ -2726,6 +2838,7 @@ function wire(){
     li.addEventListener("mouseenter",place); li.addEventListener("focusin",place);
   });
   wireSubmit();
+  wireMerge();
   mountFlying();
   mountRoster();
 }

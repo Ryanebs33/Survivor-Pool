@@ -2,7 +2,9 @@
 import crypto from "node:crypto";
 
 /* ---- Pool settings the server enforces. Keep in sync with POOL in index.html. ---- */
-export const MERGED = false;      // set to true once the tribes merge (allows merge picks)
+export const MERGED = true;       // merge bonus picks (and the one-time swap) are open
+/* Castaways out of the game, for the merge-pick rules (keep in sync with the eliminations in index.html). */
+export const OUT = ["aaliyah","ana","patt","rob","jenna","alexis","linnea","ori"];
 export const PICKS_OPEN = true;   // set to false to close the draft regardless of the deadline
 
 export const TRIBE = {
@@ -87,7 +89,7 @@ export function picksLocked(settings){
 }
 
 /* Public view of an entry: never expose the edit-token hash. */
-export const publicEntry = e => ({id:e.id, name:e.name, toka:e.toka, savu:e.savu, mvp:e.mvp, merge:e.merge||null, updatedAt:e.updatedAt});
+export const publicEntry = e => ({id:e.id, name:e.name, toka:e.toka, savu:e.savu, mvp:e.mvp, merge:e.merge||null, swap:e.swap||null, updatedAt:e.updatedAt});
 
 /* Validate a submitted Fantasy Tribe. Returns {entry} or {error}. */
 export function cleanEntry(b){
@@ -99,13 +101,48 @@ export function cleanEntry(b){
   if(savu.length !== 4) return {error:"Pick exactly four Savu castaways."};
   const eight = [...toka, ...savu];
   if(!eight.includes(b.mvp)) return {error:"Choose your MVP from your eight castaways."};
-  let merge = null;
+  let merge = null, swap = null;
   if(b.merge){
     if(!MERGED) return {error:"Merge picks open after the tribes merge."};
     if(!TRIBE[b.merge] || eight.includes(b.merge)) return {error:"Your merge pick must be a castaway who isn't already on your team."};
     merge = b.merge;
   }
-  return {entry:{name, toka, savu, mvp:b.mvp, merge}};
+  if(b.swap && (b.swap.out || b.swap.in)){
+    const o = b.swap.out, n = b.swap.in;
+    if(!MERGED) return {error:"Swaps open after the tribes merge."};
+    if(!eight.includes(o)) return {error:"The castaway being swapped out has to be one of the eight."};
+    if(o === b.mvp) return {error:"The MVP can't be swapped out."};
+    if(!TRIBE[n] || eight.includes(n) || n === merge) return {error:"The swapped-in castaway can't already be on the team."};
+    swap = {out:o, in:n};
+  }
+  return {entry:{name, toka, savu, mvp:b.mvp, merge, swap}};
+}
+
+/* The one-time merge choice a member makes themselves on the Submit page:
+   a 9th castaway, or (only if all eight are still in the game) a swap of one of the eight. */
+const firstName = n => String(n||"").trim().toLowerCase().replace(/[^a-z\s'-]/g,"").split(/\s+/)[0] || "";
+export function findByName(entries, name){
+  const full = String(name||"").trim().toLowerCase().replace(/\s+/g," ");
+  const exact = entries.filter(e=>String(e.name).trim().toLowerCase().replace(/\s+/g," ")===full);
+  if(exact.length) return exact;
+  return entries.filter(e=>firstName(e.name)===firstName(name));
+}
+export function mergeChoice(entry, b){
+  if(!MERGED) return {error:"Merge picks aren't open yet."};
+  if(entry.merge || entry.swap) return {error:"This team's merge pick is already locked in. Ask the commissioner if it needs to change.", status:409};
+  const eight = [...entry.toka, ...entry.savu];
+  const alive = id => TRIBE[id] && !OUT.includes(id);
+  if(eight.every(alive)){
+    const o = b.swapOut, n = b.swapIn;
+    if(!o || !n) return {error:"All eight of your castaways are still in, so you can swap one out instead of adding a ninth."};
+    if(!eight.includes(o)) return {error:"Choose one of your eight to swap out."};
+    if(o === entry.mvp) return {error:"Your MVP can't be swapped out."};
+    if(!alive(n) || eight.includes(n)) return {error:"Choose a castaway still in the game who isn't already on your team."};
+    return {set:{swap:{out:o, in:n}}};
+  }
+  const m = b.merge;
+  if(!m || !alive(m) || eight.includes(m)) return {error:"Choose a castaway still in the game who isn't already on your team."};
+  return {set:{merge:m}};
 }
 
 export const newId = () => "e_" + crypto.randomBytes(9).toString("base64url");

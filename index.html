@@ -1399,7 +1399,27 @@ const OL = {
     "Fade. Hard. Nathan's team is a fake idol: shiny, convincing, and completely useless when it counts.",
     "Sell everything, including the shelter. This roster is a medevac waiting for a reason.",
     "Fade with extreme prejudice. If Jeff could snuff a fantasy team's torch, he'd start here.",
-    "Avoid. Even the producers think this storyline ends with a unanimous vote."
+    "Avoid. Even the producers think this storyline ends with a unanimous vote.",
+    "Fade. {wk} points this week and Nathan's already drafting the victory speech. Sit down, sir.",
+    "Fade. Sitting {r} in the power rankings, which is generous, and frankly a clerical error.",
+    "Hard pass. Nathan's team has the strategic depth of a puddle at low tide.",
+    "Fade. This roster is held together with rope burn and wishful thinking.",
+    "Sell, sell, sell. The only thing this team is building is a jury of people who'd never vote for it.",
+    "Fade. Nathan calls it a 'long game'; the rest of us call it 'losing slowly.'",
+    "Avoid. If confidence were points, Nathan would lead by 400. It isn't, so he doesn't.",
+    "Fade. Even {bc} can't carry this much ego across a balance beam.",
+    "Proceed directly to Ponderosa. Do not pass Tribal. Do not collect 30 MVP points.",
+    "Fade. Nathan's team is the castaway who says 'I'm not here to make friends' and then makes zero friends.",
+    "Sell. This roster peaked at the marooning, and it's been downhill on a wet log since.",
+    "Fade. Jeff just asked if anyone wants to swap with Nathan's team. Silence.",
+    "Avoid. The tribe has spoken, and it said 'absolutely not, Nathan.'",
+    "Fade. {wk} points is cute. Nathan treating it like a merge feast is less cute.",
+    "Sell. Nathan picked this team like he was blindfolded in a puzzle challenge, and it shows.",
+    "Fade. This team's idol is a coconut with 'trust me' written on it in Sharpie.",
+    "Bench it. Nathan's best move this season was not being on the show.",
+    "Fade. Somewhere a cameraman is zooming in on Nathan's team for the 'and that's where it all went wrong' montage.",
+    "Avoid at all costs. Nathan's roster has the survival instincts of a moth at a torch lighting.",
+    "Fade. If this team makes the finale, Jeff will have to read the votes twice just to believe it."
   ],
   nathanWhy: [
     "Let's be clear before the numbers: this ranking is an accident, and the island knows it.",
@@ -1552,7 +1572,13 @@ function confidenceParts(x, N, deal, terse, gentle){
   else if(x.rank > Math.ceil(N*0.7)) key = "waiver";
   else key = "hold";
   const order = {start:["start","hold"], buy:["buy","hold"], sell:["sell","hold"], hold:["hold","buy","sell"], waiver:["waiver","hold"], nathan:["nathan"]}[key];
-  const verdict = deal(order, e.key);
+  let verdict;
+  if(key === "nathan"){
+    const n0 = OL.nathan.length, order0 = OL.nathan.map((_,i)=>(i + 4) % n0);   // newest lines first, starting Episode 6
+    const wi0 = weekInfo(e.key), best0 = wi0 ? [...wi0.r.parts].sort((a,b)=>b.pts-a.pts)[0] : null;
+    verdict = fillT(OL.nathan[order0[(LATEST_EP() - 6 + (terse?7:0) + n0*4) % n0]],
+      {wk: wi0 ? wi0.r.week : 0, r: ordinal(x.rank), bc: best0 ? nm(best0.id) : (top ? nm(top.id) : "anyone")});
+  } else verdict = deal(order, e.key);
   const verdictLabel = {start:"Must-start", buy:"Buy low", sell:"Sell high", hold:"Hold", waiver:"Waiver wire", nathan:"Fade"}[key];
   if(nathan){
     const nr = seeded(`${e.key}|nathan|${LATEST_EP()}`);

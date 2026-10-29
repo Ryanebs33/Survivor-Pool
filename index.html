@@ -807,7 +807,11 @@ const SWAPS = [
                 kilby:"Dina", lewis:"Dina", sharonda:"Dina", eric:"Dina", linnea:"Dina", cristian:"Dina"}},
 ];
 const TRIBE_ORDER = ["Toka","Savu","Dina"];
-const MERGE_EP = 6;      // merge picks and swaps score from the episode after this one (Episode 7 on); nothing is retroactive
+const MERGE_EP = 7;      // merge picks and swaps score from the episode after this one (Episode 8 on); nothing is retroactive
+const MERGE_OPEN_EP = 6; // the merge pick section appears once someone has seen this episode
+const MERGE_CLOSE = "2026-11-12T00:59:00Z";   // merge picks close Wed Nov 11, 7:59 pm Eastern (keep in sync with api/_lib.js)
+const mergeClosed = () => Date.now() >= Date.parse(MERGE_CLOSE);
+const fmtMergeClose = () => new Date(MERGE_CLOSE).toLocaleString(undefined,{weekday:"short",month:"short",day:"numeric",hour:"numeric",minute:"2-digit",timeZoneName:"short"});
 /* Optional: how a castaway earned their points in an episode, when the breakdown is known.
    Add to an episode as  detail: { brady: [["Wins an individual Reward Challenge",10], ["Hugs Jeff",5]] }
    Anything not listed shows as "Other point categories". */
@@ -874,7 +878,7 @@ const SAMPLE_ENTRANTS = [
    Merge picks and swapped-in castaways only count from the episode after MERGE_EP; a swapped-out
    castaway keeps the points they earned before that. */
 /* Merge picks and swaps are hidden in spoiler-safe mode for anyone who hasn't seen Episode MERGE_EP yet. */
-const mergeVisible = () => viewEp==null || viewEp>=MERGE_EP;
+const mergeVisible = () => viewEp==null || viewEp>=MERGE_OPEN_EP;
 function setRoster(e){
   if("mergeRaw" in e){ e.merge = mergeVisible() ? e.mergeRaw : null; e.swap = mergeVisible() ? e.swapRaw : null; }
   e.orig = [...e.toka, ...e.savu];
@@ -1764,8 +1768,11 @@ function mergeBodyHTML(){
 function mergeSectionHTML(){
   if(!POOL.merged) return "";
   if(!mergeVisible()) return `<div class="notice"><b>Merge bonus pick</b><span>Make pick post-merge</span></div>`;
+  if(mergeClosed()) return `<section class="merge-panel" aria-labelledby="mgTitle"><h3 id="mgTitle">Merge bonus pick</h3>
+    <p class="small">Merge picks closed ${esc(fmtMergeClose())}. Check the Picks page to see everyone's merge pick, or ask the commissioner if yours needs fixing.</p></section>`;
   return `<section class="merge-panel" aria-labelledby="mgTitle">
     <h3 id="mgTitle">Merge bonus pick</h3>
+    <div class="deadline-bar"><span class="dl-label">Merge picks close</span><strong>${esc(fmtMergeClose())}</strong></div>
     <p class="small">Add one castaway still in the game to your team. They score from Episode ${MERGE_EP+1} on. If all eight of your castaways are still in, you can swap one out instead. One choice per team, and it locks once submitted.</p>
     <div class="field"><label for="mgName">Your first name</label><input id="mgName" type="text" maxlength="40" autocomplete="off" value="${esc(MG.name)}" placeholder="e.g. Jordan"></div>
     <div id="mgBody">${mergeBodyHTML()}</div></section>`;
@@ -1803,7 +1810,7 @@ function submitPage(){
   if(dbState==="none") return `<section class="page">${head}<div class="notice"><b>Can't reach the pool right now</b><span>Picks can't be loaded or saved at the moment. Try again in a minute, or ask the commissioner to enter your picks.</span></div></section>`;
   const locked=picksLocked();
   if(locked && POOL.merged) return `<section class="page"><h2>Submit picks</h2>
-    <p class="lede">Original picks are locked.${mergeVisible()?" The merge bonus pick is open below.":""}</p>${mergeSectionHTML()}</section>`;
+    <p class="lede">Original picks are locked.${mergeVisible() && !mergeClosed()?" The merge bonus pick is open below.":""}</p>${mergeSectionHTML()}</section>`;
   if(locked && !POOL.merged && !myEntry) return `<section class="page">${head}<div class="notice"><b>Picks are locked</b><span>The draft ${deadline?`closed ${esc(fmtDeadline(deadline))}`:"is closed"}. Check the Picks page to see everyone's Fantasy Tribe.</span></div></section>`;
   const dlNote = (!locked && deadline) ? `<div class="deadline-bar"><span class="dl-label">Picks lock</span><strong>${esc(fmtDeadline(deadline))}</strong></div>` : "";
   return `<section class="page">${head}${dlNote}

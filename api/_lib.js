@@ -4,6 +4,7 @@ import crypto from "node:crypto";
 /* ---- Pool settings the server enforces. Keep in sync with POOL in index.html. ---- */
 export const MERGED = true;       // merge bonus picks (and the one-time swap) are open
 /* Castaways out of the game, for the merge-pick rules (keep in sync with the eliminations in index.html). */
+export const MERGE_CLOSE = "2026-11-12T00:59:00Z";   // merge picks close Wed Nov 11, 7:59 pm Eastern (EST)
 export const OUT = ["aaliyah","ana","patt","rob","jenna","alexis","linnea","ori"];
 export const PICKS_OPEN = true;   // set to false to close the draft regardless of the deadline
 
@@ -129,6 +130,7 @@ export function findByName(entries, name){
 }
 export function mergeChoice(entry, b){
   if(!MERGED) return {error:"Merge picks aren't open yet."};
+  if(Date.now() >= Date.parse(MERGE_CLOSE)) return {error:"Merge picks closed Nov 11 at 7:59 pm ET. Ask the commissioner if yours needs fixing.", status:409};
   if(entry.merge || entry.swap) return {error:"This team's merge pick is already locked in. Ask the commissioner if it needs to change.", status:409};
   const eight = [...entry.toka, ...entry.savu];
   const alive = id => TRIBE[id] && !OUT.includes(id);

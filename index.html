@@ -478,6 +478,23 @@ nav.tabs a.tab-alert::before{content:"";position:absolute;top:9px;right:4px;widt
 .card.gone{background:color-mix(in srgb,var(--surface) 70%,var(--bg))}
 .card.gone > .badge, .card.gone > div:not(.own-pop){filter:grayscale(1);opacity:.5}
 .swap-tag{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:4px;border:1px solid currentColor;font:600 9.5px/1.2 var(--mono);letter-spacing:.06em;text-transform:none;vertical-align:1px;opacity:.85}
+.mp-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:0 0 18px}
+.mp-stats div{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:2px}
+.mp-stats b{font-size:24px}.mp-stats span{font-size:12px;color:var(--muted)}
+.mp-kind-m{display:none;margin-top:6px}
+@media (max-width:600px){.mp-stats{grid-template-columns:repeat(2,1fr)}
+  .mp-kcol{display:none}.mp-kind-m{display:block}
+  .mp-table th,.mp-table td{padding-left:8px;padding-right:8px}
+  .mp-table .mp-edit{padding:6px 10px;font-size:11px}
+  .mp-tally li{grid-template-columns:minmax(0,1fr) 28px;}.mp-tally li .small{grid-column:1/-1}}
+.mp-cast{display:inline-flex;align-items:center;gap:8px}.mp-cast .badge{width:28px;height:28px;font-size:11px;flex:none}
+.mp-swap{display:inline-flex;flex-wrap:wrap;align-items:center;gap:6px}
+.mp-table tr.mp-none td{color:var(--muted)}
+.mp-kind{font:600 11px/1.2 var(--mono);letter-spacing:.04em;padding:3px 7px;border-radius:4px;border:1px solid var(--line);white-space:nowrap}
+.mp-kind.k-merge{border-color:currentColor}.mp-kind.k-swap{border-style:dashed}
+.mp-tally{list-style:none;padding:0;margin:0;display:grid;gap:8px}
+.mp-table .mp-edit{padding:6px 12px;font-size:12px}
+.mp-tally li{display:grid;grid-template-columns:240px 36px minmax(0,1fr);align-items:center;gap:12px;padding:8px 12px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
 .out-tag{display:inline-block;margin-left:6px;padding:2px 6px;border-radius:4px;background:var(--muted);color:var(--surface);font:600 9.5px/1.2 var(--mono);letter-spacing:.08em;vertical-align:1px}
 .spoil-wrap{position:fixed;inset:0;z-index:900;display:grid;place-items:center;padding:16px;background:rgba(5,12,9,.74);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);overflow:auto}
 .spoil-wrap .gate{width:100%;max-width:540px;margin:0;box-shadow:0 24px 60px -12px rgba(0,0,0,.6)}
@@ -2031,6 +2048,41 @@ function submitPage(){
     </section>`;
 }
 
+/* Commissioner: everyone's merge bonus pick (or one-time swap), whatever spoiler view is on. */
+function mergePicksHTML(){
+  if(dbState==="loading") return `<p class="lede">Loading the pool…</p>`;
+  if(dbState==="none") return `<div class="notice"><b>Can't reach the pool right now</b><span>The pool database isn't responding. Try again in a minute.</span></div>`;
+  const outIds = new Set(ALL_EPISODES.flatMap(ep=>ep.out));
+  const rows = [...realEntries].sort((a,b)=>a.name.localeCompare(b.name)).map(e=>{
+    const orig = [...e.toka, ...e.savu], lost = orig.filter(id=>outIds.has(id));
+    return {e, lost, m:e.mergeRaw, sw:e.swapRaw};
+  });
+  const made = rows.filter(r=>r.m), swaps = rows.filter(r=>r.sw), none = rows.filter(r=>!r.m && !r.sw);
+  const tally = {}; made.forEach(r=>{ (tally[r.m] = tally[r.m] || []).push(r.e.name); });
+  const tallyRows = Object.entries(tally).sort((a,b)=>b[1].length-a[1].length || byId[a[0]].name.localeCompare(byId[b[0]].name));
+  const cn = id => `<span class="mp-cast"><span class="badge t-${byId[id].tribe}" aria-hidden="true">${initials(byId[id])}</span>${esc(byId[id].name)}${outIds.has(id)?' <span class="out-tag">Out</span>':""}</span>`;
+  const choice = r => r.m ? cn(r.m)
+    : r.sw ? `<span class="mp-swap">${cn(r.sw.in)} <span class="small">in for ${esc(short(byId[r.sw.out]))}</span></span>`
+    : `<span class="small">${r.lost.length ? "No pick yet" : "No swap (optional)"}</span>`;
+  const kind = r => r.m ? "Merge pick" : r.sw ? "Swap" : r.lost.length ? "Pending" : "All 8 still in";
+  return `
+    <p class="lede">Who everyone took for their merge bonus pick. Picks score from Episode ${MERGE_EP+1}, and members can make theirs until ${esc(fmtMergeClose())}${mergeClosed()?" (now closed)":""}.</p>
+    <div class="mp-stats">
+      <div><b class="mono">${made.length}</b><span>merge picks</span></div>
+      <div><b class="mono">${swaps.length}</b><span>swaps</span></div>
+      <div><b class="mono">${none.filter(r=>r.lost.length).length}</b><span>still to pick</span></div>
+      <div><b class="mono">${none.filter(r=>!r.lost.length).length}</b><span>all 8 in, no swap</span></div>
+    </div>
+    <div class="tablewrap"><table class="board mp-table">
+      <thead><tr><th>Entrant</th><th>Merge pick</th><th class="mp-kcol">Type</th><th class="r"></th></tr></thead>
+      <tbody>${rows.map(r=>`<tr class="${!r.m&&!r.sw?"mp-none":""}"><td><strong>${esc(r.e.name)}</strong><div class="small">${8-r.lost.length}/8 still in</div></td>
+        <td>${choice(r)}<div class="mp-kind-m"><span class="mp-kind k-${kind(r).split(" ")[0].toLowerCase()}">${kind(r)}</span></div></td><td class="mp-kcol"><span class="mp-kind k-${kind(r).split(" ")[0].toLowerCase()}">${kind(r)}</span></td>
+        <td class="r"><button type="button" class="btn ghost small-btn mp-edit" data-key="${esc(r.e.key)}">Edit</button></td></tr>`).join("")}</tbody>
+    </table></div>
+    ${tallyRows.length?`<h3 style="margin:28px 0 10px">Most-picked</h3>
+    <ul class="mp-tally">${tallyRows.map(([id,names])=>`<li>${cn(id)}<span class="mono">${names.length}</span><span class="small">${esc(names.join(", "))}</span></li>`).join("")}</ul>`:""}`;
+}
+
 function commishPage(){
   let head=`<h2>Commissioner</h2>`;
   if(!commishUnlocked) return `<section class="page">${head}
@@ -2044,12 +2096,14 @@ function commishPage(){
       <a class="ep-tab" href="#commissioner" ${commishTab==="picks"?'aria-current="page"':""}>Picks &amp; deadline</a>
       <a class="ep-tab" href="#recap" ${commishTab==="recap"?'aria-current="page"':""}>Weekly recap</a>
       <a class="ep-tab" href="#standings" ${commishTab==="standings"?'aria-current="page"':""}>Standings</a>
+      <a class="ep-tab" href="#mergepicks" ${commishTab==="mergepicks"?'aria-current="page"':""}>Merge picks</a>
       <a class="ep-tab" href="#flying">Flying</a>
       <a class="ep-tab" href="#roster">Roster Snap</a></nav>`;
   if(commishTab==="flying") return `<div id="flyRoot"></div>`;
   if(commishTab==="roster") return `<div id="rosterRoot"></div>`;
   if(commishTab==="recap") return `<section class="page">${head}</section>${recapPage()}`;
   if(commishTab==="standings") return `<section class="page">${head}</section>${standPage()}`;
+  if(commishTab==="mergepicks") return `<section class="page">${head}${mergePicksHTML()}</section>`;
   if(dbState==="loading") return `<section class="page">${head}<p class="lede">Loading the pool…</p></section>`;
   if(dbState==="none") return `<section class="page">${head}<div class="notice"><b>Can't reach the pool right now</b><span>The pool database isn't responding. Try again in a minute.</span></div></section>`;
   const sorted=[...realEntries].sort((a,b)=>a.name.localeCompare(b.name));
@@ -2104,6 +2158,9 @@ function wireSubmit(){
       catch(e){ commishErr = e.userMsg || "Couldn't check the code. Try again."; }
       rerender();});
   }
+  document.querySelectorAll(".mp-edit").forEach(btn=>btn.addEventListener("click",()=>{
+    adminTarget = btn.dataset.key; FORMS.admin.loaded = false; location.hash = "#commissioner";
+  }));
   const mpt=document.getElementById("mpToggle");
   mpt && mpt.addEventListener("click", async()=>{
     const want = !mergePrompt, st=document.getElementById("mpStatus");
@@ -3000,6 +3057,7 @@ const currentPage = () => { const r=(location.hash||"").slice(1);
   if(r==="recap"){ recapEp=null; commishTab="recap"; return "commissioner"; }
   if(r==="commissioner") commishTab="picks";
   if(r==="roster"){ commishTab="roster"; return "commissioner"; }
+  if(r==="mergepicks"){ commishTab="mergepicks"; return "commissioner"; }
   const fm=/^flying(?:-(map|career|story))?$/.exec(r); if(fm){ commishTab="flying"; flyTab=fm[1]||"logbook"; return "commissioner"; }
   const rm=/^(?:standings|roast)(?:-ep(\d+))?$/.exec(r); if(rm){ standEp=rm[1]?+rm[1]:null; commishTab="standings"; standMsg=""; return "commissioner"; }
   if(r==="power"){ boardTab="power"; return "scoreboard"; }

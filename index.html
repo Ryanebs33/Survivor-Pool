@@ -1501,6 +1501,21 @@ function makeDealer(seedKey){
 /* Storylines from each episode, worked into the outlook's "This week" line for teams that own the castaway.
    Listed most newsworthy first; each team gets one, and teams sharing castaways get different ones where possible. */
 const EP_NOTES = {
+  7: [
+    ["brady", "Storyline: Brady ate every spare grub at the merge feast, then got voted out 9-4 and became the first juror. A true buffet-to-boot pipeline.", true],
+    ["mike", "Storyline: Mike won the first individual immunity idol of the season, then his clumsy warning to Kristin backfired and burned most of the goodwill he'd built. Safe, but friendless."],
+    ["kristin", "Storyline: Kristin sat out the grub feast, then handed her tethered idol to Sharonda as a trust fall. Bold, or the opposite of bold."],
+    ["sharonda", "Storyline: Sharonda missed the merge feast by one grub and now holds Kristin's tethered idol while pitching a Savu takeover. Hungry in every sense."],
+    ["eric", "Storyline: Eric talked through the whole feast, Brady called him \"performative and annoying,\" and his name still got floated at Tribal. Survived, somehow, on charm alone."],
+    ["maggie", "Storyline: Maggie floated voting out Kristin, then voted with the 9-4 majority against her own ally Brady. Loyalty is a feast, and she left early."],
+    ["kilby", "Storyline: Kilby's alliance with Maggie came apart at the merge and Eric and Sharonda are still fuming about the Linnea vote. Dead man walking, or just a man with a target."],
+    ["lewis", "Storyline: Lewis made the immunity final three but fell to Mike, and has now watched his side get shut out of the 9-4 vote. One more idol-level trick would help."],
+    ["cristian", "Storyline: Cristian tapped out of the grub challenge, then spent the feast quietly building the Savu three. Hungry, ruthless, and still here."],
+    ["jelly", "Storyline: Jelly and Devin walked into the merge as a duo with advantages and big targets, and nobody could count a 9-4 vote without them."],
+    ["devin", "Storyline: Devin tipped Maggie off before Tribal, and the Jelly-Devin duo was pivotal in sending Brady home. Kingmakers, with receipts."],
+    ["carter", "Storyline: Carter was on the wrong side of the 9-4 vote, and Toka's old majority just evaporated. Time to make friends."],
+    ["an", "Storyline: Thien An was shut out of the merge vote and her old core scattered. Quiet game, loud numbers problem."]
+  ],
   6: [
     ["kristin", "Storyline: Kristin left Exile with a tethered idol she can only play on Sharonda, and with Ori gone, one more boot makes it all hers. Also, the 25-year-old audition tapes. Iconic."],
     ["jelly", "Storyline: Jelly pulled out an idol at a three-person Tribal and flatly refused to be the eighth woman out in a row. Fantasy managers, take notes."],
@@ -1517,7 +1532,7 @@ const EP_NOTES = {
   ]
 };
 function storyNote(ep, ids, used){
-  const notes = (EP_NOTES[ep] || []).filter(([id])=>ids.includes(id) && RESULTS[id]?.out==null);
+  const notes = (EP_NOTES[ep] || []).filter(([id,,keep])=>ids.includes(id) && (keep || RESULTS[id]?.out==null));
   if(!notes.length) return null;
   const n = notes.find(([id])=>!used.has(id)) || notes[0];
   used.add(n[0]); return n[1];
@@ -1573,7 +1588,7 @@ function confidenceParts(x, N, deal, terse, gentle){
     const bits = [D(pool, v)];
     if(wi.r.move>0) bits.push(D("wkUp", v)); else if(wi.r.move<0) bits.push(D("wkDown", v));
     if(lostNow.length) bits.push(D("wkLost", v));
-    const note = storyNote(wi.ep, [...e.picks, ...(e.merge?[e.merge]:[])], deal.notes || (deal.notes = new Set()));
+    const note = storyNote(AIRED_EP(), [...e.picks, ...(e.merge?[e.merge]:[])], deal.notes || (deal.notes = new Set()));
     if(note) bits.push(note);
     thisWeek = bits.join(" ");
   }

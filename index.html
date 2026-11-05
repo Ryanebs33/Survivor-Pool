@@ -19,7 +19,7 @@ img{max-width:100%}
 /* Layout: torch-lit tab bar over a single content column; tribe colour is the only other hue. */
 :root{
   --bg:#ECF0EC; --surface:#FFFFFF; --ink:#13201C; --muted:#5A6B65; --line:#D3DCD7;
-  --torch:#C9471B; --torch-ink:#FFFFFF; --toka:#B7790A; --savu:#6B3FA0; --ok:#1C7488;
+  --torch:#C9471B; --torch-ink:#FFFFFF; --tovuto:#2563C9; --tovuto-soft:#DCE8FA; --toka:#B7790A; --savu:#6B3FA0; --ok:#1C7488;
   --toka-soft:#F6EAD2; --savu-soft:#ECE3F6; --ok-soft:#DCEEF1; --dina:#B42640; --dina-soft:#F8DDE2; --gate:#13201C; --gate-ink:#F4EFE6;
   --night:#0A1A14; --night-2:#123528; --ember:#FF8A3D; --flame-hi:#FFD27A; --night-ink:#F3EEE4; --night-muted:#A9BDB4;
   --stencil:"Big Shoulders Stencil Display","Big Shoulders Display",Impact,sans-serif;
@@ -29,11 +29,11 @@ img{max-width:100%}
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#0E1613; --surface:#16211D; --ink:#E7ECE8; --muted:#94A49E; --line:#2A3833;
-  --torch:#F06A35; --torch-ink:#1A0D07; --toka:#E6A93A; --savu:#B48CE6; --ok:#4FB3C8;
+  --torch:#F06A35; --torch-ink:#1A0D07; --tovuto:#6EA4F5; --tovuto-soft:#14233D; --toka:#E6A93A; --savu:#B48CE6; --ok:#4FB3C8;
   --toka-soft:#2E2512; --savu-soft:#2A1F3A; --ok-soft:#132B31; --dina:#EA6A80; --dina-soft:#3A1820; --gate:#070B0A; --gate-ink:#F4EFE6; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0E1613; --surface:#16211D; --ink:#E7ECE8; --muted:#94A49E; --line:#2A3833;
-  --torch:#F06A35; --torch-ink:#1A0D07; --toka:#E6A93A; --savu:#B48CE6; --ok:#4FB3C8;
+  --torch:#F06A35; --torch-ink:#1A0D07; --tovuto:#6EA4F5; --tovuto-soft:#14233D; --toka:#E6A93A; --savu:#B48CE6; --ok:#4FB3C8;
   --toka-soft:#2E2512; --savu-soft:#2A1F3A; --ok-soft:#132B31; --dina:#EA6A80; --dina-soft:#3A1820; --gate:#070B0A; --gate-ink:#F4EFE6; color-scheme:dark}
 
 *{box-sizing:border-box}
@@ -85,7 +85,7 @@ h3{font:800 22px/1.1 var(--display);text-transform:uppercase;letter-spacing:.02e
 input[type="text"]{font:500 16px/1.2 var(--body);padding:11px 12px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);width:100%}
 input[type="text"]:focus-visible{outline:3px solid var(--torch);outline-offset:1px}
 .pg-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:10px;border-bottom:2px solid var(--line);padding-bottom:6px}
-.tribe-h.Toka{color:var(--toka)} .tribe-h.Savu{color:var(--savu)} .tribe-h.Dina{color:var(--dina)}
+.tribe-h.Toka{color:var(--toka)} .tribe-h.Savu{color:var(--savu)} .tribe-h.Dina{color:var(--dina)} .tribe-h.Tovuto{color:var(--tovuto)}
 .count{font-size:14px;color:var(--muted)} .count.full{color:var(--torch)}
 .ptiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px}
 .ptile{display:flex;align-items:center;gap:10px;text-align:left;padding:8px 10px;border-radius:10px;border:2px solid transparent;background:var(--surface);color:var(--ink);font:500 14.5px/1.25 var(--body);cursor:pointer;min-width:0}
@@ -455,6 +455,7 @@ html.intro-lock, html.intro-lock body{overflow:hidden}
 .t-Toka .badge,.badge.t-Toka{background:var(--toka-soft);color:var(--toka);box-shadow:inset 0 0 0 2px var(--toka)}
 .t-Savu .badge,.badge.t-Savu{background:var(--savu-soft);color:var(--savu);box-shadow:inset 0 0 0 2px var(--savu)}
 .t-Dina .badge,.badge.t-Dina{background:var(--dina-soft);color:var(--dina);box-shadow:inset 0 0 0 2px var(--dina)}
+.t-Tovuto .badge,.badge.t-Tovuto{background:var(--tovuto-soft);color:var(--tovuto);box-shadow:inset 0 0 0 2px var(--tovuto)}
 .swap-toggle{margin:-4px 0 14px}
 .mp-panel{margin-top:14px}
 .switch{display:inline-flex;align-items:center;gap:8px;border:0;background:transparent;cursor:pointer;padding:2px 0;font:600 12px/1 var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
@@ -502,7 +503,7 @@ nav.tabs a.tab-alert::before{content:"";position:absolute;top:9px;right:4px;widt
 .spoil-wrap .gate .row .btn{width:100%;justify-content:center;text-align:center}
 body.spoil-open{overflow:hidden}
 .tribe{font:500 11px/1 var(--mono);text-transform:uppercase;letter-spacing:.1em}
-.tribe.Toka{color:var(--toka)} .tribe.Savu{color:var(--savu)} .tribe.Dina{color:var(--dina)}
+.tribe.Toka{color:var(--toka)} .tribe.Savu{color:var(--savu)} .tribe.Dina{color:var(--dina)} .tribe.Tovuto{color:var(--tovuto)}
 .card .facts{font-size:13px;color:var(--muted);margin:4px 0 8px}
 .card p{margin:0;font-size:14px}
 
@@ -844,8 +845,10 @@ const SWAPS = [
   {ep:4, moves:{devin:"Savu", jelly:"Savu", ori:"Savu", alexis:"Savu", jenna:"Savu",
                 mike:"Toka", carter:"Toka", brady:"Toka", an:"Toka", maggie:"Toka", kristin:"Toka",
                 kilby:"Dina", lewis:"Dina", sharonda:"Dina", eric:"Dina", linnea:"Dina", cristian:"Dina"}},
+  // Episode 7: the merge. Everyone left (Brady included, he went home at the first merged Tribal) is on Tovuto.
+  {ep:7, moves:Object.fromEntries(["an","brady","carter","cristian","devin","eric","jelly","kilby","kristin","lewis","maggie","mike","sharonda"].map(id=>[id,"Tovuto"]))},
 ];
-const TRIBE_ORDER = ["Toka","Savu","Dina"];
+const TRIBE_ORDER = ["Toka","Savu","Dina","Tovuto"];
 const MERGE_EP = 7;      // merge picks and swaps score from the episode after this one (Episode 8 on); nothing is retroactive
 const MERGE_OPEN_EP = 6; // the merge pick section appears once someone has seen this episode
 const MERGE_CLOSE = "2026-11-12T00:59:00Z";   // merge picks close Wed Nov 11, 7:59 pm Eastern (keep in sync with api/_lib.js)
@@ -882,6 +885,12 @@ function applyView(n){
 }
 let savedView=null; try{ savedView=parseInt(sessionStorage.getItem("s51-view")); }catch(e){}
 applyView(Number.isFinite(savedView) ? savedView : null);
+/* The tribe a castaway was on just before their latest move (shown as "from X"). */
+function prevTribe(c){
+  const upTo = viewEp==null ? FULL_AIRED : viewEp; let cur=c.orig, prev=c.orig;
+  SWAPS.filter(s=>s.ep<=upTo).forEach(s=>{ const t=s.moves[c.id]; if(t && t!==cur){ prev=cur; cur=t; } });
+  return prev;
+}
 /* Tribe history up to what's being viewed, e.g. " Started on Savu; moved to Toka in Episode 3." */
 function swapText(c){
   const upTo = viewEp==null ? FULL_AIRED : viewEp; let cur=c.orig; const moves=[];
@@ -1564,7 +1573,7 @@ function confidenceParts(x, N, deal, terse, gentle){
   const share = top ? Math.round(top.v/proj*100) : 0;
   const standRank = x.rank + x.vsStand;
   const mvpT = e.mvp ? tierOf(e.mvp) : null;
-  const tribes = {}; parts.forEach(p=>{ const t = byId[p.id].tribe; (tribes[t] = tribes[t] || []).push(p.id); });
+  const tribes = {}; parts.forEach(p=>{ const c0 = byId[p.id], t = c0.tribe==="Tovuto" ? prevTribe(c0) : c0.tribe; (tribes[t] = tribes[t] || []).push(p.id); });
   const stack = Object.entries(tribes).sort((a,b)=>b[1].length-a[1].length)[0];
   const sleeper = parts.slice(1).find(p=>["S","A","B"].includes(tierOf(p.id)) && RESULTS[p.id].pts <= (RESULTS[top?.id]?.pts ?? 0) - 8);
   const weak = parts.slice().reverse().find(p=>["D","F"].includes(tierOf(p.id)));
@@ -1816,7 +1825,7 @@ function castPage(){
       <article class="card t-${shownTribe(c)}${RESULTS[c.id].out!=null?" gone":""}" id="c-${c.id}" tabindex="0" aria-label="${esc(c.name)}${RESULTS[c.id].out!=null?`, out in Episode ${RESULTS[c.id].out}`:""}: show who picked them">
         <div class="badge" aria-hidden="true">${initials(c)}</div>
         <div style="min-width:0">
-          <div class="tribe ${shownTribe(c)}">${shownTribe(c)}${showSwaps && c.tribe!==c.orig?` <span class="swap-tag" title="Started on ${c.orig}">⇄ from ${c.orig}</span>`:""}${RESULTS[c.id].out!=null?` <span class="out-tag">Out · Ep ${RESULTS[c.id].out}</span>`:""}</div>
+          <div class="tribe ${shownTribe(c)}">${shownTribe(c)}${showSwaps && c.tribe!==c.orig?` <span class="swap-tag" title="Started on ${c.orig}">⇄ from ${prevTribe(c)}</span>`:""}${RESULTS[c.id].out!=null?` <span class="out-tag">Out · Ep ${RESULTS[c.id].out}</span>`:""}</div>
           <h3>${esc(c.name)}${c.nick?` <span style="color:var(--muted);font-weight:600">“${esc(c.nick)}”</span>`:""}</h3>
           <div class="facts">${c.age} · ${esc(c.job)} · ${esc(c.home)}</div>
           <p>${esc(c.bio+(showSwaps?swapText(c):""))}</p>
@@ -1851,7 +1860,7 @@ function pickLi(id, mvp){
   const pid = `bio-${c.id}-${++bioSeq}`;
   return `<li class="pick ${id===mvp?'mvp':''}"><button type="button" class="pick-link" aria-describedby="${pid}">
     <div class="badge t-${shownTribe(c)}" aria-hidden="true">${initials(c)}</div>
-    <div style="min-width:0"><div class="nm">${esc(c.name)}${id===mvp?'<span class="mvp-tag">MVP</span>':''}</div><div class="tribe ${shownTribe(c)}">${shownTribe(c)}${showSwaps && c.tribe!==c.orig?` <span class="swap-note">· from ${c.orig}</span>`:""}</div></div></button>
+    <div style="min-width:0"><div class="nm">${esc(c.name)}${id===mvp?'<span class="mvp-tag">MVP</span>':''}</div><div class="tribe ${shownTribe(c)}">${shownTribe(c)}${showSwaps && c.tribe!==c.orig?` <span class="swap-note">· from ${prevTribe(c)}</span>`:""}</div></div></button>
     <div class="bio-pop" role="tooltip" id="${pid}">
       <div class="bp-top"><span class="badge t-${shownTribe(c)}" aria-hidden="true">${initials(c)}</span>
         <div><div class="bd-title">${esc(c.name)}</div>${c.nick?`<div class="bp-nick">“${esc(c.nick)}”</div>`:""}</div></div>
@@ -2313,7 +2322,7 @@ async function refreshState(){
 /* ---------- Scoreboard image (canvas) ---------- */
 const IMG_FONTS = ['900 96px "Big Shoulders Stencil Display"','800 40px "Big Shoulders Display"','600 26px "Work Sans"','500 20px "IBM Plex Mono"'];
 const fontsReady = (document.fonts && document.fonts.load) ? Promise.all(IMG_FONTS.map(f=>document.fonts.load(f).catch(()=>{}))) : Promise.resolve();
-const C = {night:"#0A1A14", night2:"#123528", jungle:"#2A4A35", ink:"#F3EEE4", muted:"#A9BDB4", ember:"#FF8A3D", hi:"#FFD27A", toka:"#E6A93A", savu:"#B48CE6", ok:"#4FB3C8", dina:"#EA6A80", line:"rgba(243,238,228,.12)", up:"#6FD3A8", down:"#FF8A6B"};
+const C = {night:"#0A1A14", night2:"#123528", jungle:"#2A4A35", ink:"#F3EEE4", muted:"#A9BDB4", ember:"#FF8A3D", hi:"#FFD27A", toka:"#E6A93A", savu:"#B48CE6", ok:"#4FB3C8", dina:"#EA6A80", tovuto:"#6EA4F5", line:"rgba(243,238,228,.12)", up:"#6FD3A8", down:"#FF8A6B"};
 const F = {stencil:'"Big Shoulders Stencil Display","Big Shoulders Display",Impact,sans-serif', disp:'"Big Shoulders Display","Arial Narrow",Impact,sans-serif', body:'"Work Sans",system-ui,sans-serif', mono:'"IBM Plex Mono",ui-monospace,monospace'};
 function shrink(ctx, text, max, weight, size, min, fam){ let s=size; ctx.font=`${weight} ${s}px ${fam}`; while(s>min && ctx.measureText(text).width>max){ s-=2; ctx.font=`${weight} ${s}px ${fam}`; } return fit(ctx,text,max); }
 function fit(ctx, text, max){ if(ctx.measureText(text).width<=max) return text; let t=text; while(t.length>1 && ctx.measureText(t+"…").width>max) t=t.slice(0,-1); return t+"…"; }
@@ -2983,7 +2992,7 @@ function drawPersonImage(p){
   p.cast.forEach((x,i)=>{
     const top=y+i*castRow, mid=top+castRow/2+9, gone=x.out!=null;
     if(i%2){ ctx.fillStyle="rgba(243,238,228,.03)"; ctx.fillRect(PAD,top,W-PAD*2,castRow); }
-    ctx.fillStyle = ({Toka:C.toka, Savu:C.savu, Dina:C.dina})[x.c.tribe]||C.savu; ctx.beginPath(); ctx.arc(PAD+20, mid-8, 8, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = ({Toka:C.toka, Savu:C.savu, Dina:C.dina, Tovuto:C.tovuto||"#2563C9"})[x.c.tribe]||C.savu; ctx.beginPath(); ctx.arc(PAD+20, mid-8, 8, 0, Math.PI*2); ctx.fill();
     ctx.globalAlpha = gone ? .5 : 1;
     ctx.fillStyle=C.ink; ctx.font=`600 27px ${F.body}`; const nm=fit(ctx,x.c.name,420); ctx.fillText(nm, PAD+44, mid);
     let nx = PAD+44+ctx.measureText(nm).width+12;

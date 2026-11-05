@@ -746,7 +746,7 @@ nav.tabs::after{content:"";position:absolute;top:0;right:0;bottom:0;width:36px;p
 /* ============ POOL DATA — edit this block each week ============ */
 const POOL = {
   name: "Survivor 51 Fantasy Pool",
-  updatedThrough: "Episode 6",
+  updatedThrough: "Episode 7",
   picksOpen: true,         // set to false to lock the original 8 picks + MVP
   merged: true,            // merge bonus picks (and the one-time swap) are open
   winner: null             // castaway id of the Sole Survivor, at the finale (+30 to every entrant whose MVP it is)
@@ -835,8 +835,17 @@ const ALL_EPISODES = [
      ori:[["Chosen to go on a journey",10],["Cried on camera",5],["Played a Shot in the Dark",10]],
      sharonda:[["Chosen to go on a journey",10],["Wins a group Immunity Challenge",5]]
    }},
-  // Episode 7: aired, points pending. Brady voted out.
-  {ep:7, pts:{}, out:["brady"], detail:{}}
+  // Episode 7: the merge. Group reward won by 8; Mike won the first individual immunity; Brady voted out 9-4 (first juror).
+  {ep:7, pts:{an:8, brady:20, carter:8, cristian:3, devin:8, eric:8, jelly:8, kilby:8, kristin:23, lewis:8,
+              maggie:8, mike:23, sharonda:8}, out:["brady"],
+   detail:{
+     an:[["Wins a group Reward Challenge",5],["Survived the week",3]], carter:[["Wins a group Reward Challenge",5],["Survived the week",3]], devin:[["Wins a group Reward Challenge",5],["Survived the week",3]], eric:[["Wins a group Reward Challenge",5],["Survived the week",3]], jelly:[["Wins a group Reward Challenge",5],["Survived the week",3]], kilby:[["Wins a group Reward Challenge",5],["Survived the week",3]], lewis:[["Wins a group Reward Challenge",5],["Survived the week",3]], maggie:[["Wins a group Reward Challenge",5],["Survived the week",3]],
+     brady:[["Wins a group Reward Challenge",5],["Says a curse word that is bleeped",5],["Torch snuffed as a result of a blindside",10]],
+     cristian:[["Survived the week",3]],
+     kristin:[["Says a curse word that is bleeped",5],["Gave away her idol",15],["Survived the week",3]],
+     mike:[["Wins a group Reward Challenge",5],["Wins an Individual Immunity Challenge",15],["Survived the week",3]],
+     sharonda:[["Says a curse word that is bleeped",5],["Survived the week",3]]
+   }}
 ];
 /* Tribe swaps. CAST above holds each castaway's ORIGINAL tribe (what picks were made from);
    each swap lists where people went from that episode on. */

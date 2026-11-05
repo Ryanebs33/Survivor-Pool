@@ -5,7 +5,7 @@ import crypto from "node:crypto";
 export const MERGED = true;       // merge bonus picks (and the one-time swap) are open
 /* Castaways out of the game, for the merge-pick rules (keep in sync with the eliminations in index.html). */
 export const MERGE_CLOSE = "2026-11-12T00:59:00Z";   // merge picks close Wed Nov 11, 7:59 pm Eastern (EST)
-export const OUT = ["aaliyah","ana","patt","rob","jenna","alexis","linnea","ori"];
+export const OUT = ["aaliyah","ana","patt","rob","jenna","alexis","linnea","ori","brady"];
 export const PICKS_OPEN = true;   // set to false to close the draft regardless of the deadline
 
 export const TRIBE = {

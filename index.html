@@ -1882,7 +1882,7 @@ function entryCard(e){
   const m = byId[e.mvp];
   const mergeSlot = e.merge ? `<ul class="pick-list">${pickLi(e.merge)}</ul>`
     : e.swap ? `<ul class="pick-list">${pickLi(e.swap.in).replace('<li class="pick ','<li class="pick swap-in ')}</ul><p class="small swap-note-line">Swapped in for ${esc(short(byId[e.swap.out]))}, scoring from Episode ${MERGE_EP+1}.</p>`
-    : `<ul class="pick-list"><li class="pick empty">${POOL.merged && mergeVisible()?"No merge pick made":"Opens after the merge"}</li></ul>`;
+    : `<ul class="pick-list"><li class="pick empty">${POOL.merged && mergeVisible()?(e.mergeLocked?"Locked in · revealed after the deadline":(mergeClosed()?"No merge pick made":"Not picked yet · picks revealed after the deadline")):"Opens after the merge"}</li></ul>`;
   const li = id => { const h = pickLi(id, e.mvp); return e.swap && id===e.swap.out ? h.replace('<li class="pick ','<li class="pick swapped-out ') : h; };
   return `<article class="entry">
     <div class="entry-head"><div class="pw-name"><h3>${esc(e.name)}</h3><button type="button" class="ov-btn pr-btn" data-key="${esc(e.key)}" aria-expanded="false">Weekly recap</button></div>${m?`<span class="meta-line" style="margin:0">MVP · ${esc(m.name)}</span>`:""}</div>
@@ -2006,6 +2006,7 @@ function mergeBodyHTML(){
   if(m.length>1) return `<p class="small">More than one team matches “${esc(MG.name)}”. Type your full name as it appears on the Picks page.</p>`;
   const e = m[0], eight = e.orig, allIn = eight.every(stillIn);
   const team = `<div class="chips mg-team">${eight.map(id=>`<span class="chip ${stillIn(id)?"":"out"}">${esc(short(byId[id]))}${id===e.mvp?' <b style="color:var(--torch)">MVP</b>':""}</span>`).join("")}</div>`;
+  if(e.mergeLocked && !e.merge && !e.swap) return `<p class="mg-who"><b>${esc(e.name)}</b></p>${team}<div class="notice"><b>Already locked in</b><span>Your merge pick is saved and can't be changed here. Everyone's picks are revealed after the deadline (${esc(fmtMergeClose())}).</span></div>`;
   if(e.merge || e.swap){
     const what = e.merge ? `${esc(byId[e.merge].name)} is ${esc(e.name)}'s merge bonus pick` : `${esc(e.name)} swapped ${esc(byId[e.swap.out].name)} out for ${esc(byId[e.swap.in].name)}`;
     return `<p class="mg-who"><b>${esc(e.name)}</b></p>${team}<div class="notice"><b>Already locked in</b><span>${what}. It can't be changed here; ask the commissioner if it needs fixing.</span></div>`;
@@ -2031,7 +2032,7 @@ function mergeSectionHTML(){
   if(!POOL.merged) return "";
   if(!mergeVisible()) return `<div class="notice"><b>Merge bonus pick</b><span>Make pick post-merge</span></div>`;
   if(mergeClosed()) return `<section class="merge-panel" aria-labelledby="mgTitle"><h3 id="mgTitle">Merge bonus pick</h3>
-    <p class="small">Merge picks closed ${esc(fmtMergeClose())}. Check the Picks page to see everyone's merge pick, or ask the commissioner if yours needs fixing.</p></section>`;
+    <p class="small">Merge picks closed ${esc(fmtMergeClose())}. Everyone's merge picks are now showing on the Picks page, or ask the commissioner if yours needs fixing.</p></section>`;
   return `<section class="merge-panel" aria-labelledby="mgTitle">
     <h3 id="mgTitle">Merge bonus pick</h3>
     <div class="deadline-bar"><span class="dl-label">Merge picks close</span><strong>${esc(fmtMergeClose())}</strong></div>
@@ -2189,7 +2190,7 @@ function wireSubmit(){
   if(cf){ const ci=document.getElementById("codeIn"); ci.focus();
     cf.addEventListener("submit",async ev=>{ev.preventDefault();
       const code=ci.value; commishErr="Checking…"; 
-      try{ await api("/api/admin",{code, action:"verify"}); adminCode=code; commishUnlocked=true; commishErr=""; }
+      try{ await api("/api/admin",{code, action:"verify"}); adminCode=code; await loadAdminMerge(); commishUnlocked=true; commishErr=""; }
       catch(e){ commishErr = e.userMsg || "Couldn't check the code. Try again."; }
       rerender();});
   }
@@ -2221,7 +2222,7 @@ function wireSubmit(){
   }
   const ts=document.getElementById("targetSel");
   ts && ts.addEventListener("change",()=>{adminTarget=ts.value; FORMS.admin=blankForm(); MSG.admin=null; confirmDelete=false; rerender(); document.getElementById("targetSel").focus();});
-  const lb=document.getElementById("lockBtn"); lb && lb.addEventListener("click",()=>{commishUnlocked=false; adminCode=null; FORMS.admin=blankForm(); MSG.admin=null; rerender();});
+  const lb=document.getElementById("lockBtn"); lb && lb.addEventListener("click",()=>{commishUnlocked=false; adminCode=null; adminMergeMap=null; FORMS.admin=blankForm(); MSG.admin=null; rerender();});
   const da=document.getElementById("delAsk"); da && da.addEventListener("click",()=>{confirmDelete=true;rerender();document.getElementById("delNo").focus();});
   const dn=document.getElementById("delNo"); dn && dn.addEventListener("click",()=>{confirmDelete=false;rerender();});
   const dy=document.getElementById("delYes"); dy && dy.addEventListener("click",async()=>{
@@ -2281,11 +2282,26 @@ function wireSubmit(){
   });
 }
 
+/* Before the merge deadline the public data hides merge picks; the commissioner gets them from a code-checked call and they're laid over the entries. */
+let adminMergeMap = null;
+function applyAdminMerge(){
+  if(!adminMergeMap) return;
+  realEntries.forEach(e=>{ const a = adminMergeMap[e.key]; if(!a) return;
+    e.mergeRaw = byId[a.merge] ? a.merge : null;
+    e.swapRaw = (a.swap && byId[a.swap.out] && byId[a.swap.in]) ? {out:a.swap.out, in:a.swap.in} : null;
+    e.mergeLocked = !!(e.mergeRaw || e.swapRaw); });
+  realEntries.forEach(setRoster);
+}
+async function loadAdminMerge(){
+  if(!adminCode) { adminMergeMap = null; return; }
+  try{ const r = await api("/api/admin", {code:adminCode, action:"mergePicks"}); adminMergeMap = r.picks || null; applyAdminMerge(); }catch(e){}
+}
 function applyEntries(snap){
   realEntries = snap.docs.filter(d=>d.exists).map(d=>{const v=d.data();
     return {key:d.id, name:String(v.name||"Unnamed"), toka:(v.toka||[]).filter(id=>byId[id]), savu:(v.savu||[]).filter(id=>byId[id]),
-      mvp:byId[v.mvp]?v.mvp:"", mergeRaw:byId[v.merge]?v.merge:null,
+      mvp:byId[v.mvp]?v.mvp:"", mergeLocked: !!v.mergeLocked, mergeRaw:byId[v.merge]?v.merge:null,
       swapRaw:(v.swap && byId[v.swap.out] && byId[v.swap.in]) ? {out:v.swap.out, in:v.swap.in} : null};});
+  applyAdminMerge();
   realEntries.forEach(setRoster);
   usingSample = realEntries.length===0;
   ENTRANTS = usingSample ? SAMPLE_ENTRANTS : realEntries;
@@ -2315,7 +2331,7 @@ function applyState(data){
     if(pg==="commissioner" && commishUnlocked && !saving && !view.contains(document.activeElement)) rerender(); }
 }
 async function refreshState(){
-  try{ const data = await api("/api/state"); dbState="ready"; applyState(data); }
+  try{ const data = await api("/api/state"); dbState="ready"; applyState(data); if(adminCode) await loadAdminMerge(); }
   catch(e){ if(dbState==="loading"){ dbState="none"; if(["submit","commissioner"].includes(currentPage())) rerender(); } }
 }
 (async()=>{

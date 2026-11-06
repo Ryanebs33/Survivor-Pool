@@ -21,6 +21,11 @@ export default async function handler(req, res){
     }
     switch(b.action){
       case "verify": return send(res, 200, {ok:true});
+      case "mergePicks": {      // the commissioner always sees everyone's merge picks, even before the deadline
+        const { readEntries } = await import("./_lib.js");
+        const all = await readEntries();
+        return send(res, 200, {picks: Object.fromEntries(all.map(e=>[e.id, {merge:e.merge||null, swap:e.swap||null}]))});
+      }
       case "flying": {
         const { getFlying } = await import("./_flying.js");   // loaded only here: it carries the airport list
         const data = await getFlying(s, { force: !!b.refresh });

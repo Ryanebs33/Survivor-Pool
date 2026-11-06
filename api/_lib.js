@@ -90,7 +90,11 @@ export function picksLocked(settings){
 }
 
 /* Public view of an entry: never expose the edit-token hash. */
-export const publicEntry = e => ({id:e.id, name:e.name, toka:e.toka, savu:e.savu, mvp:e.mvp, merge:e.merge||null, swap:e.swap||null, updatedAt:e.updatedAt});
+export const mergeClosed = () => Date.now() >= Date.parse(MERGE_CLOSE);
+/* Merge picks and swaps stay private until the merge deadline: before it, public data only says whether a team has locked one in. */
+export const publicEntry = (e, reveal = true) => ({id:e.id, name:e.name, toka:e.toka, savu:e.savu, mvp:e.mvp,
+  merge: reveal ? (e.merge||null) : null, swap: reveal ? (e.swap||null) : null,
+  ...(reveal ? {} : {mergeLocked: !!(e.merge || e.swap)}), updatedAt:e.updatedAt});
 
 /* Validate a submitted Fantasy Tribe. Returns {entry} or {error}. */
 export function cleanEntry(b){

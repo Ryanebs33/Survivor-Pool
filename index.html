@@ -1941,7 +1941,7 @@ function scheduleLock(){
 }
 let saving=false, commishUnlocked=false, commishErr="", adminTarget="__new", confirmDelete=false;
 
-function fill(f, e){ Object.assign(f,{name:e?.name||"", toka:[...(e?.toka||[])], savu:[...(e?.savu||[])], mvp:e?.mvp||"", merge:(e?.mergeRaw??e?.merge)||"", swapOut:(e?.swapRaw??e?.swap)?.out||"", swapIn:(e?.swapRaw??e?.swap)?.in||"", loaded:true}); }
+function fill(f, e){ Object.assign(f,{name:e?.name||"", toka:[...(e?.toka||[])], savu:[...(e?.savu||[])], mvp:e?.mvp||"", merge:(e?(mergeOf(e)??e.merge):null)||"", swapOut:(e?(swapOf(e)??e.swap):null)?.out||"", swapIn:(e?.swapRaw??e?.swap)?.in||"", loaded:true}); }
 function missingList(f){
   const m=[];
   if(!f.name.trim()) m.push("a name");
@@ -2091,7 +2091,7 @@ function mergePicksHTML(){
   const outIds = new Set(ALL_EPISODES.flatMap(ep=>ep.out));
   const rows = [...realEntries].sort((a,b)=>a.name.localeCompare(b.name)).map(e=>{
     const orig = [...e.toka, ...e.savu], lost = orig.filter(id=>outIds.has(id));
-    return {e, lost, m:e.mergeRaw, sw:e.swapRaw};
+    return {e, lost, m:mergeOf(e), sw:swapOf(e)};
   });
   const made = rows.filter(r=>r.m), swaps = rows.filter(r=>r.sw), none = rows.filter(r=>!r.m && !r.sw);
   const tally = {}; made.forEach(r=>{ (tally[r.m] = tally[r.m] || []).push(r.e.name); });
@@ -2258,10 +2258,10 @@ function wireSubmit(){
     if(mode==="self" && picksLocked() && !existing){ MSG.self={kind:"err",text:"Picks locked before this was saved."}; rerender(); return; }
     const lockedSelf = mode==="self" && picksLocked();
     const body = lockedSelf
-      ? {name:existing.name, toka:existing.toka, savu:existing.savu, mvp:existing.mvp, merge:existing.mergeRaw||null, swap:existing.swapRaw||null, updatedAt:new Date().toISOString()}
+      ? {name:existing.name, toka:existing.toka, savu:existing.savu, mvp:existing.mvp, merge:mergeOf(existing)||null, swap:swapOf(existing)||null, updatedAt:new Date().toISOString()}
       : {name:st.name.trim().slice(0,40), toka:[...st.toka], savu:[...st.savu], mvp:st.mvp,
-         merge: mode==="admin" && POOL.merged ? (st.merge||null) : (existing?.mergeRaw||null),
-         swap: mode==="admin" && POOL.merged ? (st.swapOut && st.swapIn ? {out:st.swapOut, in:st.swapIn} : null) : (existing?.swapRaw||null),
+         merge: mode==="admin" && POOL.merged ? (st.merge||null) : (existing?mergeOf(existing):null)||null,
+         swap: mode==="admin" && POOL.merged ? (st.swapOut && st.swapIn ? {out:st.swapOut, in:st.swapIn} : null) : (existing?swapOf(existing):null)||null,
          updatedAt:new Date().toISOString()};
     if(mode==="admin") body.enteredBy="commissioner";
     saving=true; rerender();
@@ -2285,13 +2285,15 @@ function wireSubmit(){
 /* Before the merge deadline the public data hides merge picks; the commissioner gets them from a code-checked call and they're laid over the entries. */
 let adminMergeMap = null;
 function applyAdminMerge(){
-  if(!adminMergeMap) return;
+  // The commissioner's private copy lives in aMerge/aSwap and is only read by commissioner screens,
+  // so scoreboard, picks and the other public pages keep following the public (hidden) data.
+  if(!adminMergeMap) { realEntries.forEach(e=>{ delete e.aMerge; delete e.aSwap; }); return; }
   realEntries.forEach(e=>{ const a = adminMergeMap[e.key]; if(!a) return;
-    e.mergeRaw = byId[a.merge] ? a.merge : null;
-    e.swapRaw = (a.swap && byId[a.swap.out] && byId[a.swap.in]) ? {out:a.swap.out, in:a.swap.in} : null;
-    e.mergeLocked = !!(e.mergeRaw || e.swapRaw); });
-  realEntries.forEach(setRoster);
+    e.aMerge = byId[a.merge] ? a.merge : null;
+    e.aSwap = (a.swap && byId[a.swap.out] && byId[a.swap.in]) ? {out:a.swap.out, in:a.swap.in} : null; });
 }
+const mergeOf = e => ("aMerge" in e) ? e.aMerge : e.mergeRaw;
+const swapOf = e => ("aSwap" in e) ? e.aSwap : e.swapRaw;
 async function loadAdminMerge(){
   if(!adminCode) { adminMergeMap = null; return; }
   try{ const r = await api("/api/admin", {code:adminCode, action:"mergePicks"}); adminMergeMap = r.picks || null; applyAdminMerge(); }catch(e){}

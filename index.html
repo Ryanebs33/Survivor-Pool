@@ -839,28 +839,28 @@ const ALL_EPISODES = [
   {ep:7, pts:{an:8, brady:20, carter:8, cristian:3, devin:8, eric:8, jelly:8, kilby:8, kristin:23, lewis:8,
               maggie:8, mike:23, sharonda:8}, out:["brady"],
    detail:{
-     an:[["Wins a group Reward Challenge",5],["Survived the week",3]], carter:[["Wins a group Reward Challenge",5],["Survived the week",3]], devin:[["Wins a group Reward Challenge",5],["Survived the week",3]], eric:[["Wins a group Reward Challenge",5],["Survived the week",3]], jelly:[["Wins a group Reward Challenge",5],["Survived the week",3]], kilby:[["Wins a group Reward Challenge",5],["Survived the week",3]], lewis:[["Wins a group Reward Challenge",5],["Survived the week",3]], maggie:[["Wins a group Reward Challenge",5],["Survived the week",3]],
+     an:[["Wins a group Reward Challenge",5]], carter:[["Wins a group Reward Challenge",5]], devin:[["Wins a group Reward Challenge",5]], eric:[["Wins a group Reward Challenge",5]], jelly:[["Wins a group Reward Challenge",5]], kilby:[["Wins a group Reward Challenge",5]], lewis:[["Wins a group Reward Challenge",5]], maggie:[["Wins a group Reward Challenge",5]],
      brady:[["Wins a group Reward Challenge",5],["Says a curse word that is bleeped",5],["Torch snuffed as a result of a blindside",10]],
-     cristian:[["Survived the week",3]],
-     kristin:[["Says a curse word that is bleeped",5],["Gave away her idol",15],["Survived the week",3]],
-     mike:[["Wins a group Reward Challenge",5],["Wins an Individual Immunity Challenge",15],["Survived the week",3]],
-     sharonda:[["Says a curse word that is bleeped",5],["Survived the week",3]]
+     cristian:[],
+     kristin:[["Says a curse word that is bleeped",5],["Gives an immunity idol away",15]],
+     mike:[["Wins a group Reward Challenge",5],["Wins an Individual Immunity Challenge",15]],
+     sharonda:[["Says a curse word that is bleeped",5]]
    }},
   // Episode 8: Kilby and Kristin voted out.
   {ep:8, pts:{an:8, carter:8, cristian:43, devin:3, eric:13, jelly:28, kilby:0, kristin:20, lewis:23, maggie:3, mike:3, sharonda:23},
    out:["kilby","kristin"],
    detail:{
-     an:[["Cried on camera",5],["Survived the week",3]],
-     carter:[["Got an advantage",5],["Survived the week",3]],
-     cristian:[["Got an advantage",5],["Chosen to go on a journey",10],["Played his Shot in the Dark",10],["Drew a safe scroll",15],["Survived the week",3]],
-     devin:[["Survived the week",3]],
-     eric:[["Says a curse word that is bleeped",5],["Got an advantage",5],["Survived the week",3]],
-     jelly:[["Chosen for Reward",5],["Played an immunity idol on herself",5],["Played an immunity idol for another player",15],["Survived the week",3]],
-     kristin:[["Says a curse word that is bleeped",5],["Chosen for Reward",5],["Played her Shot in the Dark",10]],
-     lewis:[["Wins a group Reward Challenge",5],["Wins an Individual Immunity Challenge",15],["Survived the week",3]],
-     maggie:[["Survived the week",3]],
-     mike:[["Survived the week",3]],
-     sharonda:[["Wins a group Reward Challenge",5],["Wins an Individual Immunity Challenge",15],["Survived the week",3]]
+     an:[["Cried on camera",5]],
+     carter:[["Finds or gets a game advantage",5]],
+     cristian:[["Finds or gets a game advantage",5],["Chosen to go on a journey",10],["Played a Shot in the Dark",10],["Drew a safe scroll",15]],
+     devin:[],
+     eric:[["Says a curse word that is bleeped",5],["Finds or gets a game advantage",5]],
+     jelly:[["Chosen for Reward",5],["Played an immunity idol on herself",5],["Played an immunity idol for another player",15]],
+     kristin:[["Says a curse word that is bleeped",5],["Chosen for Reward",5],["Played a Shot in the Dark",10]],
+     lewis:[["Wins a group Reward Challenge",5],["Wins an Individual Immunity Challenge",15]],
+     maggie:[],
+     mike:[],
+     sharonda:[["Wins a group Reward Challenge",5],["Wins an Individual Immunity Challenge",15]]
    }}
 ];
 /* Tribe swaps. CAST above holds each castaway's ORIGINAL tribe (what picks were made from);
@@ -1507,6 +1507,250 @@ const OL = {
     "Not bad, but Nathan's teams do have a way of finding the one coconut to trip over."
   ]
 };
+
+/* Fresh wording for Episode 8. The newest lines in each pool are used first from Episode 8 on, so the outlooks read differently from the week before. */
+const OL_ADD = {
+  wkTop: [
+    "{wk} points in Episode {ep}, the pool's best, with {bc} ({bp}) doing the lifting while everyone else looked for buoys.",
+    "Top of the week: {wk} points, and {bc} ({bp}) deserves a rice bonus.",
+    "Nobody out-scored this team in Episode {ep}: {wk} points, {bc} accounting for {bp}.",
+    "Episode {ep} went exactly this team's way. {wk} points, tops in the pool, with {bc} on {bp}.",
+    "{wk} points and the best week in the pool; {bc} ({bp}) is already writing the victory speech."
+  ],
+  wkGood: [
+    "{wk} points this week lands {wkr} in the pool. {bc} ({bp}) was the difference.",
+    "A good Episode {ep}: {wk} points, {wkr} best, mostly {bc} ({bp}).",
+    "Quietly effective. {wk} points ({wkr}) with {bc} supplying {bp}.",
+    "Episode {ep} paid out: {wk} points, {wkr} in the pool, {bc} good for {bp}.",
+    "{wk} points and a {wkr}-place week. {bc}'s {bp} did the damage."
+  ],
+  wkMid: [
+    "Episode {ep} was fine: {wk} points, {wkr} in the pool. {bc} got {bp} of it.",
+    "{wk} points ({wkr}) is a shrug of a week; {bc}'s {bp} kept it respectable.",
+    "A so-so Episode {ep}. {wk} points, {wkr}, with {bc} on {bp}.",
+    "Mid-table: {wk} points this week ({wkr}). {bc} led with {bp}.",
+    "Nothing to write home about. {wk} points ({wkr}), {bc} top scorer at {bp}."
+  ],
+  wkBad: [
+    "Ouch. {wk} points in Episode {ep}, {wkr} of {N}, and {bc} only found {bp} of it.",
+    "A bad week: {wk} points ({wkr}). {bc}'s {bp} was the lone bright spot.",
+    "Episode {ep} left this team hungry: {wk} points, {wkr} in the pool, {bc} at {bp}.",
+    "{wk} points ({wkr} of {N}). The best anyone did was {bc} with {bp}.",
+    "Rough one. {wk} points and {wkr} in the pool, with {bc} salvaging {bp}."
+  ],
+  wkLost: [
+    "{lostNow} didn't make it out of Episode {ep}.",
+    "Also, {lostNow} {lostAre} gone, and not by choice.",
+    "{lostNow} got the boot this week, which hurts.",
+    "Add {lostNow} to the jury list."
+  ],
+  wkUp: [
+    "That's a {mv}-spot jump in the standings.",
+    "Up {mv} {spots} on the board.",
+    "Gained {mv} {spots} this week."
+  ],
+  wkDown: [
+    "That's {mv} {spots} lost in the standings.",
+    "Fell {mv} {spots} on the board.",
+    "Down {mv} {spots} this week."
+  ],
+  carry: [
+    "{a} ({aw}) is the roster's whole personality, and about {share}% of the outlook.",
+    "Strip out {a} ({aw}) and there's barely a team: about {share}% of the projection rides on one castaway.",
+    "{a} ({aw}) is doing the cooking, fishing and fire-making here, roughly {share}% of what's left.",
+    "About {share}% of what's still to score is {a} ({aw}). No pressure.",
+    "{a} ({aw}) is the plan, the backup plan and about {share}% of the projection.",
+    "Everything points at {a} ({aw}): around {share}% of the outlook."
+  ],
+  balanced: [
+    "{a} ({aw}) and {b} ({bw}) lead a roster with no single point of failure; top share {share}%.",
+    "No one-man show here. {a} ({aw}) and {b} ({bw}) share the load, and the biggest slice is {share}%.",
+    "{a} ({aw}) and {b} ({bw}) steer, and the rest of the roster actually pulls its weight (top share {share}%).",
+    "Healthy spread: {a} ({aw}), {b} ({bw}), and nobody above {share}%.",
+    "A deep bench anchored by {a} ({aw}) and {b} ({bw}). The top slice is only {share}%.",
+    "{a} ({aw}) and {b} ({bw}) are the front line; depth keeps any one share to {share}%."
+  ],
+  lostSome: [
+    "{lost} is out, which still leaves {live} of {total} in the hunt.",
+    "Say goodbye to {lost}; {live} of {total} still carry the torch.",
+    "{lost} has hit the jury bench, and {live} of {total} are still around.",
+    "Down {lost}, up {live} of {total} still breathing.",
+    "{lost} is gone. {live} of {total} remain to make it matter."
+  ],
+  lostMany: [
+    "{lost} are all out, leaving {live} of {total} to hold the shelter together.",
+    "The jury bench now has {lost}; {live} of {total} remain.",
+    "Down to {live} of {total}: {lost} are gone.",
+    "{lost} have left, and {live} of {total} are what's left of the plan.",
+    "Losing {lost} left {live} of {total} to do the work."
+  ],
+  full: [
+    "Still all {total} castaways alive and scoring.",
+    "Not one pick lost: all {total} still in.",
+    "Every castaway on the roster is still alive, all {total} of them.",
+    "All {total} picks still breathing; this team has dodged every vote so far."
+  ],
+  vsUp: [
+    "Projects {vs} spots above the {stand}-place standing; the roster that's left is stronger than the scoreboard.",
+    "Standing {stand} today, but the projection has them {vs} spots higher.",
+    "The experts see more in this roster than the {stand}-place standing does: {vs} spots higher.",
+    "From {stand} on the board to {vs} spots up on projection. Underrated.",
+    "{vs} spots better on projection than their {stand}-place standing. The remaining castaways are the story."
+  ],
+  vsDown: [
+    "Projects {vs} spots below the {stand}-place standing; the points are real, the path is not.",
+    "Standing {stand} today, but the projection drops them {vs} spots.",
+    "The {stand}-place standing is flattering; the projection puts them {vs} spots lower.",
+    "From {stand} on the board to {vs} spots lower on projection. Cash in while you can.",
+    "{vs} spots worse on projection than the {stand}-place standing. The best of it is already banked."
+  ],
+  upMvp: [
+    "MVP {mvp} ({mt}-tier) is why this team can still win it all; get them to the finale and the board flips.",
+    "Ceiling check: {mvp} ({mt}-tier) as MVP means a finale run and 30 bonus points.",
+    "If {mvp} ({mt}-tier) goes the distance, this team goes with them.",
+    "{mvp} ({mt}-tier) is the MVP pick this team lives or dies by, and it's a good one."
+  ],
+  upDiff: [
+    "Only {k} of {N} teams have {x} ({xt}-tier). If they pop, this team pulls away.",
+    "{x} ({xt}-tier) on {k} of {N} rosters is a real edge.",
+    "Rare asset: {x} ({xt}-tier) is on {k} of {N} teams. Everyone else can only watch.",
+    "{x} ({xt}-tier) is owned by {k} of {N}. That's the tiebreaker waiting to happen."
+  ],
+  upSleeper: [
+    "{x} ({xt}-tier, {xp} pts) hasn't done much yet, which is the setup for a big week.",
+    "Look at {x}: {xt}-tier and only {xp} pts. The ratio is about to change.",
+    "{x} ({xt}-tier) is sitting on {xp} pts. That won't last.",
+    "{x} is the dark horse: {xt}-tier, {xp} pts so far, tons of runway.",
+    "{x} ({xt}-tier, {xp} pts) is saving it for the merge, probably."
+  ],
+  upMvpAlive: [
+    "MVP {mvp} is still alive, so the 30-point bonus is still a real thing.",
+    "{mvp} is still in it, and so is the MVP bonus.",
+    "As long as {mvp} survives, the MVP bonus stays on the board."
+  ],
+  riskMvpOut: [
+    "MVP {mvp} is out, so the 30-point bonus is off the table.",
+    "{mvp} went home as MVP. That's 30 points the team will never see.",
+    "No MVP bonus now: {mvp} is already gone."
+  ],
+  riskConc: [
+    "If {a} gets voted out, {share}% of the outlook goes with them.",
+    "Too many eggs with {a}: {share}% of the projection is one Tribal away from zero.",
+    "{a} is {share}% of the projection. One blindside and it's a different team.",
+    "One bad vote on {a} and {share}% of the outlook is on a boat to Ponderosa."
+  ],
+  riskStack: [
+    "{sn} live picks on {st} ({sl}); one bad Tribal and this team takes the hit twice.",
+    "Too much {st}: {sl}. A lost challenge costs more than one torch.",
+    "{sl} are all on {st}. If that group stumbles, this team stumbles with it.",
+    "Stacked on {st} ({sl}). A great plan until it isn't."
+  ],
+  riskWeak: [
+    "{w} ({wt}-tier) looks like the next one out.",
+    "{w} ({wt}-tier) is the soft spot, and everyone knows it.",
+    "{w} ({wt}-tier) is on borrowed time.",
+    "The one to worry about is {w} ({wt}-tier).",
+    "{w} ({wt}-tier) is probably packing already."
+  ],
+  riskThin: [
+    "Only {live} left, so there's no margin for another bad Tribal.",
+    "With {live} remaining, every boot hurts.",
+    "{live} castaways left. Every vote now is a mini-finale."
+  ],
+  riskNone: [
+    "No obvious hole, which on this show just means it hasn't been spotted yet.",
+    "Nothing jumps out. That's exactly how every blindside starts.",
+    "Clean on paper. Survivor does not respect paper."
+  ],
+  start: [
+    "Start with confidence. Everyone else is already scared of this tribe.",
+    "Must-start. This roster has earned a permanent spot.",
+    "Plug it in every week and enjoy the view.",
+    "Start it. The scoreboard agrees, the projection agrees, the island agrees.",
+    "Lock it in. This is the team the rest of the pool is hoping falls apart."
+  ],
+  buy: [
+    "Buy. The board hasn't caught up with this roster yet.",
+    "Buy low. The remaining cast is better than the standings admit.",
+    "Buy. The edit and the projection both like what's left.",
+    "Buy now, thank yourself in three episodes.",
+    "Buy. Underrated roster, and nobody is paying attention."
+  ],
+  sell: [
+    "Sell. The points are banked; the cast that's left won't match them.",
+    "Sell high and don't look back at the jury.",
+    "Sell while the standings flatter. The projection isn't buying it.",
+    "Sell. This team peaked a few episodes ago and the island noticed.",
+    "Sell. Bank the lead before the next blindside takes it."
+  ],
+  hold: [
+    "Hold. It's a one-idol-away roster, and Survivor loves an idol.",
+    "Hold steady. Not a star, not a disaster, a perfectly decent torch.",
+    "Hold. Middle of the pack is where alliances get made.",
+    "Hold and watch the next Tribal before making a move.",
+    "Hold. Nothing to buy, nothing to sell, plenty to watch."
+  ],
+  waiver: [
+    "Waiver wire. Pray for chaos, and an idol.",
+    "Long shot. But hey, the tribe has spoken before.",
+    "Rebuild mode, powered by hope and a late-merge twist.",
+    "Bench it, enjoy the show, check back after the next vote.",
+    "Hope is the plan. Hope is always the plan."
+  ],
+  nathan: [
+    "Fade. Cristian dug up a vote, a safe scroll and a Shot in the Dark in one episode. Nathan's roster dug up {wk} points, and wasn't looking.",
+    "Fade. Nathan's team is the castaway who plays a Shot in the Dark with a full torch and watches it do nothing.",
+    "Sell, and a little bit of pity. {wk} points is the kind of week you pretend didn't happen at Tribal.",
+    "Avoid. {r} in the power rankings is a clerical error the experts are too polite to fix.",
+    "Fade. Kristin played her Shot in the Dark and went home. Nathan is still out here playing his like a strategy.",
+    "Hard pass. This roster has the tactical depth of a coconut shell with a face drawn on it.",
+    "Fade. {bc} is trying, which is more than the rest of Nathan's team can say.",
+    "Avoid. If Jeff read out Nathan's lineup at Tribal, the jury would vote against the whole thing on principle.",
+    "Fade. The only thing Nathan's team has in common with an idol is that both are mostly imaginary.",
+    "Sell. Nathan has the team-building instincts of someone who picks puzzle partners by blindfold.",
+    "Fade. There's a hidden advantage on this roster, and it's the 30-point MVP bonus, which Nathan can't find.",
+    "Avoid. {wk} points is a week. Nathan's lineup has been having it for a month.",
+    "Fade. Nathan's team is a boat with no seats: everyone's leaving, nobody's being replaced.",
+    "Hard pass. Even Eric would say Nathan's team talks too much and does too little, and Eric talks a lot."
+  ],
+  nathanWhy: [
+    "Let's be honest about how Nathan got this far: through a series of near-misses and one very kind projection.",
+    "How did this happen? Nobody knows, least of all the roster:",
+    "Against all logic, taste and Jeff's better judgment, here's Nathan's team:",
+    "For the jury, here's the case against Nathan, and it's unanimous:"
+  ],
+  nathanUp: [
+    "Upside exists in theory, the way an idol exists in a coconut tree.",
+    "Best case, Nathan gets lucky. Worst case, Nathan is Nathan.",
+    "The ceiling here is a sad little shelter built from leaves and optimism.",
+    "Nathan's upside is a rumor, and the tribe doesn't believe rumors."
+  ],
+  nathanRisk: [
+    "The risk is the usual one: it's Nathan's team, and the island has been paying attention.",
+    "Biggest threat is Nathan himself, who picked these castaways personally.",
+    "Also, it's Nathan. The risk is the whole thing.",
+    "The jury might be kind, but the scoreboard won't be."
+  ],
+  nathanWeek: [
+    "Nathan's {wk} points this week is the kind of number Jeff reads in a very flat voice.",
+    "{wk} points for Nathan: a fine effort, if the goal was a quiet exit.",
+    "Nathan managed {wk}. The camera, as always, cut away early.",
+    "{wk} points. At camp, they'd call that a strong 'nice try.'",
+    "Nathan scored {wk} points this week and somehow still wants a victory lap."
+  ],
+  nathanShort: [
+    "Respectable on paper, which is where Nathan does his best work.",
+    "Not terrible. Say it quietly, so Nathan doesn't get ideas.",
+    "Nathan's team is fine, and he'll never let anyone forget it.",
+    "Decent enough that nobody wants to admit Nathan might be right.",
+    "A middle-of-the-road roster that Nathan describes as 'a masterclass.'"
+  ]
+};
+const OL_NEWC = {};
+Object.entries(OL_ADD).forEach(([k,lines])=>{ OL_NEWC[k] = lines.length; OL[k] = (OL[k]||[]).concat(lines); });
+/* The slice of a pool to use: from Episode 8 on, only the newest lines; before that, the lines from earlier weeks. */
+function olRange(k, wk){ const n = OL[k].length, c = OL_NEWC[k]||0; return !c ? [0,n] : (wk>=8 ? [n-c,n] : [0,n-c]); }
+function olPick(rnd, k, wk){ const [lo,hi] = olRange(k, wk); return OL[k][lo + Math.floor(rnd()*(hi-lo))]; }
 function confidenceFor(x, N){
   const rankScore = N>1 ? 1 - (x.rank-1)/(N-1) : 1;
   const tier = x.e.mvp ? tierOf(x.e.mvp) : null;
@@ -1521,14 +1765,14 @@ function makeDealer(seedKey){
   const used = {};                                    // pool -> Set of indexes used this week
   const wk = (seedKey.match(/\|(\d+)(?:\||$)/)||[])[1];
   const prevKey = wk ? seedKey.replace(`|${wk}`, `|${+wk-1}`) : null;
-  const start = (key, k, team) => Math.floor(seeded(`${key}|${k}|${team||""}`)()*OL[k].length);
+  const start = (key, k, team) => { const [lo,hi] = olRange(k, +wk||0); return lo + Math.floor(seeded(`${key}|${k}|${team||""}`)()*(hi-lo)); };
   return (cats, team) => {
     for(const k of cats){
-      const n = OL[k].length, u = used[k] || (used[k] = new Set());
+      const [lo,hi] = olRange(k, +wk||0), n = hi-lo, u = used[k] || (used[k] = new Set());
       if(u.size >= n) continue;
       const avoid = prevKey ? start(prevKey, k, team) : -1;
       let i = start(seedKey, k, team);
-      for(let tries=0; tries<n && (u.has(i) || (i===avoid && u.size < n-1)); tries++) i = (i+1) % n;
+      for(let tries=0; tries<n && (u.has(i) || (i===avoid && u.size < n-1)); tries++) i = lo + (i-lo+1) % n;
       if(!u.has(i)){ u.add(i); return OL[k][i]; }
     }
     const k = cats[0]; used[k] = new Set(); return OL[k][start(seedKey+"|again", k, team)];
@@ -1687,17 +1931,20 @@ function confidenceParts(x, N, deal, terse, gentle){
   const order = {start:["start","hold"], buy:["buy","hold"], sell:["sell","hold"], hold:["hold","buy","sell"], waiver:["waiver","hold"], nathan:["nathan"]}[key];
   let verdict;
   if(key === "nathan"){
-    const n0 = OL.nathan.length, order0 = OL.nathan.map((_,i)=>(i + 4) % n0);   // newest lines first, starting Episode 6
+    const wkN = LATEST_EP(), [nlo, nhi] = olRange("nathan", wkN), n0 = nhi - nlo;
     const wi0 = weekInfo(e.key), best0 = wi0 ? [...wi0.r.parts].sort((a,b)=>b.pts-a.pts)[0] : null;
-    verdict = fillT(OL.nathan[order0[(LATEST_EP() - 6 + (terse?7:0) + n0*4) % n0]],
+    const nIdx = wkN>=8 ? (wkN - 8 + (terse?7:0)) % n0 : (wkN - 6 + (terse?7:0) + n0*4 + 4) % n0;
+    verdict = fillT(OL.nathan[nlo + nIdx],
       {wk: wi0 ? wi0.r.week : 0, r: ordinal(x.rank), bc: best0 ? nm(best0.id) : (top ? nm(top.id) : "anyone")});
   } else verdict = deal(order, e.key);
   const verdictLabel = {start:"Must-start", buy:"Buy low", sell:"Sell high", hold:"Hold", waiver:"Waiver wire", nathan:"Fade"}[key];
   if(nathan){
     const nr = seeded(`${e.key}|nathan|${LATEST_EP()}`);
-    whyBits.unshift(pick(nr, OL.nathanWhy));
-    upside += " " + pick(nr, OL.nathanUp);
-    risk += " " + pick(nr, OL.nathanRisk);
+    const wkN2 = LATEST_EP();
+    whyBits.unshift(olPick(nr, "nathanWhy", wkN2));
+    upside += " " + olPick(nr, "nathanUp", wkN2);
+    risk += " " + olPick(nr, "nathanRisk", wkN2);
+    if(thisWeek && wkN2>=8) thisWeek += " " + fillT(olPick(nr, "nathanWeek", wkN2), {wk: weekInfo(e.key)?.r.week ?? 0});
   }
 
   const sections = [...(thisWeek ? [[`Episode ${weekInfo(e.key).ep}`, thisWeek]] : []), [`Why #${x.rank}`, whyBits.join(" ")], ["Upside", upside], ["Risk", risk], ["Verdict", verdict]];
@@ -1743,7 +1990,7 @@ const SHORT_CAT = {"Wins a group Reward Challenge":"Group reward","Wins a group 
   "Says a curse word that is bleeped":"Curse word","Survived the week":"Survived","Found a hidden immunity idol":"Found idol",
   "Treated for a medical emergency":"Medical emergency","Torch snuffed as a result of a blindside":"Blindsided","Other point categories":"Other",
   "Finds or gets a game advantage":"Got advantage","Finds or gets a game advantage (before giving it away)":"Got advantage","Chosen to go on a journey":"Journey",
-  "Found a hidden immunity idol":"Found idol","Searches through someone else's bag":"Bag search","Chooses to forfeit the game":"Quit","Gives an immunity idol away":"Gave idol away","Cried on camera":"Cried","Voted out unanimously":"Unanimous boot","Created a fake idol":"Fake idol","Played an advantage at Tribal":"Played advantage","Got an idol":"Got idol","Played a Shot in the Dark":"Shot in the Dark"};
+  "Found a hidden immunity idol":"Found idol","Searches through someone else's bag":"Bag search","Chooses to forfeit the game":"Quit","Gives an immunity idol away":"Gave idol away","Cried on camera":"Cried","Voted out unanimously":"Unanimous boot","Created a fake idol":"Fake idol","Played an advantage at Tribal":"Played advantage","Got an idol":"Got idol","Played a Shot in the Dark":"Shot in the Dark","Drew a safe scroll":"Safe scroll","Chosen for Reward":"Chosen for reward","Played an immunity idol on herself":"Idol (self)","Played an immunity idol for another player":"Idol (for another)","Wins an Individual Immunity Challenge":"Individual immunity"};
 /* A castaway's points by category across scored episodes (optionally only after a given episode). */
 function castCats(id, afterEp, onlyEp){
   const r=RESULTS[id], cats=new Map(); let total=0;
@@ -1753,7 +2000,7 @@ function castCats(id, afterEp, onlyEp){
     if(afterEp!=null && e.ep<=afterEp) return;
     if(r.out!=null && e.ep>r.out) return;
     const t=r.byEp[e.ep]||0; total+=t; let used=0;
-    const surv = r.out===e.ep ? 0 : (MERGE_EP!=null && e.ep>MERGE_EP ? 3 : 1);
+    const surv = r.out===e.ep ? 0 : (e.ep>=7 ? 3 : 1);
     if(surv && t>=surv){ cats.set("Survived the week",(cats.get("Survived the week")||0)+surv); used+=surv; }
     (e.detail?.[id]||[]).forEach(([l,p])=>{ cats.set(l,(cats.get(l)||0)+p); used+=p; });
     if(t-used>0) cats.set("Other point categories",(cats.get("Other point categories")||0)+(t-used));
@@ -2812,7 +3059,7 @@ function standData(ep){
       const c = confidenceParts(x, N, deal, true, true);
       // Nathan gets his real tag and the same facts as everyone, with a lighter ribbing in place of the verdict line.
       const auto = isTarget(x.e)
-        ? `${c.why[0]} ${pick(seeded(`${x.e.key}|short|${ep}|${standSeed}`), OL.nathanShort)}`
+        ? `${c.why[0]} ${olPick(seeded(`${x.e.key}|short|${ep}|${standSeed}`), "nathanShort", ep)}`
         : `${c.why[0]} ${c.verdict}`;
       const edited = STAND_EDITS[ep]?.[x.e.key];
       const quip = isTarget(x.e) ? auto.slice(c.why[0].length).trim() : c.verdict;   // one-liner for the share image

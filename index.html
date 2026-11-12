@@ -746,7 +746,7 @@ nav.tabs::after{content:"";position:absolute;top:0;right:0;bottom:0;width:36px;p
 /* ============ POOL DATA — edit this block each week ============ */
 const POOL = {
   name: "Survivor 51 Fantasy Pool",
-  updatedThrough: "Episode 7",
+  updatedThrough: "Episode 8",
   picksOpen: true,         // set to false to lock the original 8 picks + MVP
   merged: true,            // merge bonus picks (and the one-time swap) are open
   winner: null             // castaway id of the Sole Survivor, at the finale (+30 to every entrant whose MVP it is)
@@ -846,8 +846,22 @@ const ALL_EPISODES = [
      mike:[["Wins a group Reward Challenge",5],["Wins an Individual Immunity Challenge",15],["Survived the week",3]],
      sharonda:[["Says a curse word that is bleeped",5],["Survived the week",3]]
    }},
-  // Episode 8: aired, points pending. Kilby and Kristin voted out.
-  {ep:8, pts:{}, out:["kilby","kristin"], detail:{}}
+  // Episode 8: Kilby and Kristin voted out.
+  {ep:8, pts:{an:8, carter:8, cristian:43, devin:3, eric:13, jelly:28, kilby:0, kristin:20, lewis:23, maggie:3, mike:3, sharonda:23},
+   out:["kilby","kristin"],
+   detail:{
+     an:[["Cried on camera",5],["Survived the week",3]],
+     carter:[["Got an advantage",5],["Survived the week",3]],
+     cristian:[["Got an advantage",5],["Chosen to go on a journey",10],["Played his Shot in the Dark",10],["Drew a safe scroll",15],["Survived the week",3]],
+     devin:[["Survived the week",3]],
+     eric:[["Says a curse word that is bleeped",5],["Got an advantage",5],["Survived the week",3]],
+     jelly:[["Chosen for Reward",5],["Played an immunity idol on herself",5],["Played an immunity idol for another player",15],["Survived the week",3]],
+     kristin:[["Says a curse word that is bleeped",5],["Chosen for Reward",5],["Played her Shot in the Dark",10]],
+     lewis:[["Wins a group Reward Challenge",5],["Wins an Individual Immunity Challenge",15],["Survived the week",3]],
+     maggie:[["Survived the week",3]],
+     mike:[["Survived the week",3]],
+     sharonda:[["Wins a group Reward Challenge",5],["Wins an Individual Immunity Challenge",15],["Survived the week",3]]
+   }}
 ];
 /* Tribe swaps. CAST above holds each castaway's ORIGINAL tribe (what picks were made from);
    each swap lists where people went from that episode on. */
@@ -1523,6 +1537,20 @@ function makeDealer(seedKey){
 /* Storylines from each episode, worked into the outlook's "This week" line for teams that own the castaway.
    Listed most newsworthy first; each team gets one, and teams sharing castaways get different ones where possible. */
 const EP_NOTES = {
+  8: [
+    ["kilby", "Storyline: Kilby and Kristin got sent home together on a single vote in the Double Duos twist, the first two jurors. Chaos tornado, gone in one gust.", true],
+    ["kristin", "Storyline: Kristin burned her Shot in the Dark and it saved nobody, taking her and Kilby out on one lone vote. Calm to the end, jury bound.", true],
+    ["cristian", "Storyline: Cristian dug up a vote, a safe scroll and a Shot in the Dark in one episode, and gave Eric his extra vote and told him to waste it. Eric did. Cristian is running the island's economy."],
+    ["jelly", "Storyline: Jelly played her idol for herself and Devin and canceled a whole stack of votes, then watched a one-vote blindside take out two players. Duo champions."],
+    ["devin", "Storyline: Devin's single vote was the only one that counted against Kilby and Kristin, sending two to the jury at once. The quietest kingmaker in the game."],
+    ["lewis", "Storyline: Lewis and Sharonda won immunity, and he picked Jelly for reward because he heard someone talk about spaghetti a lot. Eric noticed. Everyone noticed."],
+    ["sharonda", "Storyline: Sharonda won immunity with Lewis, secretly warned Devin and Jelly, then voted against them anyway. Playing both sides of the beach."],
+    ["eric", "Storyline: Eric compared himself to Frankenstein's monster for surviving Tribal, then asked people to talk to him. They did not. His extra vote expired unused."],
+    ["carter", "Storyline: Carter pitched a six-person alliance, got a safe scroll through Cristian, and declared \"this is easy!\" Famous last words, or a flex."],
+    ["mike", "Storyline: Mike followed Cristian to the well claiming he wasn't spying while doing exactly that. Maggie is done with his Tribal secrets."],
+    ["maggie", "Storyline: Maggie lost patience with Mike's tendency to leak Tribal secrets, and admitted people might not trust her because of how she acts. Self-aware, at least."],
+    ["an", "Storyline: Thien An voted against Devin and Jelly and watched their idol undo it. A small price for quiet survival."]
+  ],
   7: [
     ["brady", "Storyline: Brady ate every spare grub at the merge feast, then got voted out 9-4 and became the first juror. A true buffet-to-boot pipeline.", true],
     ["mike", "Storyline: Mike won the first individual immunity idol of the season, then his clumsy warning to Kristin backfired and burned most of the goodwill he'd built. Safe, but friendless."],

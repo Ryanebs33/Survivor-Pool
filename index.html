@@ -2411,17 +2411,20 @@ function winOdds(){
   const beatBy = teams.map(()=>Array(T).fill(0));
   const inF3 = teams.map(()=>({}));      // team -> castaway -> [sims with castaway in final 3, team wins in those]
   const wonBy = teams.map(()=>({}));     // team -> castaway -> [sims castaway won, team wins in those]
-  const castF3 = Array(ids.length).fill(0), castWin = Array(ids.length).fill(0);
+  const castF3 = Array(ids.length).fill(0), castWin = Array(ids.length).fill(0), castEarly = Array(ids.length).fill(0);
+  // For each team, how often each castaway made the final three / went out before the finale in the seasons that team won
+  const wF3 = teams.map(()=>new Float64Array(ids.length)), wEarly = teams.map(()=>new Float64Array(ids.length));
+  const early = new Uint8Array(ids.length);
   const rnd = seeded("winodds|" + key);
   const pickW = (pool, w) => { let t=0; pool.forEach(i=>t+=w(i)); let r=rnd()*t; for(const i of pool){ r-=w(i); if(r<=0) return i; } return pool[pool.length-1]; };
   const pts = new Float64Array(ids.length);
   for(let s=0; s<WIN_SIMS; s++){
-    pts.fill(0); let left = ids.map((_,i)=>i);
+    pts.fill(0); early.fill(0); let left = ids.map((_,i)=>i);
     for(let ep=0; ep<epsLeft; ep++){
       const boots = [];
       for(let b=0;b<plan[ep];b++){ const i = pickW(left, i=>1/Math.pow(mult[ids[i]],2.2)); boots.push(i); left = left.filter(x=>x!==i); }
       left.forEach(i=>{ pts[i] += rate[ids[i]] * -Math.log(1 - rnd()); });   // lumpy weeks: most are quiet, some are idol-sized
-      boots.forEach(i=>{ pts[i] += rate[ids[i]] * 0.5 * rnd(); });
+      boots.forEach(i=>{ pts[i] += rate[ids[i]] * 0.5 * rnd(); if(ep < epsLeft-1) early[i] = 1; });
     }
     // Final three: the winner and runner-up lean toward the stronger castaways.
     let f = left.slice(); const order = [];
@@ -2433,7 +2436,10 @@ function winOdds(){
     const sorted = tot.map((v,i)=>[v,i]).sort((a,b)=>b[0]-a[0]);
     const best = sorted[0][0], leaders = sorted.filter(x=>x[0]===best).map(x=>x[1]);
     sorted.forEach(([v,i],r)=>{ rankSum[i] += r+1; finSum[i] += v; if(r<3) top3[i]++; });
-    leaders.forEach(i=>wins[i] += 1/leaders.length);
+    leaders.forEach(i=>{ wins[i] += 1/leaders.length;
+      for(let j=0;j<ids.length;j++){ if(early[j]) wEarly[i][j] += 1/leaders.length; }
+      left.forEach(j=>wF3[i][j] += 1/leaders.length); });
+    for(let j=0;j<ids.length;j++) if(early[j]) castEarly[j]++;
     teams.forEach((t,i)=>{
       const won = leaders.includes(i);
       if(!won) beatBy[i][leaders[0]]++;
@@ -2446,10 +2452,13 @@ function winOdds(){
   }
   const standOrder = [...teams].sort((a,b)=>b.now-a.now);
   const rows = teams.map((t,i)=>({t, i, win:wins[i]/WIN_SIMS, top3:top3[i]/WIN_SIMS, avgFin:finSum[i]/WIN_SIMS, avgRank:rankSum[i]/WIN_SIMS,
-    standRank: standOrder.findIndex(x=>x.now===t.now)+1, inF3:inF3[i], wonBy:wonBy[i], beatBy:beatBy[i]}))
+    standRank: standOrder.findIndex(x=>x.now===t.now)+1, inF3:inF3[i], wonBy:wonBy[i], beatBy:beatBy[i],
+    winF3: Object.fromEntries(ids.map((id,j)=>[id, wins[i] ? wF3[i][j]/wins[i] : 0])),
+    winEarly: Object.fromEntries(ids.map((id,j)=>[id, wins[i] ? wEarly[i][j]/wins[i] : 0]))}))
     .sort((a,b)=>b.win-a.win || b.avgFin-a.avgFin);
   return WIN_CACHE[key] = {rows, teams, epsLeft, plan, ids, castF3:Object.fromEntries(ids.map((id,i)=>[id,castF3[i]/WIN_SIMS])),
-    castWin:Object.fromEntries(ids.map((id,i)=>[id,castWin[i]/WIN_SIMS])), leaderNow: standOrder[0]?.now ?? 0, latest};
+    castWin:Object.fromEntries(ids.map((id,i)=>[id,castWin[i]/WIN_SIMS])),
+    castEarly:Object.fromEntries(ids.map((id,i)=>[id,castEarly[i]/WIN_SIMS])), leaderNow: standOrder[0]?.now ?? 0, latest};
 }
 const pctTxt = p => p<=0 ? "0%" : p<0.005 ? "<1%" : p>0.995 && p<1 ? ">99%" : Math.round(p*100)+"%";
 function winWhy(x, W){
@@ -2477,11 +2486,41 @@ function winWhy(x, W){
   // Main obstacle
   const rival = x.beatBy.map((n,j)=>[n,j]).sort((a,b)=>b[0]-a[0])[0];
   if(rival && rival[0] > 0 && x.win < 0.995) out.push(`The team most likely to beat them: ${esc(W.teams[rival[1]].e.name)}, who finishes first in ${pctTxt(rival[0]/(WIN_SIMS*(1-x.win)))} of the simulations this team doesn't win.`);
+  // Path to victory: what the seasons this team wins have in common
+  out.push(...winPath(x, W));
   // Bottom line
   const bl = x.win>=0.4 ? "The favourite. It's theirs to lose." : x.win>=0.2 ? "A real contender; one good week puts them in front." :
     x.win>=0.08 ? "In the hunt, but needs help from the teams above." : x.win>=0.01 ? "Long shot. It takes a deep run from their best castaway and a stumble from the leaders." :
     x.win>0 ? "Needs nearly everything to break right." : "Mathematically alive, practically not: no simulated season ended with this team on top.";
   out.push(isTarget(e) && x.win<0.2 ? bl + " Nathan, to be clear, disagrees." : bl);
+  return out;
+}
+function winPath(x, W){
+  // Returns short "Path to victory" bullets: what the simulated seasons this team wins have in common.
+  const e = x.t.e, nm = id => short(byId[id]), nWins = x.win*WIN_SIMS, P = "<b>Path to victory:</b> ";
+  const list = a => a.length<=1 ? a.join("") : a.slice(0,-1).join(", ") + " and " + a[a.length-1];
+  const pct = p => Math.round(p*100) + "%";
+  if(x.win<=0) return [];
+  if(nWins < 15) return [P + `it happens in only ${Math.round(nWins)} of ${WIN_SIMS.toLocaleString()} simulated seasons, so nearly everything has to break right: big weeks from their castaways while the teams above stall.`];
+  const mine = new Set(x.t.ids), above = W.teams.filter(t=>t.now > x.t.now && t!==x.t);
+  const deep = Object.keys(x.winF3).filter(id=>mine.has(id) || id===e.mvp)
+    .map(id=>({id, d:x.winF3[id]-W.castF3[id], p:x.winF3[id]})).filter(o=>o.d>=0.12).sort((a,b)=>b.d-a.d).slice(0,2);
+  const gone = Object.keys(x.winEarly).filter(id=>!mine.has(id) && id!==e.mvp)
+    .map(id=>({id, d:x.winEarly[id]-W.castEarly[id]})).filter(o=>o.d>=0.1).sort((a,b)=>b.d-a.d).slice(0,3);
+  const mvpLive = e.mvp && RESULTS[e.mvp]?.out==null, wb = mvpLive ? x.wonBy[e.mvp] : null;
+  const mvpShare = wb && nWins ? Math.min(wb[1]/nWins, 1) : 0;
+  const out = [];
+  if(mvpShare >= 0.5) out.push(P + `it mostly comes down to MVP ${nm(e.mvp)} winning Survivor. ${nm(e.mvp)} is the Sole Survivor in ${pct(mvpShare)} of this team's wins.`);
+  if(deep.length) out.push((out.length?"":P) + `Needs ${list(deep.map(o=>nm(o.id)))} in the final three (${list(deep.map(o=>pct(o.p)))} of their wins, vs ${list(deep.map(o=>pct(W.castF3[o.id])))} normally).`);
+  if(gone.length){
+    const owners = gone.map(o=>above.filter(t=>t.ids.includes(o.id)).map(t=>esc(t.e.name)));
+    const same = owners.every(o=>o.join()===owners[0].join()) && owners[0].length;
+    const whose = same ? ` ${gone.length>1?(gone.length===2?"Both are":"All are"):"They're"} on ${owners[0].length>2?`${owners[0].length} rosters ahead of them`:list(owners[0])+"'s roster"}.`
+      : (owners.some(o=>o.length) ? " " + gone.map((o,k)=>owners[k].length ? `${nm(o.id)} is on ${owners[k].length>2?`${owners[k].length} rosters ahead`:list(owners[k])+"'s"}` : null).filter(Boolean).join("; ") + "." : "");
+    out.push((out.length?"":P) + `Needs ${list(gone.map(o=>nm(o.id)))} voted out before the finale.${whose}`);
+  }
+  if(mvpShare >= 0.25 && mvpShare < 0.5) out.push(`MVP ${nm(e.mvp)} winning Survivor would help a lot: it happens in ${pct(mvpShare)} of their wins.`);
+  if(!out.length) out.push(P + (x.win>=0.4 ? "keep doing what they're doing. Their wins don't hinge on any one castaway or boot." : "no single castaway or boot decides it. It takes steady scoring across the roster and quiet weeks from the teams above."));
   return out;
 }
 function winOddsHTML(){

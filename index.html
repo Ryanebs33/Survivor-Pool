@@ -479,6 +479,21 @@ nav.tabs a.tab-alert::before{content:"";position:absolute;top:9px;right:4px;widt
 .card.gone{background:color-mix(in srgb,var(--surface) 70%,var(--bg))}
 .card.gone > .badge, .card.gone > div:not(.own-pop){filter:grayscale(1);opacity:.5}
 .swap-tag{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:4px;border:1px solid currentColor;font:600 9.5px/1.2 var(--mono);letter-spacing:.06em;text-transform:none;vertical-align:1px;opacity:.85}
+.wo-list{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+.wo-item{background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.wo-item summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:28px minmax(0,1fr) 64px;align-items:center;gap:10px;padding:10px 14px}
+.wo-item summary::-webkit-details-marker{display:none}
+.wo-item summary:focus-visible{outline:2px solid var(--torch);outline-offset:2px;border-radius:10px}
+.wo-rank{font:600 13px/1 var(--mono);color:var(--muted)}
+.wo-name{display:flex;flex-direction:column;gap:6px;min-width:0}
+.wo-name strong{text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
+.wo-item[open] .wo-name strong{text-decoration-color:currentColor}
+.wo-bar{height:6px;border-radius:3px;background:var(--line);overflow:hidden}.wo-bar span{display:block;height:100%;background:var(--torch);border-radius:3px}
+.wo-pct{font:700 20px/1 var(--mono);text-align:right}
+.wo-body{padding:2px 14px 14px 52px;font-size:14px;line-height:1.55}
+.wo-body p{margin:0 0 8px}.wo-body ul{margin:0 0 8px;padding-left:18px}.wo-body li{margin:0 0 4px}
+.wo-meta{display:flex;flex-wrap:wrap;gap:6px 14px;font:12px/1.3 var(--mono);color:var(--muted);margin:0 0 10px}
+@media (max-width:600px){.wo-body{padding-left:14px}.wo-item summary{grid-template-columns:22px minmax(0,1fr) 56px;padding:10px 12px}}
 .mp-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:0 0 18px}
 .mp-stats div{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:2px}
 .mp-stats b{font-size:24px}.mp-stats span{font-size:12px;color:var(--muted)}
@@ -2364,6 +2379,130 @@ function submitPage(){
     </section>`;
 }
 
+
+/* ---------- Commissioner: win probability ----------
+   Simulates the rest of the season thousands of times with the same inputs as the power rankings:
+   each castaway's scoring rate so far and the expert strength scores. Weaker castaways are likelier to be
+   voted out each week, stronger ones likelier to reach the final three and win. Seeded, so the numbers only
+   change when a new episode is scored or rankings update. */
+const WIN_SIMS = 5000;
+const WIN_CACHE = {};
+function winOdds(){
+  const latest = LATEST_EP(), key = `${latest}|${viewEp}|${ENTRANTS.map(e=>e.key+":"+e.picks.join(".")+":"+(e.merge||"")+":"+e.mvp).join(",")}`;
+  if(WIN_CACHE[key]) return WIN_CACHE[key];
+  const eps = SCORED_EPS();
+  const alive = CAST.filter(c=>RESULTS[c.id]?.out==null);
+  const played = c => eps.filter(n => RESULTS[c.id].out==null || n <= RESULTS[c.id].out).length;
+  const castMean = alive.reduce((s,c)=>s+RESULTS[c.id].pts,0) / Math.max(alive.reduce((s,c)=>s+played(c),0),1);
+  const rate = {}, mult = {};
+  alive.forEach(c=>{ rate[c.id] = (RESULTS[c.id].pts + 2*castMean) / (played(c) + 2); mult[c.id] = multOf(c.id); });
+  const epsLeft = Math.max(SEASON_EPISODES - latest, 0);
+  // Boots per remaining episode, spread evenly down to a final three (extras land later, the finale takes the most).
+  const toBoot = Math.max(alive.length - 3, 0), plan = Array(epsLeft).fill(0);
+  for(let i=0;i<toBoot && epsLeft;i++) plan[epsLeft-1-(i%epsLeft)]++;
+  const teams = ENTRANTS.map(e=>({e, ids:[...e.picks, ...(e.merge?[e.merge]:[])].filter(id=>RESULTS[id]?.out==null), now:score(e)}));
+  const T = teams.length, ids = alive.map(c=>c.id), idx = Object.fromEntries(ids.map((id,i)=>[id,i]));
+  const wins = Array(T).fill(0), top3 = Array(T).fill(0), finSum = Array(T).fill(0), rankSum = Array(T).fill(0);
+  const beatBy = teams.map(()=>Array(T).fill(0));
+  const inF3 = teams.map(()=>({}));      // team -> castaway -> [sims with castaway in final 3, team wins in those]
+  const wonBy = teams.map(()=>({}));     // team -> castaway -> [sims castaway won, team wins in those]
+  const castF3 = Array(ids.length).fill(0), castWin = Array(ids.length).fill(0);
+  const rnd = seeded("winodds|" + key);
+  const pickW = (pool, w) => { let t=0; pool.forEach(i=>t+=w(i)); let r=rnd()*t; for(const i of pool){ r-=w(i); if(r<=0) return i; } return pool[pool.length-1]; };
+  const pts = new Float64Array(ids.length);
+  for(let s=0; s<WIN_SIMS; s++){
+    pts.fill(0); let left = ids.map((_,i)=>i);
+    for(let ep=0; ep<epsLeft; ep++){
+      const boots = [];
+      for(let b=0;b<plan[ep];b++){ const i = pickW(left, i=>1/Math.pow(mult[ids[i]],2.2)); boots.push(i); left = left.filter(x=>x!==i); }
+      left.forEach(i=>{ pts[i] += rate[ids[i]] * -Math.log(1 - rnd()); });   // lumpy weeks: most are quiet, some are idol-sized
+      boots.forEach(i=>{ pts[i] += rate[ids[i]] * 0.5 * rnd(); });
+    }
+    // Final three: the winner and runner-up lean toward the stronger castaways.
+    let f = left.slice(); const order = [];
+    while(f.length){ const i = pickW(f, i=>Math.pow(mult[ids[i]],2.2)); order.push(i); f = f.filter(x=>x!==i); }
+    [30,20,10].forEach((b,k)=>{ if(order[k]!=null) pts[order[k]] += b; });
+    const winner = order[0] != null ? ids[order[0]] : null;
+    left.forEach(i=>castF3[i]++); if(order[0]!=null) castWin[order[0]]++;
+    const tot = teams.map(t=> t.now + t.ids.reduce((a,id)=>a+pts[idx[id]],0) + (winner && t.e.mvp===winner ? 30 : 0));
+    const sorted = tot.map((v,i)=>[v,i]).sort((a,b)=>b[0]-a[0]);
+    const best = sorted[0][0], leaders = sorted.filter(x=>x[0]===best).map(x=>x[1]);
+    sorted.forEach(([v,i],r)=>{ rankSum[i] += r+1; finSum[i] += v; if(r<3) top3[i]++; });
+    leaders.forEach(i=>wins[i] += 1/leaders.length);
+    teams.forEach((t,i)=>{
+      const won = leaders.includes(i);
+      if(!won) beatBy[i][leaders[0]]++;
+      t.ids.concat(t.e.mvp && idx[t.e.mvp]!=null && !t.ids.includes(t.e.mvp) ? [t.e.mvp] : []).forEach(id=>{
+        const j = idx[id]; if(j==null) return;
+        if(left.includes(j)){ const a = inF3[i][id] || (inF3[i][id]=[0,0]); a[0]++; if(won) a[1]++; }
+        if(winner===id){ const a = wonBy[i][id] || (wonBy[i][id]=[0,0]); a[0]++; if(won) a[1]++; }
+      });
+    });
+  }
+  const standOrder = [...teams].sort((a,b)=>b.now-a.now);
+  const rows = teams.map((t,i)=>({t, i, win:wins[i]/WIN_SIMS, top3:top3[i]/WIN_SIMS, avgFin:finSum[i]/WIN_SIMS, avgRank:rankSum[i]/WIN_SIMS,
+    standRank: standOrder.findIndex(x=>x.now===t.now)+1, inF3:inF3[i], wonBy:wonBy[i], beatBy:beatBy[i]}))
+    .sort((a,b)=>b.win-a.win || b.avgFin-a.avgFin);
+  return WIN_CACHE[key] = {rows, teams, epsLeft, plan, ids, castF3:Object.fromEntries(ids.map((id,i)=>[id,castF3[i]/WIN_SIMS])),
+    castWin:Object.fromEntries(ids.map((id,i)=>[id,castWin[i]/WIN_SIMS])), leaderNow: standOrder[0]?.now ?? 0, latest};
+}
+const pctTxt = p => p<=0 ? "0%" : p<0.005 ? "<1%" : p>0.995 && p<1 ? ">99%" : Math.round(p*100)+"%";
+function winWhy(x, W){
+  const e = x.t.e, nm = id => short(byId[id]), out = [];
+  const gap = W.leaderNow - x.t.now, live = x.t.ids;
+  const total = [...e.picks, ...(e.merge?[e.merge]:[])].length;
+  // Where they stand
+  out.push(gap<=0 ? `Leading the pool on ${x.t.now} points, so every simulated finish starts with this team in front.`
+    : `Sitting ${ordinal(x.standRank)} on ${x.t.now} points, ${gap} behind the leader with ${W.epsLeft} episode${W.epsLeft===1?"":"s"} to go.`);
+  // Roster still alive
+  if(!live.length) out.push("No castaways left in the game, so the total is frozen. Any win would need everyone above to stop scoring entirely.");
+  else {
+    const strong = live.slice().sort((a,b)=>W.castWin[b]-W.castWin[a]);
+    out.push(`${live.length} of ${total} castaways still in: ${strong.map(id=>`${nm(id)} (${pctTxt(W.castF3[id])} to reach the final three)`).join(", ")}.`);
+  }
+  // The castaway who matters most
+  const swing = Object.entries(x.inF3).map(([id,[n,w]])=>({id, n, p:w/Math.max(n,1)})).filter(o=>o.n>=WIN_SIMS*0.03 && live.includes(o.id)).sort((a,b)=>(b.p-x.win)-(a.p-x.win))[0];
+  if(swing && swing.p - x.win >= 0.03) out.push(`Biggest swing: when ${nm(swing.id)} makes the final three, this team wins ${pctTxt(swing.p)} of the time, up from ${pctTxt(x.win)} overall.`);
+  // MVP
+  if(e.mvp){
+    if(RESULTS[e.mvp]?.out!=null) out.push(`MVP pick ${nm(e.mvp)} is out, so the 30-point MVP bonus can't help.`);
+    else { const wb = x.wonBy[e.mvp], pw = W.castWin[e.mvp];
+      out.push(`MVP pick ${nm(e.mvp)} wins Survivor in ${pctTxt(pw)} of simulations${wb && wb[0] ? `, and when that happens this team takes the pool ${pctTxt(wb[1]/wb[0])} of the time` : ""}.`); }
+  }
+  // Main obstacle
+  const rival = x.beatBy.map((n,j)=>[n,j]).sort((a,b)=>b[0]-a[0])[0];
+  if(rival && rival[0] > 0 && x.win < 0.995) out.push(`The team most likely to beat them: ${esc(W.teams[rival[1]].e.name)}, who finishes first in ${pctTxt(rival[0]/(WIN_SIMS*(1-x.win)))} of the simulations this team doesn't win.`);
+  // Bottom line
+  const bl = x.win>=0.4 ? "The favourite. It's theirs to lose." : x.win>=0.2 ? "A real contender; one good week puts them in front." :
+    x.win>=0.08 ? "In the hunt, but needs help from the teams above." : x.win>=0.01 ? "Long shot. It takes a deep run from their best castaway and a stumble from the leaders." :
+    x.win>0 ? "Needs nearly everything to break right." : "Mathematically alive, practically not: no simulated season ended with this team on top.";
+  out.push(isTarget(e) && x.win<0.2 ? bl + " Nathan, to be clear, disagrees." : bl);
+  return out;
+}
+function winOddsHTML(){
+  if(dbState==="loading") return `<p class="lede">Loading the pool…</p>`;
+  if(!LATEST_EP()) return `<p class="lede">Win odds appear once the first episode is scored.</p>`;
+  const W = winOdds();
+  const items = W.rows.map((x,n)=>{
+    const why = winWhy(x, W);
+    return `<li><details class="wo-item"><summary>
+      <span class="wo-rank">${n+1}</span>
+      <span class="wo-name"><strong>${esc(x.t.e.name)}</strong><span class="wo-bar" aria-hidden="true"><span style="width:${Math.max(x.win*100, x.win>0?1:0).toFixed(1)}%"></span></span></span>
+      <span class="wo-pct">${pctTxt(x.win)}</span></summary>
+      <div class="wo-body">
+        <div class="wo-meta"><span>Now ${x.t.now} pts (${ordinal(x.standRank)})</span><span>Avg. finish ${Math.round(x.avgFin)} pts</span><span>Top 3: ${pctTxt(x.top3)}</span><span>Avg. place ${x.avgRank.toFixed(1)}</span></div>
+        <ul>${why.map(w=>`<li>${w}</li>`).join("")}</ul>
+      </div></details></li>`;
+  }).join("");
+  return `
+    <p class="lede">Each team's chance of winning the pool, from ${WIN_SIMS.toLocaleString()} simulated finishes of the last ${W.epsLeft} episode${W.epsLeft===1?"":"s"}. Tap a name to see why.</p>
+    <ol class="wo-list">${items}</ol>
+    <details class="how"><summary>How the odds are worked out</summary>
+      <p>Every simulation plays out the rest of the season from where things stand now (through Episode ${W.latest}). Each week, castaways are voted out until three remain, with weaker castaways, by the same expert rankings the power rankings use, more likely to go. Everyone still in scores at about their own rate so far, but lumpy: most weeks are quiet and a few are big, like a real idol or immunity week. At the finale, the final three earn 30, 20 and 10, the stronger castaways are likelier to win, and teams with the winner as MVP get 30 more.</p>
+      <p>A team's win probability is the share of simulations it finishes first (ties split). "Biggest swing" compares how often a team wins when that castaway reaches the final three against its overall odds. The numbers only change when an episode is scored or the expert rankings update.</p>
+    </details>`;
+}
+
 /* Commissioner: everyone's merge bonus pick (or one-time swap), whatever spoiler view is on. */
 function mergePicksHTML(){
   if(dbState==="loading") return `<p class="lede">Loading the pool…</p>`;
@@ -2413,6 +2552,7 @@ function commishPage(){
       <a class="ep-tab" href="#recap" ${commishTab==="recap"?'aria-current="page"':""}>Weekly recap</a>
       <a class="ep-tab" href="#standings" ${commishTab==="standings"?'aria-current="page"':""}>Standings</a>
       <a class="ep-tab" href="#mergepicks" ${commishTab==="mergepicks"?'aria-current="page"':""}>Merge picks</a>
+      <a class="ep-tab" href="#winodds" ${commishTab==="winodds"?'aria-current="page"':""}>Win odds</a>
       <a class="ep-tab" href="#flying">Flying</a>
       <a class="ep-tab" href="#roster">Roster Snap</a></nav>`;
   if(commishTab==="flying") return `<div id="flyRoot"></div>`;
@@ -2420,6 +2560,7 @@ function commishPage(){
   if(commishTab==="recap") return `<section class="page">${head}</section>${recapPage()}`;
   if(commishTab==="standings") return `<section class="page">${head}</section>${standPage()}`;
   if(commishTab==="mergepicks") return `<section class="page">${head}${mergePicksHTML()}</section>`;
+  if(commishTab==="winodds") return `<section class="page">${head}${winOddsHTML()}</section>`;
   if(dbState==="loading") return `<section class="page">${head}<p class="lede">Loading the pool…</p></section>`;
   if(dbState==="none") return `<section class="page">${head}<div class="notice"><b>Can't reach the pool right now</b><span>The pool database isn't responding. Try again in a minute.</span></div></section>`;
   const sorted=[...realEntries].sort((a,b)=>a.name.localeCompare(b.name));
@@ -3391,6 +3532,7 @@ const currentPage = () => { const r=(location.hash||"").slice(1);
   if(r==="commissioner") commishTab="picks";
   if(r==="roster"){ commishTab="roster"; return "commissioner"; }
   if(r==="mergepicks"){ commishTab="mergepicks"; return "commissioner"; }
+  if(r==="winodds"){ commishTab="winodds"; return "commissioner"; }
   const fm=/^flying(?:-(map|career|story))?$/.exec(r); if(fm){ commishTab="flying"; flyTab=fm[1]||"logbook"; return "commissioner"; }
   const rm=/^(?:standings|roast)(?:-ep(\d+))?$/.exec(r); if(rm){ standEp=rm[1]?+rm[1]:null; commishTab="standings"; standMsg=""; return "commissioner"; }
   if(r==="power"){ boardTab="power"; return "scoreboard"; }

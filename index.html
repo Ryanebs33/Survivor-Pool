@@ -304,6 +304,10 @@ button.pick-link{font:inherit;color:inherit;background:none;border:0;text-align:
 .linkish{background:none;border:0;padding:0;margin-top:4px;color:var(--torch);font:600 12px/1 var(--body);cursor:pointer;text-decoration:underline}
 
 /* upward cards for names near the bottom of a list */
+.ol-wo{margin:8px 0 10px;padding:10px 0 2px;border-top:1px solid rgba(255,255,255,.14);border-bottom:1px solid rgba(255,255,255,.14)}
+.ol-wo-head{display:flex;justify-content:space-between;align-items:baseline;font-weight:600}.ol-wo-head b{font-size:18px}
+.ol-wo-meta{font-size:11px;opacity:.7;margin:2px 0 6px}
+.ol-wo ul{margin:0 0 6px;padding-left:16px}.ol-wo li{margin:0 0 4px;line-height:1.45}
 .sb-pop.up{top:auto;bottom:calc(100% + 8px)}
 .sb-pop.up::before{top:auto;bottom:-10px}
 .cp-pop.up{top:auto;bottom:calc(100% + 4px)}
@@ -1197,7 +1201,8 @@ function confidenceHTML(x, N, deal){
       <div class="conf-bar"><span style="width:${c.score}%"></span></div>
       <div class="conf-row"><span class="conf-label">${c.label}</span><span class="mono">${c.score}/100</span></div>
     </div>
-    <div class="ol-tag ol-${c.verdictKey}">${esc(c.verdictLabel)}</div>
+    <div class="ol-tag ol-${c.verdictKey}" data-wo="${esc(x.e.key)}">${esc(c.verdictLabel)}</div>
+    <div class="ol-wo" hidden></div>
     <dl class="ol">${c.sections.map(([k,v])=>`<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl>`;
 }
 /* Fantasy-football-style outlook: why the team sits where it does, its upside, its risk and a verdict.
@@ -3639,6 +3644,17 @@ document.addEventListener("click", ev=>{
       const r=pop.getBoundingClientRect(), navB=document.querySelector("nav.tabs")?.getBoundingClientRect().bottom||0;
       if(r.bottom > innerHeight-8){ const dy=Math.min(r.bottom-innerHeight+16, r.top-navB-12); if(dy>0) scrollBy({top:dy, behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"}); } });
   }
+});
+/* Tapping the verdict tag in an outlook quietly reveals that team's win odds. */
+document.addEventListener("click", ev=>{
+  const tag = ev.target.closest(".ol-tag[data-wo]"); if(!tag) return;
+  const box = tag.nextElementSibling; if(!box || !box.classList.contains("ol-wo")) return;
+  if(!box.hidden){ box.hidden = true; return; }
+  const W = winOdds(), x = W.rows.find(r=>r.t.e.key===tag.dataset.wo); if(!x) return;
+  box.innerHTML = `<div class="ol-wo-head"><span>Win odds</span><b class="mono">${pctTxt(x.win)}</b></div>
+    <div class="ol-wo-meta mono">Top 3: ${pctTxt(x.top3)} · Avg. place ${x.avgRank.toFixed(1)} · Avg. finish ${Math.round(x.avgFin)} pts</div>
+    <ul>${winWhy(x, W).map(w=>`<li>${w}</li>`).join("")}</ul>`;
+  box.hidden = false;
 });
 document.addEventListener("mouseout", ev=>{
   if(lastPointer !== "mouse") return;   // taps fire fake mouse events; only a real mouse leaving re-enables hover

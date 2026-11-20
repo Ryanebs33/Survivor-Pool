@@ -1118,6 +1118,12 @@ const EXPERTS = [
                          "carter","brady","mike","sharonda","cristian",             // In the Mix
                          "eric","kristin","an"] }                                   // Deep Field
     ] },
+  // Counts (and is listed) only from Episode 9 on, so earlier spoiler-safe views are unchanged.
+  { source: "Surviving Tribal", title: "Survivor 51 power rankings after Episode 9's $1 million coin flip", since: 9,
+    url: "https://survivingtribal.com/survivor-51-power-rankings-after-episode-9-shocking-1-million-coin-flip",
+    versions: [
+      { asOf: 9, ranks: ["carter","sharonda","an","cristian","maggie","eric","mike","devin","jelly"] }
+    ] },
   // Additional edit-based ranking: factored into the projection but not listed on the page.
   { source: "Edit ranking", hidden: true,
     versions: [
@@ -1130,7 +1136,7 @@ const TIER_MULT = {S:1.6, A:1.35, B:1.15, C:1, D:0.8, F:0.6};
 function sourceRanks(src){
   if(!src.versions) return src.ranks;
   const ep = LATEST_EP(), ok = src.versions.filter(v=>v.asOf<=ep);
-  if(!ok.length) return src.hidden ? null : src.versions[0].ranks;   // an unlisted source only counts from its own episode on
+  if(!ok.length) return (src.hidden || src.since) ? null : src.versions[0].ranks;   // unlisted or late-added sources only count from their own episode on
   return ok[ok.length-1].ranks;
 }
 function sourceMult(src, id){
@@ -2184,7 +2190,7 @@ function powerHTML(){
       <td class="total">${x.final}</td>
     </tr>`).join("");
   return `
-    <p class="lede">Teams ranked by the total points they're expected to finish the season with: what they've banked so far plus what their remaining castaways should score from here to the finale. Projections combine each castaway's scoring so far with expert rankings from ${EXPERTS.filter(x=>!x.hidden).map(x=>`<a class="inline-link" href="${x.url}" target="_blank" rel="noopener">${esc(x.source)}</a>`).reduce((a,l,i,arr)=>a+(i===0?"":i===arr.length-1?", and ":", ")+l,"")}.</p>
+    <p class="lede">Teams ranked by the total points they're expected to finish the season with: what they've banked so far plus what their remaining castaways should score from here to the finale. Projections combine each castaway's scoring so far with expert rankings from ${EXPERTS.filter(x=>!x.hidden && !(x.since && LATEST_EP() < x.since)).map(x=>`<a class="inline-link" href="${x.url}" target="_blank" rel="noopener">${esc(x.source)}</a>`).reduce((a,l,i,arr)=>a+(i===0?"":i===arr.length-1?", and ":", ")+l,"")}.</p>
     <div class="tablewrap stand-wrap"><table class="board power">
       <thead><tr><th>#</th><th>Team</th><th class="r" title="Compared with the current standings">vs. standings</th><th class="r">Now</th><th class="r" title="Expected total at the end of the season">Proj. final</th></tr></thead>
       <tbody>${rows}</tbody></table></div>

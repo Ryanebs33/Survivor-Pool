@@ -235,6 +235,17 @@ button.pick-link{font:inherit;color:inherit;background:none;border:0;text-align:
 .board-tabs .ep-tab[aria-current="page"]{background:var(--torch);color:var(--torch-ink);box-shadow:0 6px 16px -6px color-mix(in srgb,var(--torch) 80%,transparent)}
 .board-tabs .ep-tab:focus-visible{outline:3px solid var(--ember);outline-offset:2px}
 @media (max-width:640px){.board-tabs{display:flex;width:100%}.board-tabs .ep-tab{flex:1;justify-content:center;font-size:18px;padding:12px 10px}}
+@media (max-width:520px){.board-tabs .ep-tab{font-size:14px;padding:11px 6px;white-space:normal;text-align:center;line-height:1.05}}
+.wo-pct.wo-out{display:flex;flex-direction:column;align-items:flex-end;font-size:18px}.wo-pct small{font:600 10px/1 var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:3px}
+.rt-goal{margin:0 0 10px}
+.rt-block{border-left:3px solid var(--line);padding:2px 0 2px 12px;margin:0 0 10px}
+.rt-block h4{margin:0 0 4px;font:700 12px/1.2 var(--mono);text-transform:uppercase;letter-spacing:.08em}
+.rt-block ul{margin:0;padding-left:16px}.rt-block p{margin:0}
+.rt-for{border-color:#2F7D5B}.rt-for h4{color:#2F7D5B}
+.rt-against{border-color:#B4442A}.rt-against h4{color:#B4442A}
+.rt-tonight{border-color:var(--torch)}.rt-tonight h4{color:var(--torch)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .rt-for h4{color:#5FC79A}:root:not([data-theme="light"]) .rt-against h4{color:#F08A6E}}
+:root[data-theme="dark"] .rt-for h4{color:#5FC79A}:root[data-theme="dark"] .rt-against h4{color:#F08A6E}
 
 .card{position:relative;cursor:help}
 .card:focus-visible{outline:3px solid var(--torch);outline-offset:2px}
@@ -2300,9 +2311,10 @@ function boardPage(){
     <h2>Scoreboard</h2>
     <p class="meta-line">Through ${esc(POOL.updatedThrough)}${AIRED_EP()>LATEST_EP()?` · Episode ${AIRED_EP()} points coming soon (eliminations and tribes are up to date)`:""}</p>
     <nav class="board-tabs" aria-label="Scoreboard views">
-      <a class="ep-tab" href="#scoreboard" ${boardTab!=="power"?'aria-current="page"':""}>Standings</a>
-      <a class="ep-tab" href="#power" ${boardTab==="power"?'aria-current="page"':""}>Power rankings</a></nav>
-    ${boardTab==="power" ? powerHTML()+"</section>" : `
+      <a class="ep-tab" href="#scoreboard" ${boardTab==="standings"||!boardTab?'aria-current="page"':""}>Standings</a>
+      <a class="ep-tab" href="#power" ${boardTab==="power"?'aria-current="page"':""}>Power rankings</a>
+      <a class="ep-tab" href="#odds" ${boardTab==="odds"?'aria-current="page"':""}>Win odds</a></nav>
+    ${boardTab==="power" ? powerHTML()+"</section>" : boardTab==="odds" ? oddsPageHTML()+"</section>" : `
     ${LATEST_EP()?`<h3 class="wk-title">Episode ${LATEST_EP()} highlights</h3>${highlightsHTML(recapData(LATEST_EP()), true)}<h3 class="wk-title wk-standings">Standings</h3>`:""}
     <div class="split">
       <div class="tablewrap stand-wrap"><table class="board">
@@ -2602,9 +2614,9 @@ function winOdds(){
   const rate = {}, mult = {};
   alive.forEach(c=>{ rate[c.id] = (RESULTS[c.id].pts + 2*castMean) / (played(c) + 2); mult[c.id] = multOf(c.id); });
   const epsLeft = Math.max(SEASON_EPISODES - latest, 0);
-  // Boots per remaining episode, spread evenly down to a final three (extras land later, the finale takes the most).
+  // Boots per remaining episode: one a week, and whatever's left at the finale (down to a final three).
   const toBoot = Math.max(alive.length - 3, 0), plan = Array(epsLeft).fill(0);
-  for(let i=0;i<toBoot && epsLeft;i++) plan[epsLeft-1-(i%epsLeft)]++;
+  for(let ep=0, left=toBoot; ep<epsLeft; ep++){ const n = ep===epsLeft-1 ? left : Math.min(1, left); plan[ep] = n; left -= n; }
   const teams = ENTRANTS.map(e=>({e, ids:[...e.picks, ...(e.merge?[e.merge]:[])].filter(id=>RESULTS[id]?.out==null), now:score(e)}));
   const T = teams.length, ids = alive.map(c=>c.id), idx = Object.fromEntries(ids.map((id,i)=>[id,i]));
   const wins = Array(T).fill(0), top3 = Array(T).fill(0), finSum = Array(T).fill(0), rankSum = Array(T).fill(0);
@@ -2615,6 +2627,8 @@ function winOdds(){
   // For each team, how often each castaway made the final three / went out before the finale in the seasons that team won
   const wF3 = teams.map(()=>new Float64Array(ids.length)), wEarly = teams.map(()=>new Float64Array(ids.length));
   const early = new Uint8Array(ids.length);
+  // Per-simulation record, for "what has to happen" questions: each team's place, each castaway's fate, and next week's boot.
+  const simRank = new Uint8Array(WIN_SIMS*T), simCast = new Uint8Array(WIN_SIMS*ids.length), simNext = new Int16Array(WIN_SIMS).fill(-1);
   const rnd = seeded("winodds|" + key);
   const pickW = (pool, w) => { let t=0; pool.forEach(i=>t+=w(i)); let r=rnd()*t; for(const i of pool){ r-=w(i); if(r<=0) return i; } return pool[pool.length-1]; };
   const pts = new Float64Array(ids.length);
@@ -2623,6 +2637,7 @@ function winOdds(){
     for(let ep=0; ep<epsLeft; ep++){
       const boots = [];
       for(let b=0;b<plan[ep];b++){ const i = pickW(left, i=>1/Math.pow(mult[ids[i]],2.2)); boots.push(i); left = left.filter(x=>x!==i); }
+      if(ep===0 && boots.length) simNext[s] = boots[0];
       left.forEach(i=>{ pts[i] += rate[ids[i]] * -Math.log(1 - rnd()); });   // lumpy weeks: most are quiet, some are idol-sized
       boots.forEach(i=>{ pts[i] += rate[ids[i]] * 0.5 * rnd(); if(ep < epsLeft-1) early[i] = 1; });
     }
@@ -2636,6 +2651,8 @@ function winOdds(){
     const sorted = tot.map((v,i)=>[v,i]).sort((a,b)=>b[0]-a[0]);
     const best = sorted[0][0], leaders = sorted.filter(x=>x[0]===best).map(x=>x[1]);
     sorted.forEach(([v,i],r)=>{ rankSum[i] += r+1; finSum[i] += v; if(r<3) top3[i]++; });
+    tot.forEach((v,i)=>{ let r = 1; for(const w of tot) if(w>v) r++; simRank[s*T+i] = r; });
+    for(let j=0;j<ids.length;j++) simCast[s*ids.length+j] = early[j] ? 0 : !left.includes(j) ? 1 : order[0]===j ? 3 : 2;
     leaders.forEach(i=>{ wins[i] += 1/leaders.length;
       for(let j=0;j<ids.length;j++){ if(early[j]) wEarly[i][j] += 1/leaders.length; }
       left.forEach(j=>wF3[i][j] += 1/leaders.length); });
@@ -2658,7 +2675,8 @@ function winOdds(){
     .sort((a,b)=>b.win-a.win || b.avgFin-a.avgFin);
   return WIN_CACHE[key] = {rows, teams, epsLeft, plan, ids, castF3:Object.fromEntries(ids.map((id,i)=>[id,castF3[i]/WIN_SIMS])),
     castWin:Object.fromEntries(ids.map((id,i)=>[id,castWin[i]/WIN_SIMS])),
-    castEarly:Object.fromEntries(ids.map((id,i)=>[id,castEarly[i]/WIN_SIMS])), leaderNow: standOrder[0]?.now ?? 0, latest};
+    castEarly:Object.fromEntries(ids.map((id,i)=>[id,castEarly[i]/WIN_SIMS])), leaderNow: standOrder[0]?.now ?? 0, latest,
+    T, simRank, simCast, simNext, nextCount: ids.map((_,j)=>simNext.filter(x=>x===j).length)};
 }
 const pctTxt = p => p<=0 ? "0%" : p<0.005 ? "<1%" : p>0.995 && p<1 ? ">99%" : Math.round(p*100)+"%";
 function winWhy(x, W){
@@ -2746,6 +2764,107 @@ function winOddsHTML(){
       <p>A team's win probability is the share of simulations it finishes first (ties split). "Biggest swing" compares how often a team wins when that castaway reaches the final three against its overall odds. The numbers only change when an episode is scored or the expert rankings update.</p>
     </details>`;
 }
+
+
+/* ---------- Scoreboard: Win odds (public) ----------
+   For every team: its chance to win, or (if it can't) its likely and best realistic finish,
+   plus exactly who to cheer for and against, worked out from the seasons where that goal happens. */
+function goalFor(x, W){
+  const ti = W.teams.indexOf(x.t), dist = Array(W.T+2).fill(0);
+  for(let s=0;s<WIN_SIMS;s++) dist[W.simRank[s*W.T+ti]]++;
+  let mode = 1; dist.forEach((n,r)=>{ if(r && n>dist[mode]) mode = r; });
+  let cum = 0, best = W.T;
+  for(let r=1;r<=W.T;r++){ cum += dist[r]; if(cum/WIN_SIMS >= 0.03){ best = r; break; } }
+  const canWin = x.win*WIN_SIMS >= 15;
+  const place = canWin ? 1 : best;
+  let pGoal = 0; for(let r=1;r<=place;r++) pGoal += dist[r];
+  return {ti, dist, mode, modeP: dist[mode]/WIN_SIMS, place, pGoal: pGoal/WIN_SIMS, canWin};
+}
+function goalStats(W, g){
+  const n = W.ids.length, f3 = new Float64Array(n), early = new Float64Array(n), win = new Float64Array(n), nextHit = new Float64Array(n);
+  let hits = 0;
+  for(let s=0;s<WIN_SIMS;s++){
+    if(W.simRank[s*W.T+g.ti] > g.place) continue;
+    hits++;
+    for(let j=0;j<n;j++){ const o = W.simCast[s*n+j]; if(o>=2) f3[j]++; if(o===0) early[j]++; if(o===3) win[j]++; }
+    if(W.simNext[s]>=0) nextHit[W.simNext[s]]++;
+  }
+  return {hits, f3, early, win, nextHit};
+}
+function routeFor(x, W){
+  const g = goalFor(x, W), st = goalStats(W, g), e = x.t.e, nm = id => short(byId[id]);
+  const pct = p => pctTxt(p), list = a => a.length<=1 ? a.join("") : a.slice(0,-1).join(", ") + " and " + a[a.length-1];
+  const mine = new Set(x.t.ids), ids = W.ids, H = Math.max(st.hits,1);
+  const goalTxt = g.canWin ? "win the pool" : g.place===1 ? "win the pool" : `finish ${ordinal(g.place)} or better`;
+  const out = {g, goalTxt, forList:[], againstList:[], tonight:null, mvp:null, rivals:[], thin: st.hits < 40};
+  // Cheer for: their castaways who make the final three much more often when the goal happens
+  ids.forEach((id,j)=>{ if(!(mine.has(id) || id===e.mvp)) return;
+    const base = W.castF3[id], cond = st.f3[j]/H;
+    if(cond - base >= 0.07) out.forList.push({id, txt:`${nm(id)} to make the final three (${pct(cond)} of the time when they ${goalTxt}, vs ${pct(base)} normally)`, d:cond-base}); });
+  out.forList.sort((a,b)=>b.d-a.d); out.forList = out.forList.slice(0,3);
+  // Cheer against: other castaways who go home before the finale much more often when the goal happens
+  const above = W.teams.filter(t=>t.now > x.t.now && t!==x.t);
+  ids.forEach((id,j)=>{ if(mine.has(id) || id===e.mvp) return;
+    const base = W.castEarly[id], cond = st.early[j]/H;
+    if(cond - base >= 0.07){
+      const ow = above.filter(t=>t.ids.includes(id)).map(t=>t.e.name);
+      out.againstList.push({id, d:cond-base, txt:`${nm(id)} out before the finale${ow.length ? ` (on ${ow.length>2 ? ow.length+" teams ahead of them" : list(ow.map(esc))+(ow.length>1?"'s rosters":"'s roster")})` : ""}`});
+    } });
+  out.againstList.sort((a,b)=>b.d-a.d); out.againstList = out.againstList.slice(0,3);
+  // MVP
+  if(e.mvp && RESULTS[e.mvp]?.out==null){
+    const j = ids.indexOf(e.mvp), share = j>=0 ? st.win[j]/H : 0;
+    if(share >= 0.25) out.mvp = `${share>=0.5?"It mostly comes down to":"A big boost:"} MVP ${nm(e.mvp)} winning Survivor (${pct(share)} of the time when they ${goalTxt}, vs ${pct(W.castWin[e.mvp])} normally).`;
+  }
+  // Next episode: which boot helps and hurts most
+  if(W.plan[0] > 0){
+    const opts = ids.map((id,j)=>({id, n:W.nextCount[j], p: W.nextCount[j] ? st.nextHit[j]/W.nextCount[j] : 0})).filter(o=>o.n >= 150);
+    if(opts.length >= 2){
+      opts.sort((a,b)=>b.p-a.p);
+      const best = opts[0], worst = opts[opts.length-1];
+      if(best.p - worst.p >= 0.02) out.tonight = {best, worst};
+    }
+  }
+  // Teams most in the way
+  if(g.canWin){ out.rivals = x.beatBy.map((n,j)=>[n,j]).filter(r=>r[0]>0).sort((a,b)=>b[0]-a[0]).slice(0,2).map(([n,j])=>W.teams[j].e.name); }
+  else { out.rivals = W.teams.filter(t=>t!==x.t && t.now >= x.t.now).sort((a,b)=>a.now-b.now).slice(0, Math.max(0, Math.min(2, x.standRank - g.place))).map(t=>t.e.name); }
+  return out;
+}
+function oddsPageHTML(){
+  if(!LATEST_EP()) return `<p class="lede">Win odds appear once the first episode is scored.</p>`;
+  const W = winOdds(), nextEp = W.latest + 1;
+  const rows = W.rows.map(x=>({x, g:goalFor(x, W)}))
+    .sort((a,b)=> b.x.win - a.x.win || a.g.place - b.g.place || a.x.avgRank - b.x.avgRank);
+  const items = rows.map(({x,g},n)=>{
+    const r = routeFor(x, W), e = x.t.e, gap = W.leaderNow - x.t.now;
+    const head = g.canWin ? `<span class="wo-pct">${pctTxt(x.win)}</span>`
+      : `<span class="wo-pct wo-out"><small>Best</small>${ordinal(g.place)}</span>`;
+    const status = `${ordinal(x.standRank)} now on ${x.t.now} pts${gap>0?`, ${gap} behind the leader`:", leading the pool"}, with ${W.epsLeft} episode${W.epsLeft===1?"":"s"} left.`;
+    const goal = g.canWin
+      ? `<p class="rt-goal"><b>Goal: win the pool.</b> Happens in ${pctTxt(x.win)} of ${WIN_SIMS.toLocaleString()} simulated finishes. Top 3 in ${pctTxt(x.top3)}.</p>`
+      : `<p class="rt-goal"><b>Can't realistically win</b> (${x.win>0 ? `only ${Math.round(x.win*WIN_SIMS)} of ${WIN_SIMS.toLocaleString()} simulated finishes` : `it didn't happen in any of ${WIN_SIMS.toLocaleString()} simulated finishes`}). Most likely finish: <b>${ordinal(g.mode)}</b> (${pctTxt(g.modeP)}). Best realistic finish: <b>${ordinal(g.place)}</b> (${pctTxt(g.pGoal)} chance of ${g.place===1?"winning":`${ordinal(g.place)} or better`}).</p>`;
+    const tonight = r.tonight ? `<div class="rt-block rt-tonight"><h4>Episode ${nextEp}: who should go home</h4>
+      <p>Best boot for them: <b>${short(byId[r.tonight.best.id])}</b> (chance to ${r.goalTxt} goes to ${pctTxt(r.tonight.best.p)}). Worst: <b>${short(byId[r.tonight.worst.id])}</b> (drops to ${pctTxt(r.tonight.worst.p)}).</p></div>` : "";
+    const forB = r.forList.length || r.mvp ? `<div class="rt-block rt-for"><h4>Cheer for</h4><ul>${r.mvp?`<li>${r.mvp}</li>`:""}${r.forList.map(o=>`<li>${o.txt}</li>`).join("")}</ul></div>` : "";
+    const agB = r.againstList.length ? `<div class="rt-block rt-against"><h4>Cheer against</h4><ul>${r.againstList.map(o=>`<li>${o.txt}</li>`).join("")}</ul></div>` : "";
+    const none = !forB && !agB ? `<p class="small">No single castaway decides it: they just need steady scoring from ${x.t.ids.length ? list2(x.t.ids.map(id=>short(byId[id]))) : "a roster that's already out"}${x.t.ids.length?"":", so the total is frozen"}.</p>` : "";
+    const rivals = r.rivals.length ? `<p class="small">${g.canWin ? "Main threat" : "Teams to pass"}: ${r.rivals.map(esc).join(" and ")}.</p>` : "";
+    const thin = r.thin ? `<p class="small">This only happens in a handful of simulations, so treat the specifics as a long-shot wish list.</p>` : "";
+    return `<li><details class="wo-item"><summary>
+      <span class="wo-rank">${n+1}</span>
+      <span class="wo-name"><strong>${esc(e.name)}</strong><span class="wo-bar" aria-hidden="true"><span style="width:${(g.canWin ? Math.max(x.win*100,1) : 0).toFixed(1)}%"></span></span></span>
+      ${head}</summary>
+      <div class="wo-body"><p class="wo-meta">${status}</p>${goal}${tonight}${forB}${agB}${none}${rivals}${thin}</div></details></li>`;
+  }).join("");
+  return `
+    <p class="lede">Every team's chance to win the pool, and exactly what has to happen. Tap a team to see who to cheer for and against while you watch.</p>
+    <ol class="wo-list">${items}</ol>
+    <details class="how"><summary>How this is worked out</summary>
+      <p>The rest of the season is played out ${WIN_SIMS.toLocaleString()} times from where things stand (through Episode ${W.latest}). Each week one castaway goes home, more often the ones the expert rankings rate lower, and the finale cuts it to a final three. Everyone still in scores at about their own rate so far, with the occasional big week. The final three earn 30, 20 and 10 points, and the winner's MVP owners get 30 more.</p>
+      <p>"Cheer for" and "cheer against" compare the simulated seasons where a team reaches its goal with all the others: whose deep runs and early exits show up far more often when it works out. Teams that never win in any simulation get their best realistic finish instead, the highest place they reach at least 3% of the time. The odds update every time an episode is scored or the rankings change.</p>
+    </details>`;
+}
+const list2 = a => a.length<=1 ? a.join("") : a.slice(0,-1).join(", ") + " and " + a[a.length-1];
 
 /* Commissioner: everyone's merge bonus pick (or one-time swap), whatever spoiler view is on. */
 function mergePicksHTML(){
@@ -3780,6 +3899,7 @@ const currentPage = () => { const r=(location.hash||"").slice(1);
   const fm=/^flying(?:-(map|career|story))?$/.exec(r); if(fm){ commishTab="flying"; flyTab=fm[1]||"logbook"; return "commissioner"; }
   const rm=/^(?:standings|roast)(?:-ep(\d+))?$/.exec(r); if(rm){ standEp=rm[1]?+rm[1]:null; commishTab="standings"; standMsg=""; return "commissioner"; }
   if(r==="power"){ boardTab="power"; return "scoreboard"; }
+  if(r==="odds"){ boardTab="odds"; return "scoreboard"; }
   if(r==="scoreboard") boardTab="standings";
   const cm=/^castaway-([a-z]+)$/.exec(r); if(cm && byId[cm[1]]){ focusCast=cm[1]; tribeFilter="All"; return "castaways"; }
   return ROUTES[r]?r:"rules"; };

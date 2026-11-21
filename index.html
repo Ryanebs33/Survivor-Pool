@@ -1012,7 +1012,7 @@ let ENTRANTS = SAMPLE_ENTRANTS, usingSample = true;
 const byId = Object.fromEntries(CAST.map(c=>[c.id,c]));
 const esc = s => String(s).replace(/[&<>"]/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[ch]));
 const short = c => c.nick || c.name.split(" ")[0];
-const initials = c => (c.nick ? (c.nick.includes(" ") ? c.nick.split(" ").map(w=>w[0]).join("") : c.nick.slice(0,2)) : c.name.split(" ").map(w=>w[0]).join("")).slice(0,2).toUpperCase();
+const initials = c => (c.nick ? c.nick.slice(0,2) : c.name.split(" ").map(w=>w[0]).join("").slice(0,2)).toUpperCase();
 const score = e => SCORED_EPS().reduce((s,n)=>s + rosterAt(e,n).reduce((t,x)=>t+(RESULTS[x.id]?.byEp[n]||0),0), 0)
   + (POOL.winner && POOL.winner===e.mvp ? 30 : 0);
 

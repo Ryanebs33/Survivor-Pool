@@ -1110,7 +1110,7 @@ function rulesPage(){
   <p class="lede">Build your Fantasy Tribe, pick your MVP, and earn points every week your castaways stay in the game.</p>
   <div class="rules">
     <section><h3>Building your tribe</h3><ol>
-      <li>Pick <b>four castaways from each tribe</b> (Toka and Savu) that you think will make it to the end of the game. These eight are your Fantasy Tribe.</li>
+      <li>Pick <b>four castaways from each tribe</b>${isS51() ? " (Toka and Savu)" : ""} that you think will make it to the end of the game. These eight are your Fantasy Tribe.</li>
       <li>Out of your eight picks, choose <b>one MVP</b> who you think will be the Sole Survivor. You get bonus points at the end of the season if you guessed right.</li>
       <li><b>Merge bonus:</b> after the tribes merge, you can pick one extra castaway for your Fantasy Tribe. If you lost players before the merge, this is your chance to bolster your tribe. Points for this pick are not retroactive and start accumulating the episode after the merge.</li>
     </ol></section>
@@ -2845,12 +2845,10 @@ function seasonChrome(page){
   document.title = `Survivor ${n} Fantasy Pool`;
   if(!isS51()) document.getElementById("poolSub").textContent = S.ready ? "" : `Season ${n} is on its way. Past winners live in History.`;
   else updateViewChrome();
-  const s51only = ["rules","scoreboard","picks","castaways","submit"];
   document.querySelectorAll("nav.tabs a").forEach(l=>{
     const r = l.dataset.r;
-    if(s51only.includes(r)) l.hidden = !isS51();
-    if(r==="season") l.hidden = isS51();
-    if(r==="history") l.hidden = isS51() || n < 52;
+    if(r==="season") l.hidden = true;
+    if(r==="history") l.hidden = n < 52;
   });
   if(!isS51()){
     document.getElementById("viewNote").hidden = true;
@@ -2867,7 +2865,6 @@ function setPreview(n){
   previewSeason = (n && n!==liveSeason) ? n : null;
   try{ previewSeason ? sessionStorage.setItem("pool-preview-season", String(previewSeason)) : sessionStorage.removeItem("pool-preview-season"); }catch(e){}
   if(isS51()) entrySpoiler(); else { document.querySelector(".spoil-wrap:not(.mp-wrap)")?.remove(); document.body.classList.remove("spoil-open"); }
-  if(!isS51() && !commishTab==="seasons") commishTab = "seasons";
   route();
 }
 
@@ -2970,7 +2967,16 @@ function wireTheme(){
 }
 function keepScroll(fn){ const y = scrollY; fn(); scrollTo(0, y); }
 
-/* ---------- Later seasons: home page until the season is set up ---------- */
+/* ---------- Later seasons: the same pages as Season 51, empty until the season is set up ---------- */
+const SEASON_EMPTY_PAGES = {scoreboard:"Scoreboard", picks:"Picks", castaways:"Castaways", submit:"Submit picks"};
+function emptySeasonNote(what){
+  const n = shownSeason();
+  return `<div class="notice"><b>Season ${n} hasn't started yet</b><span>${esc(what)} will show up here once Season ${n}'s cast is announced and the pool opens.${n>=52?` Until then, see how past seasons finished in <a href="#history">History</a>.`:""}</span></div>`;
+}
+function emptySeasonPage(page){
+  const blurb = {scoreboard:"The standings, power rankings and win odds", picks:"Everyone's picks", castaways:"The cast", submit:"The pick form"}[page];
+  return `<section class="page"><h2>${SEASON_EMPTY_PAGES[page]}</h2>${emptySeasonNote(blurb)}</section>`;
+}
 function seasonHomePage(){
   const n = shownSeason();
   return `<section class="page">
@@ -3190,14 +3196,14 @@ function commishPage(){
       <button class="btn" type="submit">Unlock</button>
       <span class="small" role="status">${commishErr?`<span class="err">${esc(commishErr)}</span>`:""}</span>
     </form></section>`;
-  head += !isS51() ? `<nav class="ep-tabs sub-tabs" aria-label="Commissioner tools">
-      <a class="ep-tab" href="#seasons" ${commishTab==="seasons"?'aria-current="page"':""}>Seasons</a></nav>` : `<nav class="ep-tabs sub-tabs" aria-label="Commissioner tools">
+  head += `<nav class="ep-tabs sub-tabs" aria-label="Commissioner tools">
       <a class="ep-tab" href="#seasons" ${commishTab==="seasons"?'aria-current="page"':""}>Seasons</a>
       <a class="ep-tab" href="#commissioner" ${commishTab==="picks"?'aria-current="page"':""}>Picks &amp; deadline</a>
       <a class="ep-tab" href="#standings" ${commishTab==="standings"?'aria-current="page"':""}>Standings</a>
       <a class="ep-tab" href="#mergepicks" ${commishTab==="mergepicks"?'aria-current="page"':""}>Merge picks</a>
 </nav>`;
   if(commishTab==="seasons") return `<section class="page">${head}${seasonsPanelHTML()}</section>`;
+  if(!isS51()) return `<section class="page">${head}${emptySeasonNote({picks:"Pick deadline and entries", standings:"Weekly standings", mergepicks:"Merge picks"}[commishTab] || "This tool")}</section>`;
   if(commishTab==="flying") return `<div id="flyRoot"></div>`;
   if(commishTab==="roster") return `<div id="rosterRoot"></div>`;
   if(commishTab==="recap") return `<section class="page">${head}</section>${recapPage()}`;
@@ -4181,9 +4187,8 @@ const ROUTES = {rules:rulesPage, scoreboard:boardPage, recap:recapPage, castaway
 let focusCast = null;
 const currentPage = () => {
   const pg = pageFor();
-  if(isS51()) return (pg==="season" || pg==="history") ? "rules" : pg;            // History begins with Season 52
-  if(!["season","history","commissioner"].includes(pg)) return "season";           // later seasons: only their own pages for now
-  if(pg==="commissioner" && !commishTab==="seasons") commishTab = "seasons";
+  if(pg==="season") return "rules";
+  if(pg==="history" && shownSeason() < 52) return "rules";                         // History begins with Season 52
   return pg; };
 const pageFor = () => { const r=(location.hash||"").slice(1);
   if(r==="seasons"){ commishTab="seasons"; return "commissioner"; }
@@ -4203,7 +4208,7 @@ function route(){
   document.querySelectorAll("nav.tabs a").forEach(a=>{if(a.dataset.r===page)a.setAttribute("aria-current","page");else a.removeAttribute("aria-current")});
   const act=document.querySelector('nav.tabs a[aria-current="page"]'), strip=document.querySelector(".tabs-in");
   if(act && strip){ const l=act.offsetLeft-16, r=act.offsetLeft+act.offsetWidth-strip.clientWidth+40; if(strip.scrollLeft>l) strip.scrollLeft=l; else if(strip.scrollLeft<r) strip.scrollLeft=r; updateFade(); }
-  view.innerHTML = ROUTES[page]();
+  view.innerHTML = (!isS51() && SEASON_EMPTY_PAGES[page]) ? emptySeasonPage(page) : ROUTES[page]();
   seasonChrome(page);
   wire();
   if(page==="castaways" && focusCast){

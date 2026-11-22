@@ -2867,7 +2867,7 @@ function setPreview(n){
   previewSeason = (n && n!==liveSeason) ? n : null;
   try{ previewSeason ? sessionStorage.setItem("pool-preview-season", String(previewSeason)) : sessionStorage.removeItem("pool-preview-season"); }catch(e){}
   if(isS51()) entrySpoiler(); else { document.querySelector(".spoil-wrap:not(.mp-wrap)")?.remove(); document.body.classList.remove("spoil-open"); }
-  if(!isS51() && !["seasons","flying","roster"].includes(commishTab)) commishTab = "seasons";
+  if(!isS51() && !commishTab==="seasons") commishTab = "seasons";
   route();
 }
 
@@ -3191,17 +3191,12 @@ function commishPage(){
       <span class="small" role="status">${commishErr?`<span class="err">${esc(commishErr)}</span>`:""}</span>
     </form></section>`;
   head += !isS51() ? `<nav class="ep-tabs sub-tabs" aria-label="Commissioner tools">
-      <a class="ep-tab" href="#seasons" ${commishTab==="seasons"?'aria-current="page"':""}>Seasons</a>
-      <a class="ep-tab" href="#flying">Flying</a>
-      <a class="ep-tab" href="#roster">Roster Snap</a></nav>` : `<nav class="ep-tabs sub-tabs" aria-label="Commissioner tools">
+      <a class="ep-tab" href="#seasons" ${commishTab==="seasons"?'aria-current="page"':""}>Seasons</a></nav>` : `<nav class="ep-tabs sub-tabs" aria-label="Commissioner tools">
       <a class="ep-tab" href="#seasons" ${commishTab==="seasons"?'aria-current="page"':""}>Seasons</a>
       <a class="ep-tab" href="#commissioner" ${commishTab==="picks"?'aria-current="page"':""}>Picks &amp; deadline</a>
-      <a class="ep-tab" href="#recap" ${commishTab==="recap"?'aria-current="page"':""}>Weekly recap</a>
       <a class="ep-tab" href="#standings" ${commishTab==="standings"?'aria-current="page"':""}>Standings</a>
       <a class="ep-tab" href="#mergepicks" ${commishTab==="mergepicks"?'aria-current="page"':""}>Merge picks</a>
-      <a class="ep-tab" href="#winodds" ${commishTab==="winodds"?'aria-current="page"':""}>Win odds</a>
-      <a class="ep-tab" href="#flying">Flying</a>
-      <a class="ep-tab" href="#roster">Roster Snap</a></nav>`;
+</nav>`;
   if(commishTab==="seasons") return `<section class="page">${head}${seasonsPanelHTML()}</section>`;
   if(commishTab==="flying") return `<div id="flyRoot"></div>`;
   if(commishTab==="roster") return `<div id="rosterRoot"></div>`;
@@ -4188,17 +4183,13 @@ const currentPage = () => {
   const pg = pageFor();
   if(isS51()) return (pg==="season" || pg==="history") ? "rules" : pg;            // History begins with Season 52
   if(!["season","history","commissioner"].includes(pg)) return "season";           // later seasons: only their own pages for now
-  if(pg==="commissioner" && !["seasons","flying","roster"].includes(commishTab)) commishTab = "seasons";
+  if(pg==="commissioner" && !commishTab==="seasons") commishTab = "seasons";
   return pg; };
 const pageFor = () => { const r=(location.hash||"").slice(1);
   if(r==="seasons"){ commishTab="seasons"; return "commissioner"; }
-  const m=/^recap-ep(\d+)$/.exec(r); if(m){ recapEp=+m[1]; commishTab="recap"; return "commissioner"; }
-  if(r==="recap"){ recapEp=null; commishTab="recap"; return "commissioner"; }
-  if(r==="commissioner") commishTab="picks";
-  if(r==="roster"){ commishTab="roster"; return "commissioner"; }
+  // Weekly recap, Win odds, Flying and Roster Snap were removed from the commissioner tools; old links land on its main page.
+  if(r==="commissioner" || /^(recap(-ep\d+)?|roster|winodds|flying(-(map|career|story))?)$/.test(r)){ commishTab="picks"; return "commissioner"; }
   if(r==="mergepicks"){ commishTab="mergepicks"; return "commissioner"; }
-  if(r==="winodds"){ commishTab="winodds"; return "commissioner"; }
-  const fm=/^flying(?:-(map|career|story))?$/.exec(r); if(fm){ commishTab="flying"; flyTab=fm[1]||"logbook"; return "commissioner"; }
   const rm=/^(?:standings|roast)(?:-ep(\d+))?$/.exec(r); if(rm){ standEp=rm[1]?+rm[1]:null; commishTab="standings"; standMsg=""; return "commissioner"; }
   if(r==="power"){ boardTab="power"; return "scoreboard"; }
   if(r==="odds"){ boardTab="odds"; return "scoreboard"; }

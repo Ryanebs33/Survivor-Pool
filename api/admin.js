@@ -67,6 +67,15 @@ export default async function handler(req, res){
         await writeSettings({...cur, liveSeason: n, updatedAt: new Date().toISOString()});
         return send(res, 200, {liveSeason: n});
       }
+      case "theme": {           // two theme colours for a future season
+        const n = Number(b.season), hex = /^#[0-9a-fA-F]{6}$/;
+        if(!Number.isInteger(n) || n < 52 || n > 60) return send(res, 400, {error:"Theme colours are for Seasons 52 to 60."});
+        if(!hex.test(b.a||"") || !hex.test(b.b||"")) return send(res, 400, {error:"Pick two colours."});
+        const cur = await readSettings();
+        const themes = {...(cur.themes||{}), [n]: {a: b.a.toUpperCase(), b: b.b.toUpperCase()}};
+        await writeSettings({...cur, themes, updatedAt: new Date().toISOString()});
+        return send(res, 200, {themes});
+      }
       case "mergePrompt": {
         const on = !!b.on;
         await writeSettings({...(await readSettings()), mergePrompt: on, updatedAt: new Date().toISOString()});

@@ -6,6 +6,6 @@ export default async function handler(req, res){
   try{
     await ensureSeeded();
     const [entries, settings] = await Promise.all([readEntries(), readSettings()]);
-    send(res, 200, {entries: entries.map(e=>publicEntry(e, mergeClosed())), deadline: settings.deadline||null, locked: picksLocked(settings), merged: MERGED, mergePrompt: !!settings.mergePrompt});
+    send(res, 200, {entries: entries.map(e=>publicEntry(e, mergeClosed())), deadline: settings.deadline||null, locked: picksLocked(settings), merged: MERGED, mergePrompt: !!settings.mergePrompt, liveSeason: Number(settings.liveSeason)||51});
   }catch(e){ send(res, e.status||500, {error: e.status ? e.message : "The pool database couldn't be read."}); }
 }

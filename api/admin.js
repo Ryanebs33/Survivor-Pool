@@ -55,6 +55,18 @@ export default async function handler(req, res){
         await writeSettings({...(await readSettings()), deadline: d, updatedAt: new Date().toISOString()});
         return send(res, 200, {deadline: d});
       }
+      case "season": {          // which season everyone sees when they open the site (51-60)
+        const n = Number(b.live);
+        if(!Number.isInteger(n) || n < 51 || n > 60) return send(res, 400, {error:"Pick a season from 51 to 60."});
+        const cur = await readSettings();
+        // Before moving off Season 51 for the first time, keep a frozen copy of its entries.
+        if((Number(cur.liveSeason)||51) === 51 && n !== 51 && !(await s.get("archive:51"))){
+          const { readEntries } = await import("./_lib.js");
+          await s.set("archive:51", JSON.stringify({savedAt: new Date().toISOString(), entries: await readEntries()}));
+        }
+        await writeSettings({...cur, liveSeason: n, updatedAt: new Date().toISOString()});
+        return send(res, 200, {liveSeason: n});
+      }
       case "mergePrompt": {
         const on = !!b.on;
         await writeSettings({...(await readSettings()), mergePrompt: on, updatedAt: new Date().toISOString()});

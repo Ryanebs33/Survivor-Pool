@@ -494,6 +494,21 @@ nav.tabs a.tab-alert::before{content:"";position:absolute;top:9px;right:4px;widt
 .card.gone{background:color-mix(in srgb,var(--surface) 70%,var(--bg))}
 .card.gone > .badge, .card.gone > div:not(.own-pop){filter:grayscale(1);opacity:.5}
 .swap-tag{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:4px;border:1px solid currentColor;font:600 9.5px/1.2 var(--mono);letter-spacing:.06em;text-transform:none;vertical-align:1px;opacity:.85}
+.season-card{margin:0 0 14px;padding:16px 18px;background:var(--surface);border:1px solid var(--line);border-radius:12px}.season-card h3{margin:0 0 4px}
+.season-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px}
+.season-row select{min-height:44px;padding:8px 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.preview-note{border-style:dashed}.linkbtn{background:none;border:0;padding:0;color:inherit;font:inherit;font-weight:700;text-decoration:underline;cursor:pointer}
+.hist-season{margin-top:8px}
+.hist-champ{display:flex;gap:14px;align-items:center;background:var(--night);color:var(--night-ink);border-radius:14px;padding:18px 20px;margin:10px 0 18px}
+.hist-champ .small{color:var(--night-muted)}.hist-name{font:900 34px/1.05 var(--display);text-transform:uppercase;letter-spacing:.02em;margin:2px 0;overflow-wrap:anywhere}
+.podium{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;align-items:end;margin:0 0 22px}
+.pod{display:flex;flex-direction:column;align-items:center;text-align:center;gap:2px;min-width:0}
+.pod strong{font-size:15px;overflow-wrap:anywhere}.pod-place{font:700 12px/1 var(--mono);letter-spacing:.08em;color:var(--muted)}
+.pod-step{width:100%;border-radius:8px 8px 0 0;background:var(--surface);border:1px solid var(--line);margin-top:6px}
+.pod-1 .pod-step{height:84px;background:var(--torch);border-color:var(--torch)}.pod-2 .pod-step{height:58px}.pod-3 .pod-step{height:40px}
+.hist-picks{width:100%;border-collapse:collapse}.hist-picks td{padding:7px 0;border-bottom:1px solid var(--line);vertical-align:middle}
+.hist-picks .r{text-align:right;padding-left:10px}.hist-total td{font-weight:700;border-bottom:0}
 .wo-list{display:grid;gap:8px;margin:0;padding:0;list-style:none}
 .wo-item{background:var(--surface);border:1px solid var(--line);border-radius:10px}
 .wo-item summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:28px minmax(0,1fr) 64px;align-items:center;gap:10px;padding:10px 14px}
@@ -762,10 +777,13 @@ nav.tabs::after{content:"";position:absolute;top:0;right:0;bottom:0;width:36px;p
     <a href="#picks" data-r="picks">Picks</a>
     <a href="#castaways" data-r="castaways">Castaways</a>
     <a href="#submit" data-r="submit">Submit picks</a>
+    <a href="#season" data-r="season" hidden>Home</a>
+    <a href="#history" data-r="history" hidden>History</a>
     <a href="#commissioner" data-r="commissioner">Commissioner</a>
 </div></nav>
 
 <div class="wrap">
+  <div id="previewNote" class="notice preview-note" hidden></div>
   <div id="viewNote" class="notice view-note" hidden></div>
   <div id="sampleNote" class="notice" hidden><b>Sample data</b><span>The entrants and their picks are placeholders until the first real picks are submitted. Castaway points are the real weekly results.</span></div>
 
@@ -932,6 +950,18 @@ const AIRED_EP = () => Math.max(...EPISODES.map(e=>e.ep), 0);
 CAST.forEach(c=>{ c.orig = c.tribe; });
 function tribeAt(c, n){ let t=c.orig; SWAPS.filter(s=>s.ep<=n).forEach(s=>{ if(s.moves[c.id]) t=s.moves[c.id]; }); return t; }
 const FULL_THROUGH = POOL.updatedThrough;
+/* ---------- Seasons ----------
+   One site, many seasons. The commissioner picks which season is live for everyone (stored on the server),
+   and can preview any season in their own browser. Season 51 is this whole app; later seasons start empty
+   and get their cast, rules and data as they're set up. */
+const SEASONS = {51:{place:"Fiji", night:"Wednesdays on Global", ready:true}};
+for(let n=52;n<=60;n++) SEASONS[n] = {ready:false};
+const SEASON_LIST = Object.keys(SEASONS).map(Number);
+let liveSeason = 51, previewSeason = null;
+try{ const c = +localStorage.getItem("pool-live-season"); if(SEASONS[c]) liveSeason = c; }catch(e){}
+try{ const p = +sessionStorage.getItem("pool-preview-season"); if(SEASONS[p]) previewSeason = p; }catch(e){}
+const shownSeason = () => previewSeason || liveSeason;
+const isS51 = () => shownSeason() === 51;
 let viewEp = null;   // null = everything; a number = show the site as it was after that episode
 function applyView(n){
   viewEp = (n!=null && n<FULL_AIRED) ? n : null;
@@ -2766,6 +2796,162 @@ function winOddsHTML(){
 }
 
 
+
+/* ---------- Season chrome: header, nav and notes follow the season being shown ---------- */
+function seasonChrome(page){
+  const n = shownSeason(), S = SEASONS[n] || {};
+  const eb = document.querySelector(".hero-eyebrow"), a = document.querySelector("#poolName .h1a");
+  if(eb) eb.textContent = S.ready ? `Season ${n} · ${S.place} · ${S.night}` : `Season ${n}`;
+  if(a) a.textContent = `Survivor ${n}`;
+  document.title = `Survivor ${n} Fantasy Pool`;
+  if(!isS51()) document.getElementById("poolSub").textContent = S.ready ? "" : `Season ${n} is on its way. Past winners live in History.`;
+  else updateViewChrome();
+  const s51only = ["rules","scoreboard","picks","castaways","submit"];
+  document.querySelectorAll("nav.tabs a").forEach(l=>{
+    const r = l.dataset.r;
+    if(s51only.includes(r)) l.hidden = !isS51();
+    if(r==="season") l.hidden = isS51();
+    if(r==="history") l.hidden = isS51() || n < 52;
+  });
+  if(!isS51()){
+    document.getElementById("viewNote").hidden = true;
+    document.getElementById("sampleNote").hidden = !(usingSample && page==="history");
+  }
+  const pn = document.getElementById("previewNote");
+  if(previewSeason && previewSeason!==liveSeason){
+    pn.hidden = false;
+    pn.innerHTML = `<b>Previewing Season ${previewSeason}</b><span>Only you see this. Everyone else sees Season ${liveSeason}. <button type="button" class="linkbtn" id="exitPreview">Exit preview</button></span>`;
+    pn.querySelector("#exitPreview").onclick = () => setPreview(null);
+  } else pn.hidden = true;
+}
+function setPreview(n){
+  previewSeason = (n && n!==liveSeason) ? n : null;
+  try{ previewSeason ? sessionStorage.setItem("pool-preview-season", String(previewSeason)) : sessionStorage.removeItem("pool-preview-season"); }catch(e){}
+  if(isS51()) entrySpoiler(); else { document.querySelector(".spoil-wrap:not(.mp-wrap)")?.remove(); document.body.classList.remove("spoil-open"); }
+  if(!isS51() && !["seasons","flying","roster"].includes(commishTab)) commishTab = "seasons";
+  route();
+}
+
+/* ---------- Commissioner: Seasons ---------- */
+let seasonMsg = null;
+function seasonsPanelHTML(){
+  const opt = sel => SEASON_LIST.map(n=>`<option value="${n}" ${n===sel?"selected":""}>Season ${n}${SEASONS[n].ready?"":" (empty)"}</option>`).join("");
+  const status = n => n===51 ? `${SEASONS[51].place} · scores through ${esc(POOL.updatedThrough)}` : SEASONS[n].ready ? "Set up" : "Empty: no cast or data yet";
+  return `
+    <p class="lede">Choose which season everyone sees when they open the site. Season 51 stays saved no matter what's live, and from Season 52 on, its results show in the History tab.</p>
+    <div class="season-card">
+      <h3>Live season</h3>
+      <p class="small">What every visitor sees. Right now: <b>Season ${liveSeason}</b>.</p>
+      <div class="season-row"><label class="sr-only" for="liveSel">Live season</label>
+        <select id="liveSel">${opt(liveSeason)}</select>
+        <button type="button" class="btn" id="liveSave">Make live</button></div>
+      <p class="small" role="status" id="liveMsg">${seasonMsg?`<span class="${seasonMsg.kind==="err"?"err":"ok"}">${esc(seasonMsg.text)}</span>`:""}</p>
+    </div>
+    <div class="season-card">
+      <h3>Preview a season</h3>
+      <p class="small">See any season the way visitors would, in this browser only. Nobody else is affected.${previewSeason?` You're previewing <b>Season ${previewSeason}</b>.`:""}</p>
+      <div class="season-row"><label class="sr-only" for="prevSel">Season to preview</label>
+        <select id="prevSel">${opt(previewSeason||(liveSeason===51?52:51))}</select>
+        <button type="button" class="btn ghost" id="prevGo">Preview</button>
+        ${previewSeason?`<button type="button" class="btn ghost" id="prevExit">Exit preview</button>`:""}</div>
+    </div>
+    <div class="tablewrap"><table class="board season-table">
+      <thead><tr><th>Season</th><th>Status</th><th></th></tr></thead>
+      <tbody>${SEASON_LIST.map(n=>`<tr><td><strong>Season ${n}</strong></td><td class="small">${status(n)}</td><td class="r">${n===liveSeason?`<span class="mp-kind k-merge">Live</span>`:""}${n===previewSeason?` <span class="mp-kind k-swap">Previewing</span>`:""}</td></tr>`).join("")}</tbody>
+    </table></div>`;
+}
+function wireSeasons(){
+  const save = document.getElementById("liveSave"); if(!save) return;
+  save.addEventListener("click", async()=>{
+    const n = +document.getElementById("liveSel").value;
+    if(n===liveSeason){ seasonMsg={kind:"ok", text:`Season ${n} is already live.`}; return route(); }
+    save.disabled = true; document.getElementById("liveMsg").textContent = "Saving…";
+    try{ await api("/api/admin",{code:adminCode, action:"season", live:n});
+      liveSeason = n; try{ localStorage.setItem("pool-live-season", String(n)); }catch(e){}
+      seasonMsg = {kind:"ok", text:`Season ${n} is now live for everyone.`};
+      setPreview(previewSeason===n ? null : previewSeason);
+    }catch(err){ seasonMsg = {kind:"err", text: err.message || "That didn't save. Try again."}; route(); }
+  });
+  document.getElementById("prevGo").addEventListener("click",()=>{ seasonMsg=null; setPreview(+document.getElementById("prevSel").value); });
+  document.getElementById("prevExit")?.addEventListener("click",()=>{ seasonMsg=null; setPreview(null); });
+}
+
+/* ---------- Later seasons: home page until the season is set up ---------- */
+function seasonHomePage(){
+  const n = shownSeason();
+  return `<section class="page">
+    <h2>Survivor ${n}</h2>
+    <div class="notice"><b>Season ${n} is coming</b><span>The cast, rules and pick form will show up here once the season is set up. Until then, see how past seasons finished in History.</span></div>
+    ${n>=52?`<p style="margin-top:16px"><a class="btn" href="#history">See past winners</a></p>`:""}
+  </section>`;
+}
+
+/* ---------- History: past seasons' pool results ---------- */
+function seasonResults51(){
+  const rows = ENTRANTS.map(e=>({e, pts:score(e)})).sort((a,b)=>b.pts-a.pts || a.e.name.localeCompare(b.e.name));
+  rows.forEach((r,i)=>{ r.rank = i && r.pts===rows[i-1].pts ? rows[i-1].rank : i+1; });
+  return {rows, final: FULL_LATEST >= SEASON_EPISODES, through: FULL_LATEST};
+}
+function historyPicks(e){
+  const ids = [...new Set([...(e.orig||[]), ...(e.picks||[]), ...(e.merge?[e.merge]:[])])];
+  const rows = ids.map(id=>{
+    const c = byId[id], pts = pickPts(e, id), out = RESULTS[id]?.out;
+    const tags = [];
+    if(id===e.mvp) tags.push("MVP");
+    if(id===e.merge) tags.push("Merge pick");
+    else if(e.swap && id===e.swap.in) tags.push("Swapped in");
+    else if(e.swap && id===e.swap.out) tags.push("Swapped out");
+    if(POOL.winner===id) tags.push("Sole Survivor");
+    return {id, c, pts, out, tags};
+  }).sort((a,b)=>b.pts-a.pts);
+  return {rows, bonus: POOL.winner && POOL.winner===e.mvp ? 30 : 0};
+}
+function historyPage(){
+  const seasons = SEASON_LIST.filter(n=>n < shownSeason() && n===51);   // seasons with saved results
+  if(!seasons.length) return `<section class="page"><h2>History</h2><p class="lede">No past seasons yet.</p></section>`;
+  if(dbState==="loading") return `<section class="page"><h2>History</h2><p class="lede">Loading…</p></section>`;
+  // Season 51 results always count every episode, whatever spoiler choice was made.
+  const keep = viewEp; if(keep!=null) applyView(null);
+  const R = seasonResults51(), S = SEASONS[51];
+  const champ = R.rows.filter(r=>r.rank===1), podium = R.rows.filter(r=>r.rank<=3);
+  const placeName = k => ["","1st","2nd","3rd"][k];
+  const pod = [2,1,3].map(k=>{ const grp = podium.filter(r=>r.rank===k); return grp.length ? `<div class="pod pod-${k}">
+      <span class="pod-place">${placeName(k)}</span><strong>${grp.map(r=>esc(r.e.name)).join(" &amp; ")}</strong><span class="mono small">${grp[0].pts} pts</span><div class="pod-step"></div></div>` : `<div></div>`; }).join("");
+  const list = R.rows.map(r=>{
+    const H = historyPicks(r.e);
+    return `<li><details class="wo-item hist-item"><summary>
+      <span class="wo-rank">${r.rank}</span>
+      <span class="wo-name"><strong>${esc(r.e.name)}</strong></span>
+      <span class="wo-pct">${r.pts}</span></summary>
+      <div class="wo-body"><table class="hist-picks"><tbody>
+        ${H.rows.map(x=>`<tr><td><span class="mp-cast"><span class="badge t-${x.c.tribe}" aria-hidden="true">${initials(x.c)}</span>${esc(x.c.nick && !x.c.name.startsWith(x.c.nick) ? x.c.name.replace(" ", ` "${x.c.nick}" `) : x.c.name)}</span>
+          <div class="small">${[...x.tags, x.out!=null ? `Out Episode ${x.out}` : (R.final ? "" : "Still in")].filter(Boolean).map(esc).join(" · ")}</div></td><td class="r mono">${x.pts}</td></tr>`).join("")}
+        ${H.bonus?`<tr><td>MVP won the season</td><td class="r mono">+30</td></tr>`:""}
+        <tr class="hist-total"><td>Total</td><td class="r mono">${r.pts}</td></tr>
+      </tbody></table></div></details></li>`;
+  }).join("");
+  const html = `<section class="page">
+    <h2>History</h2>
+    <p class="lede">How every past pool finished. Tap a name for their picks and the points each one earned.</p>
+    <article class="hist-season">
+      <div class="eyebrow">Season 51 · ${S.place}</div>
+      ${R.final ? "" : `<p class="small">Season 51 is still in progress, so these are the standings through Episode ${R.through}.</p>`}
+      <div class="hist-champ">
+        <span aria-hidden="true">${flameSmall()}</span>
+        <div><div class="small">${R.final?"Pool champion":"Leading the pool"}</div>
+        <div class="hist-name">${champ.map(r=>esc(r.e.name)).join(" &amp; ")}</div>
+        <div class="mono">${champ[0].pts} points${champ[0].e.mvp?` · MVP ${esc(byId[champ[0].e.mvp].name)}`:""}</div></div>
+      </div>
+      <div class="podium" aria-label="Top three">${pod}</div>
+      <h3>${R.final?"Final rankings":"Rankings so far"}</h3>
+      <ol class="wo-list">${list}</ol>
+    </article>
+  </section>`;
+  if(keep!=null) applyView(keep);
+  return html;
+}
+const flameSmall = () => `<svg viewBox="0 0 40 60" width="28" height="42"><path d="M20 4c6 12 14 18 14 32a14 14 0 0 1-28 0c0-8 4-12 7-18 1 5 3 8 6 9-2-7 0-15 1-23z" fill="var(--ember)"/><path d="M20 26c3 5 6 8 6 13a6 6 0 0 1-12 0c0-5 3-8 6-13z" fill="var(--flame-hi)"/></svg>`;
+
 /* ---------- Scoreboard: Win odds (public) ----------
    For every team: its chance to win, or (if it can't) its likely and best realistic finish,
    plus exactly who to cheer for and against, worked out from the seasons where that goal happens. */
@@ -2910,7 +3096,11 @@ function commishPage(){
       <button class="btn" type="submit">Unlock</button>
       <span class="small" role="status">${commishErr?`<span class="err">${esc(commishErr)}</span>`:""}</span>
     </form></section>`;
-  head += `<nav class="ep-tabs sub-tabs" aria-label="Commissioner tools">
+  head += !isS51() ? `<nav class="ep-tabs sub-tabs" aria-label="Commissioner tools">
+      <a class="ep-tab" href="#seasons" ${commishTab==="seasons"?'aria-current="page"':""}>Seasons</a>
+      <a class="ep-tab" href="#flying">Flying</a>
+      <a class="ep-tab" href="#roster">Roster Snap</a></nav>` : `<nav class="ep-tabs sub-tabs" aria-label="Commissioner tools">
+      <a class="ep-tab" href="#seasons" ${commishTab==="seasons"?'aria-current="page"':""}>Seasons</a>
       <a class="ep-tab" href="#commissioner" ${commishTab==="picks"?'aria-current="page"':""}>Picks &amp; deadline</a>
       <a class="ep-tab" href="#recap" ${commishTab==="recap"?'aria-current="page"':""}>Weekly recap</a>
       <a class="ep-tab" href="#standings" ${commishTab==="standings"?'aria-current="page"':""}>Standings</a>
@@ -2918,6 +3108,7 @@ function commishPage(){
       <a class="ep-tab" href="#winodds" ${commishTab==="winodds"?'aria-current="page"':""}>Win odds</a>
       <a class="ep-tab" href="#flying">Flying</a>
       <a class="ep-tab" href="#roster">Roster Snap</a></nav>`;
+  if(commishTab==="seasons") return `<section class="page">${head}${seasonsPanelHTML()}</section>`;
   if(commishTab==="flying") return `<div id="flyRoot"></div>`;
   if(commishTab==="roster") return `<div id="rosterRoot"></div>`;
   if(commishTab==="recap") return `<section class="page">${head}</section>${recapPage()}`;
@@ -3106,6 +3297,12 @@ function applyEntries(snap){
 }
 let mergePrompt = false;     // commissioner switch: point visitors to the merge bonus pick
 function applyState(data){
+  const ls = Number(data.liveSeason)||51;
+  if(SEASONS[ls] && ls!==liveSeason){
+    const before = shownSeason(); liveSeason = ls;
+    try{ localStorage.setItem("pool-live-season", String(ls)); }catch(e){}
+    if(shownSeason()!==before){ if(isS51()) entrySpoiler(); else { document.querySelector(".spoil-wrap:not(.mp-wrap)")?.remove(); document.body.classList.remove("spoil-open"); } route(); }
+  }
   applyEntries({docs:(data.entries||[]).map(e=>({id:e.id, exists:true, data:()=>e}))});
   const mp = !!data.mergePrompt;
   if(mp!==mergePrompt){ mergePrompt=mp; markSubmitTab(); maybePromptMerge();
@@ -3887,9 +4084,17 @@ function wireRecap(){
 
 }
 
-const ROUTES = {rules:rulesPage, scoreboard:boardPage, recap:recapPage, castaways:castPage, picks:picksPage, submit:submitPage, commissioner:commishPage};
+const ROUTES = {rules:rulesPage, scoreboard:boardPage, recap:recapPage, castaways:castPage, picks:picksPage, submit:submitPage, commissioner:commishPage,
+  season:seasonHomePage, history:historyPage};
 let focusCast = null;
-const currentPage = () => { const r=(location.hash||"").slice(1);
+const currentPage = () => {
+  const pg = pageFor();
+  if(isS51()) return (pg==="season" || pg==="history") ? "rules" : pg;            // History begins with Season 52
+  if(!["season","history","commissioner"].includes(pg)) return "season";           // later seasons: only their own pages for now
+  if(pg==="commissioner" && !["seasons","flying","roster"].includes(commishTab)) commishTab = "seasons";
+  return pg; };
+const pageFor = () => { const r=(location.hash||"").slice(1);
+  if(r==="seasons"){ commishTab="seasons"; return "commissioner"; }
   const m=/^recap-ep(\d+)$/.exec(r); if(m){ recapEp=+m[1]; commishTab="recap"; return "commissioner"; }
   if(r==="recap"){ recapEp=null; commishTab="recap"; return "commissioner"; }
   if(r==="commissioner") commishTab="picks";
@@ -3911,6 +4116,7 @@ function route(){
   const act=document.querySelector('nav.tabs a[aria-current="page"]'), strip=document.querySelector(".tabs-in");
   if(act && strip){ const l=act.offsetLeft-16, r=act.offsetLeft+act.offsetWidth-strip.clientWidth+40; if(strip.scrollLeft>l) strip.scrollLeft=l; else if(strip.scrollLeft<r) strip.scrollLeft=r; updateFade(); }
   view.innerHTML = ROUTES[page]();
+  seasonChrome(page);
   wire();
   if(page==="castaways" && focusCast){
     const id=focusCast; focusCast=null;
@@ -3934,6 +4140,7 @@ function flipUp(anchor, pop, row){
   if(h + 16 > below && h + 16 <= above) pop.classList.add("up");   // only flip when it fits above; otherwise keep opening down
 }
 function wire(){
+  wireSeasons();
   const rv=document.getElementById("reveal");
   const rp=document.getElementById("revealPrev");
   if(rp) rp.addEventListener("click",()=>{ applyView(prevViewEp()); updateViewChrome(); revealed=true; revealedThrough=LATEST_EP(); view.innerHTML=ROUTES[currentPage()](); wire(); scrollTo(0,0); });
@@ -4033,7 +4240,7 @@ route();
 
 /* Merge pick reminder: when the commissioner turns it on, visitors get one pop-up per visit pointing
    them to the merge bonus pick, and the Submit picks tab gets a dot. */
-const mergePromptLive = () => mergePrompt && POOL.merged && mergeVisible() && !mergeClosed();
+const mergePromptLive = () => isS51() && mergePrompt && POOL.merged && mergeVisible() && !mergeClosed();
 function markSubmitTab(){
   const a=document.querySelector('nav.tabs a[data-r="submit"]'); if(!a) return;
   a.classList.toggle("tab-alert", mergePromptLive());
@@ -4062,9 +4269,9 @@ function maybePromptMerge(){
 
 /* One spoiler warning, shown once when someone first opens the site (per visit). Their answer sets
    what the whole site shows: everything, or everything as of the episode before the newest one. */
-(function entrySpoiler(){
+function entrySpoiler(){
   let seen=false; try{ seen=sessionStorage.getItem("s51-spoiler")==="1"; }catch(e){}
-  if(seen || FULL_AIRED<1) return;
+  if(seen || FULL_AIRED<1 || !isS51() || document.querySelector(".spoil-wrap:not(.mp-wrap)")) return;
   const scored = ALL_EPISODES.filter(e=>Object.keys(e.pts).length).map(e=>e.ep);
   const prev = FULL_AIRED>FULL_LATEST ? (FULL_LATEST||null) : (scored.length>1 ? scored[scored.length-2] : null);
   const wrap=document.createElement("div"); wrap.className="spoil-wrap";
@@ -4085,7 +4292,8 @@ function maybePromptMerge(){
   // focus the first choice once the intro has gone
   const focusIt=()=>{ const i=document.getElementById("intro"); if(i && !i.classList.contains("gone")) return setTimeout(focusIt,300); wrap.querySelector("#spLatest")?.focus({preventScroll:true}); };
   focusIt();
-})();
+}
+entrySpoiler();
 </script>
 
 </body>

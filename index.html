@@ -809,7 +809,7 @@ nav.tabs::after{content:"";position:absolute;top:0;right:0;bottom:0;width:36px;p
 /* ============ POOL DATA — edit this block each week ============ */
 const POOL = {
   name: "Survivor 51 Fantasy Pool",
-  updatedThrough: "Episode 9",
+  updatedThrough: "Episode 10",
   picksOpen: true,         // set to false to lock the original 8 picks + MVP
   merged: true,            // merge bonus picks (and the one-time swap) are open
   winner: null             // castaway id of the Sole Survivor, at the finale (+30 to every entrant whose MVP it is)
@@ -934,8 +934,17 @@ const ALL_EPISODES = [
      devin:[["Created a fake idol",15],["Wins a group Reward Challenge",5]],
      lewis:[["Wins a group Reward Challenge",5],["Flipped the Million-Dollar Coin",10],["Created a fake idol",15]]
    }},
-  // Episode 10: aired, points pending. Maggie and Carter voted out (double boot).
-  {ep:10, pts:{}, out:["maggie","carter"], detail:{}}
+  // Episode 10: double boot. Mike and Cristian won immunity; Maggie out 7-1-1, then Carter out 5-2-1 holding an idol.
+  {ep:10, pts:{an:8, carter:20, cristian:23, devin:3, eric:3, jelly:3, maggie:15, mike:28, sharonda:8},
+   out:["maggie","carter"],
+   detail:{
+     an:[["Cried on camera",5]],
+     carter:[["Torch snuffed as a result of a blindside",10],["Voted out with an idol in pocket",10]],
+     cristian:[["Chosen for Reward",5],["Wins an Individual Immunity Challenge",10],["Cried on camera",5]],
+     maggie:[["Chosen for Reward",5],["Torch snuffed as a result of a blindside",10]],
+     mike:[["Wins an Individual Immunity Challenge",15],["Wins an Individual Reward Challenge",10]],
+     sharonda:[["Chosen for Reward",5]]
+   }}
 ];
 /* Tribe swaps. CAST above holds each castaway's ORIGINAL tribe (what picks were made from);
    each swap lists where people went from that episode on. */
@@ -2033,8 +2042,106 @@ const OL_ADD9 = {
     "A decent roster attached to an unbearable owner."
   ]
 };
+const OL_ADD10 = {
+  wkTop: [
+    "Two Tribals, one great night: {wk} points in Episode {ep}, the pool's best. {bc} ({bp}) led the double-boot haul.",
+    "Double episode, double points: {wk} this week, top of the pool, {bc} with {bp}.",
+    "{wk} points topped the pool in Episode {ep}. {bc}'s {bp} made it look easy.",
+    "Nobody had a better double boot: {wk} points, {bc} bringing {bp}."
+  ],
+  wkGood: [
+    "{wk} points in a double-boot week ({wkr}). {bc} ({bp}) did the damage.",
+    "Strong Episode {ep}: {wk} points, {wkr}, mostly {bc} ({bp}).",
+    "{wk} points and a {wkr}-place night; {bc}'s {bp} carried it.",
+    "Good double episode: {wk} points ({wkr}), {bc} on {bp}."
+  ],
+  wkMid: [
+    "{wk} points ({wkr}) in a week with two Tribals. {bc}'s {bp} kept it afloat.",
+    "Survived the double boot with {wk} points, {wkr} in the pool. {bc} led with {bp}.",
+    "A middling Episode {ep}: {wk} points ({wkr}). {bc} found {bp}.",
+    "{wk} points, {wkr}. Two votes, zero fireworks. {bc} got {bp}."
+  ],
+  wkBad: [
+    "Two Tribals and only {wk} points to show for it ({wkr} of {N}). {bc} managed {bp}.",
+    "Episode {ep} was a double gut punch: {wk} points, {wkr} of {N}, {bc} at {bp}.",
+    "{wk} points in a double episode is rough ({wkr} of {N}). {bc}'s {bp} was the lone bright spot.",
+    "A lean night: {wk} points ({wkr} of {N}). Best of the bunch was {bc} with {bp}."
+  ],
+  wkLost: [
+    "And {lostNow} {lostAre} gone in the double boot.",
+    "The double boot took {lostNow}.",
+    "{lostNow} didn't survive the two-Tribal night."
+  ],
+  carry: [
+    "{a} ({aw}) is about {share}% of what's left. Down to seven, that's a lot of pressure on one torch.",
+    "Most of the remaining hope, about {share}%, sits with {a} ({aw}).",
+    "{a} ({aw}) is the engine, roughly {share}% of the projection, with seven left in the game.",
+    "Around {share}% of this team's future is {a} ({aw}). Fingers crossed at every Tribal."
+  ],
+  balanced: [
+    "{a} ({aw}) and {b} ({bw}) lead a roster with no one above {share}% of the outlook.",
+    "Two live threats, {a} ({aw}) and {b} ({bw}), and the top share is just {share}%.",
+    "{a} ({aw}) and {b} ({bw}) give this team two shots at a deep run (top share {share}%).",
+    "Balanced into the final seven: {a} ({aw}), {b} ({bw}), nobody above {share}%."
+  ],
+  lostSome: [
+    "{lost} is on the jury now; {live} of {total} still in.",
+    "{lost} is gone, leaving {live} of {total} for the home stretch.",
+    "Minus {lost}, {live} of {total} remain with seven left in the game.",
+    "{lost} is out. {live} of {total} are still chasing the finale."
+  ],
+  lostMany: [
+    "{lost} are all gone. {live} of {total} remain for the stretch run.",
+    "The jury bench is full of this team: {lost}. {live} of {total} left.",
+    "{live} of {total} still standing after losing {lost}.",
+    "{lost} have left; {live} of {total} carry it home."
+  ],
+  vsUp: [
+    "Projected {vs} spots higher than the {stand}-place standing. The finale bonuses favour them.",
+    "{stand} now, {vs} spots better on projection. The best castaways are still in.",
+    "The projection likes this roster {vs} spots more than the {stand}-place standing."
+  ],
+  vsDown: [
+    "{stand} on the board, {vs} spots lower on projection. The bank is doing the work.",
+    "Projected {vs} spots below the {stand}-place standing. Not enough left to hold it.",
+    "The {stand}-place standing is mostly banked points; the projection drops them {vs} spots."
+  ],
+  riskConc: [
+    "{share}% of the outlook is {a}. With seven left, one vote decides a lot.",
+    "If {a} goes, {share}% of the projection goes too.",
+    "{a} carries {share}% of the outlook into a seven-person game. No pressure."
+  ],
+  riskWeak: [
+    "{w} ({wt}-tier) is the most exposed with seven left.",
+    "Watch {w} ({wt}-tier); the numbers aren't kind.",
+    "{w} ({wt}-tier) is the next likely jury member on this roster."
+  ],
+  riskThin: [
+    "Only {live} left in a seven-person game. Every boot now counts double.",
+    "Down to {live}. One more bad Tribal and the ceiling collapses.",
+    "{live} castaways remain. Nothing to spare."
+  ],
+  start: ["Start it. Seven left and this roster owns the best of them.", "Must-start. The finale bonuses are lining up nicely.", "Lock it in. The stretch run favours this team."],
+  buy: ["Buy. The final seven fits this roster.", "Buy before the finale bonuses get priced in.", "Buy. Their castaways are the ones still standing."],
+  sell: ["Sell. The double boot took more than it gave.", "Sell high; the stretch run won't be kind.", "Sell. The banked points are all that's propping this up."],
+  hold: ["Hold. One immunity win flips the whole picture.", "Hold and watch the next vote.", "Hold. Middle of the pack, with one more swing in it."],
+  waiver: ["Waiver wire. It'll take a miracle finale.", "Long shot. Hope the idol math breaks their way.", "Bench it, enjoy the finale, cheer for chaos."],
+  nathan: [
+    "Fade. Carter went home with an idol in his pocket and still made better use of his assets than Nathan did on draft day.",
+    "Avoid. Sharonda said timing is everything. Nathan's timing has been wrong since the premiere.",
+    "Fade. Two Tribals in one night, and the only thing Nathan's roster blindsided was its own owner.",
+    "Hard pass. {wk} points in a double episode. Even a PB&J lunch has more substance.",
+    "Fade. {r} in the power rankings and dropping like a balance challenge in phase two.",
+    "Sell. {bc} is out there scrapping; the rest of Nathan's team is already on the jury bench in spirit."
+  ],
+  nathanWhy: ["The case against Nathan, double-boot edition:", "Two votes, one verdict: Nathan's roster.", "Explaining Nathan's team, slowly, for the jury:"],
+  nathanUp: ["The upside requires a finale miracle and Nathan not talking about it.", "Ceiling: a seat on the jury, cheering for someone else's team.", "There's a path. It runs through a fire-making challenge Nathan would lose."],
+  nathanRisk: ["The risk is that Nathan already thinks he's won.", "Main risk: it's still Nathan's team.", "Risk level: two Tribals a night, every night."],
+  nathanWeek: ["Nathan scored {wk} points in a double episode, which is half as many as you'd think.", "{wk} points for Nathan. Two Tribals, one shrug.", "Nathan's {wk} this week came with a free PB&J and no immunity."],
+  nathanShort: ["Nathan's team is fine, which he'll describe as dominant.", "Respectable, and Nathan won't shut up about it.", "Not bad, which Nathan considers a moral victory."]
+};
 const OL_BATCH = {};      // pool -> [{ep, lo, hi}]
-[[8, OL_ADD], [9, OL_ADD9]].forEach(([ep, add])=>Object.entries(add).forEach(([k,lines])=>{
+[[8, OL_ADD], [9, OL_ADD9], [10, OL_ADD10]].forEach(([ep, add])=>Object.entries(add).forEach(([k,lines])=>{
   const lo = (OL[k]||[]).length; OL[k] = (OL[k]||[]).concat(lines);
   (OL_BATCH[k] = OL_BATCH[k] || []).push({ep, lo, hi: lo + lines.length});
 }));
@@ -2072,6 +2179,17 @@ function makeDealer(seedKey){
 /* Storylines from each episode, worked into the outlook's "This week" line for teams that own the castaway.
    Listed most newsworthy first; each team gets one, and teams sharing castaways get different ones where possible. */
 const EP_NOTES = {
+  10: [
+    ["carter", "Storyline: Carter refused to change his game, kept his idol in his pocket, and went home 5-2-1 on the second vote of the night. Principled to the last, and holding the receipt.", true],
+    ["maggie", "Storyline: Maggie went out 7-1-1 in the first vote of the double boot, after Sharonda flipped the numbers at Tribal. Jeff called her one of a kind on the way out.", true],
+    ["sharonda", "Storyline: Sharonda told Jeff \"timing is everything\" and then proved it, steering both votes of the double boot. The puppet master has entered the chat."],
+    ["mike", "Storyline: Mike won immunity again, his second individual win, took Cristian, Maggie and Sharonda to a PB&J lunch, and is now keeping Devin and Jelly as \"decoys.\" Strategic, sticky."],
+    ["cristian", "Storyline: Cristian won the feet-only tower to grab immunity in the second half, then admitted he can't tell who's running the game. Safe and confused is still safe."],
+    ["an", "Storyline: Thien An lost her ally Maggie in the first vote, survived a split second vote, and is very aware she might be next."],
+    ["devin", "Storyline: Devin was the pre-episode target and walked out of a double boot untouched. The Helicopter Alliance flies on."],
+    ["jelly", "Storyline: Jelly dropped early from the balance challenge, then helped Sharonda count the votes that took out Maggie and Carter. Out of challenges, into control."],
+    ["eric", "Storyline: Eric followed Sharonda's lead both times and survived the double boot without a single scramble. The best kind of quiet."]
+  ],
   9: [
     ["lewis", "Storyline: Lewis carried the reward challenge alone, made the immunity final two, then volunteered for the Million-Dollar Coin Flip, called fire, and got water. Gone, with the million rolling to next season.", true],
     ["carter", "Storyline: Carter outlasted Lewis for half an hour to win immunity, offered his idol to cover Cristian, and then Cristian told Sharonda all about that idol. Safe this week, exposed next week."],
@@ -2293,7 +2411,7 @@ const SHORT_CAT = {"Wins a group Reward Challenge":"Group reward","Wins a group 
   "Says a curse word that is bleeped":"Curse word","Survived the week":"Survived","Found a hidden immunity idol":"Found idol",
   "Treated for a medical emergency":"Medical emergency","Torch snuffed as a result of a blindside":"Blindsided","Other point categories":"Other",
   "Finds or gets a game advantage":"Got advantage","Finds or gets a game advantage (before giving it away)":"Got advantage","Chosen to go on a journey":"Journey",
-  "Found a hidden immunity idol":"Found idol","Searches through someone else's bag":"Bag search","Chooses to forfeit the game":"Quit","Gives an immunity idol away":"Gave idol away","Cried on camera":"Cried","Voted out unanimously":"Unanimous boot","Created a fake idol":"Fake idol","Played an advantage at Tribal":"Played advantage","Got an idol":"Got idol","Played a Shot in the Dark":"Shot in the Dark","Drew a safe scroll":"Safe scroll","Chosen for Reward":"Chosen for reward","Played an immunity idol on herself":"Idol (self)","Played an immunity idol for another player":"Idol (for another)","Wins an Individual Immunity Challenge":"Individual immunity","Created a fake idol":"Fake idol","Flipped the Million-Dollar Coin":"Coin flip"};
+  "Found a hidden immunity idol":"Found idol","Searches through someone else's bag":"Bag search","Chooses to forfeit the game":"Quit","Gives an immunity idol away":"Gave idol away","Cried on camera":"Cried","Voted out unanimously":"Unanimous boot","Created a fake idol":"Fake idol","Voted out with an idol in pocket":"Idol in pocket","Wins an Individual Reward Challenge":"Individual reward","Played an advantage at Tribal":"Played advantage","Got an idol":"Got idol","Played a Shot in the Dark":"Shot in the Dark","Drew a safe scroll":"Safe scroll","Chosen for Reward":"Chosen for reward","Played an immunity idol on herself":"Idol (self)","Played an immunity idol for another player":"Idol (for another)","Wins an Individual Immunity Challenge":"Individual immunity","Created a fake idol":"Fake idol","Flipped the Million-Dollar Coin":"Coin flip"};
 /* A castaway's points by category across scored episodes (optionally only after a given episode). */
 function castCats(id, afterEp, onlyEp){
   const r=RESULTS[id], cats=new Map(); let total=0;
